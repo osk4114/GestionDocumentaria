@@ -16,8 +16,11 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
       // Error 401 - Token expirado o sesión inválida
       if (error.status === 401) {
         
-        // Si es login o refresh, no hacer nada especial
-        if (req.url.includes('/login') || req.url.includes('/register')) {
+        // Rutas públicas - no redirigir al login
+        const publicRoutes = ['/login', '/register', '/submit', '/tracking/', '/document-types'];
+        const isPublicRoute = publicRoutes.some(route => req.url.includes(route));
+        
+        if (isPublicRoute) {
           return throwError(() => error);
         }
 
@@ -29,10 +32,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
             errorMessage.includes('sesión no encontrada')) {
           // 🔒 Sesión cerrada desde otro dispositivo - NO intentar refresh
           console.warn('🚨 Tu sesión fue cerrada desde otro dispositivo');
-          authService.logout();
-          router.navigate(['/login'], { 
-            queryParams: { reason: 'session-closed' } 
-          });
+          authService.logout(true); // Redirigir al login
           return throwError(() => error);
         }
 
@@ -52,8 +52,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
             catchError(refreshError => {
               // Si el refresh falla, redirigir a login
               console.warn('🔄 Refresh token falló - Redirigiendo al login');
-              authService.logout();
-              router.navigate(['/login']);
+              authService.logout(true); // Redirigir al login
               return throwError(() => refreshError);
             })
           );

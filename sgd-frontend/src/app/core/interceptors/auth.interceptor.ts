@@ -10,8 +10,21 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const storage = inject(StorageService);
   const token = storage.getToken();
 
-  // Si hay token y no es una petición de login/register/refresh, agregarlo
-  if (token && !req.url.includes('/login') && !req.url.includes('/register')) {
+  // Rutas públicas que NO necesitan autenticación
+  const publicRoutes = [
+    '/login',
+    '/register',
+    '/refresh',
+    '/submit',           // Mesa de Partes Virtual
+    '/tracking/',        // Seguimiento público
+    '/document-types'    // Tipos de documento
+  ];
+
+  // Verificar si la URL es pública
+  const isPublicRoute = publicRoutes.some(route => req.url.includes(route));
+
+  // Si hay token y NO es una ruta pública, agregarlo
+  if (token && !isPublicRoute) {
     req = req.clone({
       setHeaders: {
         Authorization: `Bearer ${token}`

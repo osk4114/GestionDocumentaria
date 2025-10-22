@@ -54,7 +54,8 @@ export class AuthService {
       // 🔌 Conectar WebSocket si el usuario ya estaba autenticado
       this.websocketService.connect();
     } else {
-      this.logout();
+      // Limpiar datos sin redirigir - el usuario puede estar en rutas públicas
+      this.logout(false);
     }
   }
 
@@ -96,20 +97,32 @@ export class AuthService {
 
   /**
    * Logout - cerrar sesión actual
+   * @param redirect - Si debe redirigir al login (true por defecto)
    */
-  logout(): Observable<any> | void {
+  logout(redirect: boolean = true): Observable<any> | void {
     const token = this.storage.getToken();
     
     if (token) {
       return this.http.post(`${this.API_URL}/logout`, {}).pipe(
-        tap(() => this.clearAuthData()),
+        tap(() => {
+          this.clearAuthData();
+          if (redirect) {
+            this.router.navigate(['/login']);
+          }
+        }),
         catchError(() => {
           this.clearAuthData();
+          if (redirect) {
+            this.router.navigate(['/login']);
+          }
           return throwError(() => new Error('Error al cerrar sesión'));
         })
       );
     } else {
       this.clearAuthData();
+      if (redirect) {
+        this.router.navigate(['/login']);
+      }
     }
   }
 
@@ -198,7 +211,8 @@ export class AuthService {
     this.storage.clearAll();
     this.currentUser.set(null);
     this.isAuthenticatedSubject.next(false);
-    this.router.navigate(['/login']);
+    this.websocketService.disconnect();
+    // NO redirigir automáticamente - los guards manejan las redirecciones cuando es necesario
   }
 
   /**

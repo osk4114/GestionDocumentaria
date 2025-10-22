@@ -1,0 +1,153 @@
+<div class="track-document-container">
+  <div class="content-wrapper">
+    
+    <!-- Header -->
+    <div class="header">
+      <h1 class="title">Seguimiento de Documentos</h1>
+      <p class="subtitle">Consulta el estado de tu trámite ingresando el código de seguimiento</p>
+    </div>
+
+    <!-- Buscador -->
+    <div class="search-card">
+      <form [formGroup]="searchForm" (ngSubmit)="searchDocument()">
+        <div class="search-input-group">
+          <input 
+            type="text" 
+            formControlName="trackingCode"
+            placeholder="Ej: SGD-2024-123456"
+            [disabled]="loading()">
+          <button 
+            type="submit" 
+            class="btn-search"
+            [disabled]="loading() || searchForm.invalid">
+            @if (loading()) {
+              <span class="loading-spinner"></span>
+            } @else {
+              <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            }
+            Buscar
+          </button>
+        </div>
+        @if (searchForm.get('trackingCode')?.invalid && searchForm.get('trackingCode')?.touched) {
+          <p class="error-hint">Formato de código inválido. Debe ser: SGD-YYYY-NNNNNN</p>
+        }
+      </form>
+    </div>
+
+    <!-- Mensaje de Error -->
+    @if (errorMessage()) {
+      <div class="error-message">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>{{ errorMessage() }}</span>
+      </div>
+    }
+
+    <!-- Resultado de la Búsqueda -->
+    @if (document()) {
+      <div class="result-section">
+        
+        <!-- Información del Documento -->
+        <div class="document-card">
+          <div class="document-header">
+            <div>
+              <h2 class="document-title">{{ document()!.asunto }}</h2>
+              <p class="document-code">Código: <strong>{{ document()!.trackingCode }}</strong></p>
+            </div>
+            <div class="document-badges">
+              <span class="badge" [ngClass]="getPriorityClass(document()!.prioridad)">
+                {{ getPriorityLabel(document()!.prioridad) }}
+              </span>
+              <span class="badge badge-status" [style.background-color]="document()!.status.color">
+                {{ document()!.status.nombre }}
+              </span>
+            </div>
+          </div>
+
+          <div class="document-info-grid">
+            <div class="info-item">
+              <span class="info-label">Remitente:</span>
+              <span class="info-value">{{ document()!.sender.nombreCompleto }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Tipo de Documento:</span>
+              <span class="info-value">{{ document()!.documentType.nombre }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Fecha de Ingreso:</span>
+              <span class="info-value">{{ formatDate(document()!.created_at) }}</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Estado Actual:</span>
+              <span class="info-value">{{ document()!.status.nombre }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Línea de Tiempo -->
+        <div class="timeline-card">
+          <h3 class="timeline-title">
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Historial de Movimientos
+          </h3>
+          
+          <div class="timeline">
+            @for (movement of document()!.movements; track movement.id; let isLast = $last; let isFirst = $first) {
+              <div class="timeline-item" [class.is-first]="isFirst">
+                <div class="timeline-marker"></div>
+                <div class="timeline-content">
+                  <div class="timeline-header">
+                    <span class="timeline-action">{{ movement.accion }}</span>
+                    <span class="timeline-date">{{ formatDate(movement.timestamp) }}</span>
+                  </div>
+                  
+                  @if (movement.fromArea || movement.toArea) {
+                    <div class="timeline-areas">
+                      @if (movement.fromArea) {
+                        <span class="area-badge">{{ movement.fromArea.sigla }}</span>
+                        <svg class="arrow-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        </svg>
+                      }
+                      <span class="area-badge area-badge-destination">{{ movement.toArea.sigla }}</span>
+                    </div>
+                  }
+                  
+                  @if (movement.observacion) {
+                    <p class="timeline-observation">{{ movement.observacion }}</p>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Acciones -->
+        <div class="actions-section">
+          <button (click)="newSearch()" class="btn btn-secondary">
+            Nueva Búsqueda
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- Información Adicional -->
+    <div class="info-footer">
+      <div class="info-card">
+        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <div>
+          <h4>¿Necesitas ayuda?</h4>
+          <p>Si tienes dudas sobre el estado de tu documento, comunícate con la Mesa de Partes</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

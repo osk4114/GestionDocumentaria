@@ -12,6 +12,7 @@ const { UserSession } = require('./models');
 // Importar rutas
 const authRoutes = require('./routes/authRoutes');
 const documentRoutes = require('./routes/documentRoutes');
+const documentTypeRoutes = require('./routes/documentTypeRoutes');
 const movementRoutes = require('./routes/movementRoutes');
 const attachmentRoutes = require('./routes/attachmentRoutes');
 
@@ -52,6 +53,7 @@ app.get('/api/health', (req, res) => {
 // Rutas de la API
 app.use('/api/auth', authRoutes);
 app.use('/api/documents', documentRoutes);
+app.use('/api/document-types', documentTypeRoutes);
 app.use('/api/movements', movementRoutes);
 app.use('/api/attachments', attachmentRoutes);
 
@@ -127,7 +129,10 @@ const startServer = async () => {
   }
 };
 
-// Iniciar el servidor
-startServer();
+// Solo iniciar el servidor si se ejecuta directamente
+// (no cuando se importa para tests)
+if (require.main === module) {
+  startServer();
+}
 
-module.exports = { app, io };
+module.exports = { app, io, server };
