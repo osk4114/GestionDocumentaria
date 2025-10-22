@@ -10,6 +10,7 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
 const JWT_REFRESH_EXPIRES_IN = process.env.JWT_REFRESH_EXPIRES_IN || '7d';
 const MAX_LOGIN_ATTEMPTS = parseInt(process.env.MAX_LOGIN_ATTEMPTS) || 5;
 const LOGIN_ATTEMPT_WINDOW = parseInt(process.env.LOGIN_ATTEMPT_WINDOW) || 15; // minutos
+const MAX_SESSIONS_PER_USER = parseInt(process.env.MAX_SESSIONS_PER_USER) || 3;
 
 /**
  * Registrar nuevo usuario
@@ -162,6 +163,31 @@ const cleanupOldAttempts = async () => {
  */
 const createSession = async (user, ipAddress, userAgent) => {
   const jti = uuidv4(); // JWT ID único
+  
+  // ⚠️ SESIÓN ÚNICA: Invalidar TODAS las sesiones anteriores del usuario
+  const previousSessions = await UserSession.update(
+    { isActive: false },
+    {
+      where: {
+        userId: user.id,
+        isActive: true
+      },
+      returning: true // Para PostgreSQL, en MySQL no funciona
+    }
+  );
+
+  if (previousSessions[0] > 0) {
+    console.log(`🔒 Sesión única activada: ${previousSessions[0]} sesión(es) anterior(es) cerrada(s) automáticamente para usuario ${user.id}`);
+    
+    // 📢 Notificar via WebSocket a las sesiones cerradas
+    if (global.io) {
+      global.io.to(`user:${user.id}`).emit('session-invalidated', {
+        reason: 'new-login',
+        message: 'Tu sesión fue cerrada porque iniciaste sesión desde otro dispositivo'
+      });
+      console.log(`📢 Notificación WebSocket enviada a usuario ${user.id}`);
+    }
+  }
   
   // Calcular fecha de expiración
   const expiresAt = new Date();
@@ -527,7 +553,7 @@ const getSessions = async (req, res) => {
           [Op.gt]: new Date()
         }
       },
-      attributes: ['id', 'ipAddress', 'userAgent', 'lastActivity', 'expiresAt'],
+      attributes: ['id', 'ipAddress', 'userAgent', 'isActive', 'lastActivity', 'expiresAt'],
       order: [['lastActivity', 'DESC']]
     });
 

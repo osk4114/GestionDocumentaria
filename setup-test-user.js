@@ -11,9 +11,9 @@ async function setupTestUser() {
     
     if (user) {
       console.log('✓ Usuario admin@sgd.com existe');
-      console.log(`  Username: ${user.username}`);
+      console.log(`  Nombre: ${user.nombre}`);
       console.log(`  Email: ${user.email}`);
-      console.log(`  Rol: ${user.role.name}`);
+      console.log(`  Rol: ${user.role ? user.role.nombre : 'No asignado'}`);
       
       // Actualizar contraseña a admin123
       const hashedPassword = await bcrypt.hash('admin123', 10);
@@ -26,10 +26,9 @@ async function setupTestUser() {
       // Crear usuario admin
       const hashedPassword = await bcrypt.hash('admin123', 10);
       user = await User.create({
-        username: 'admin',
+        nombre: 'Administrador Sistema',
         email: 'admin@sgd.com',
         password: hashedPassword,
-        fullName: 'Administrador',
         rolId: 1,
         areaId: 1,
         isActive: true

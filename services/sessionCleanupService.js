@@ -3,6 +3,32 @@ const { Op } = require('sequelize');
 const { cleanupOldAttempts } = require('../controllers/authController');
 
 /**
+ * Invalidar TODAS las sesiones al iniciar el servidor
+ * Cuando el servidor se reinicia, todas las sesiones WebSocket se pierden
+ * Por lo tanto, todas las sesiones deben ser invalidadas
+ */
+const cleanupStaleSessionsOnStartup = async () => {
+  try {
+    const result = await UserSession.update(
+      { isActive: false },
+      {
+        where: {
+          isActive: true
+        }
+      }
+    );
+
+    if (result[0] > 0) {
+      console.log(`🧹 Limpieza de inicio: ${result[0]} sesiones invalidadas (servidor reiniciado)`);
+    } else {
+      console.log(`✓ No hay sesiones activas para limpiar`);
+    }
+  } catch (error) {
+    console.error('✗ Error en limpieza de inicio:', error);
+  }
+};
+
+/**
  * Limpieza automática de sesiones expiradas
  * Ejecutar cada hora
  */
@@ -53,7 +79,10 @@ const cleanupExpiredSessions = async () => {
  * Por defecto cada hora
  */
 const startCleanupSchedule = (intervalMs = 3600000) => {
-  // Ejecutar inmediatamente
+  // Limpiar sesiones inactivas al inicio
+  cleanupStaleSessionsOnStartup();
+
+  // Ejecutar limpieza de expiradas inmediatamente
   cleanupExpiredSessions();
 
   // Programar ejecuciones periódicas
@@ -64,5 +93,6 @@ const startCleanupSchedule = (intervalMs = 3600000) => {
 
 module.exports = {
   cleanupExpiredSessions,
+  cleanupStaleSessionsOnStartup,
   startCleanupSchedule
 };
