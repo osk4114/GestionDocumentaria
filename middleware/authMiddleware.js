@@ -1,8 +1,8 @@
 const jwt = require('jsonwebtoken');
-const { User, Role, Area } = require('../models');
+const { User, Role, Area, UserSession } = require('../models');
 
 // Secret key (debe coincidir con authController)
-const JWT_SECRET = process.env.JWT_SECRET || 'sgd_secret_key_2025_change_in_production';
+const JWT_SECRET = process.env.JWT_SECRET || 'sgd_secret_key_change_in_production';
 
 /**
  * Middleware para verificar token JWT
@@ -25,6 +25,30 @@ const authMiddleware = async (req, res, next) => {
 
     // Verificar y decodificar el token
     const decoded = jwt.verify(token, JWT_SECRET);
+
+    // Verificar si la sesión está activa en la base de datos
+    const session = await UserSession.findOne({
+      where: {
+        jti: decoded.jti,
+        isActive: true
+      }
+    });
+
+    if (!session) {
+      return res.status(401).json({
+        success: false,
+        message: 'Sesión inválida o cerrada. Por favor inicie sesión nuevamente'
+      });
+    }
+
+    // Verificar si la sesión no ha expirado
+    if (new Date() > session.expiresAt) {
+      await session.update({ isActive: false });
+      return res.status(401).json({
+        success: false,
+        message: 'Sesión expirada. Por favor inicie sesión nuevamente'
+      });
+    }
 
     // Buscar el usuario en la base de datos
     const user = await User.findByPk(decoded.id, {
@@ -50,8 +74,12 @@ const authMiddleware = async (req, res, next) => {
       });
     }
 
-    // Agregar usuario a la request
+    // Actualizar última actividad de la sesión
+    await session.update({ lastActivity: new Date() });
+
+    // Agregar usuario y sesión a la request
     req.user = user;
+    req.session = session;
     next();
 
   } catch (error) {

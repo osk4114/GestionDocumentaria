@@ -12,6 +12,10 @@ const DocumentMovement = require('./DocumentMovement');
 const Attachment = require('./Attachment');
 const Notification = require('./Notification');
 
+// Inicializar modelos que son funciones
+const UserSession = require('./UserSession')(sequelize);
+const LoginAttempt = require('./LoginAttempt')(sequelize);
+
 // ============================================================
 // Definir relaciones entre modelos
 // ============================================================
@@ -25,6 +29,16 @@ User.belongsTo(Role, {
 Role.hasMany(User, {
   foreignKey: 'rolId',
   as: 'users'
+});
+
+// User tiene muchas sesiones
+User.hasMany(UserSession, {
+  foreignKey: 'userId',
+  as: 'sessions'
+});
+UserSession.belongsTo(User, {
+  foreignKey: 'userId',
+  as: 'user'
 });
 
 // User pertenece a un Area
@@ -191,5 +205,7 @@ module.exports = {
   DocumentMovement,
   Attachment,
   Notification,
+  UserSession,
+  LoginAttempt,
   syncDatabase
 };
