@@ -55,6 +55,44 @@ CREATE TABLE IF NOT EXISTS users (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
+-- Tabla: user_sessions
+-- Descripción: Gestión de sesiones de usuario (JWT refresh tokens)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS user_sessions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    token TEXT NOT NULL,
+    jti VARCHAR(36) NOT NULL UNIQUE COMMENT 'JWT ID único para identificar el token',
+    refresh_token TEXT COMMENT 'Token de renovación',
+    ip_address VARCHAR(45) COMMENT 'Dirección IP del cliente',
+    user_agent TEXT COMMENT 'Información del navegador/dispositivo',
+    is_active BOOLEAN DEFAULT TRUE COMMENT 'Si la sesión está activa',
+    expires_at TIMESTAMP NOT NULL COMMENT 'Fecha de expiración del token',
+    last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Última actividad registrada',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    INDEX idx_user_id (user_id),
+    INDEX idx_jti (jti),
+    INDEX idx_expires_at (expires_at),
+    INDEX idx_is_active (is_active)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- Tabla: login_attempts
+-- Descripción: Registro de intentos de login para prevenir fuerza bruta
+-- ============================================================
+CREATE TABLE IF NOT EXISTS login_attempts (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(100) NOT NULL,
+    ip_address VARCHAR(45) NOT NULL,
+    success BOOLEAN DEFAULT FALSE,
+    attempted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    INDEX idx_email_attempts (email, attempted_at),
+    INDEX idx_ip_attempts (ip_address, attempted_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
 -- Tabla: senders
 -- Descripción: Remitentes de documentos (ciudadanos, empresas)
 -- ============================================================
@@ -233,4 +271,4 @@ CREATE INDEX idx_notifications_user ON notifications(user_id, is_read);
 CREATE INDEX idx_attachments_document ON attachments(document_id);
 
 -- ============================================================
-SELECT 'Base de datos SGD creada exitosamente con 10 tablas' AS mensaje;
+SELECT 'Base de datos SGD creada exitosamente con 12 tablas' AS mensaje;

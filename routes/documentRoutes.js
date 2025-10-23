@@ -34,11 +34,42 @@ router.get('/tracking/:code', documentController.getDocumentByTrackingCode);
 router.get('/stats', authMiddleware, documentController.getDocumentStats);
 
 /**
+ * @route   GET /api/documents/search
+ * @desc    Búsqueda avanzada de documentos con paginación
+ * @access  Private
+ * @query   trackingCode, asunto, remitente, area, status, priority, type, dateFrom, dateTo, page, pageSize
+ */
+router.get('/search', authMiddleware, documentController.advancedSearch);
+
+/**
+ * @route   GET /api/documents/by-status
+ * @desc    Obtener documentos agrupados por estado
+ * @access  Private
+ * @query   areaId (opcional)
+ */
+router.get('/by-status', authMiddleware, documentController.getDocumentsByStatus);
+
+/**
+ * @route   GET /api/documents/area/:areaId/archived
+ * @desc    Obtener documentos archivados por área
+ * @access  Private
+ * @query   dateFrom, dateTo, search
+ */
+router.get('/area/:areaId/archived', authMiddleware, documentController.getArchivedDocumentsByArea);
+
+/**
  * @route   GET /api/documents/area/:areaId
  * @desc    Obtener documentos por área
  * @access  Private
  */
 router.get('/area/:areaId', authMiddleware, documentController.getDocumentsByArea);
+
+/**
+ * @route   GET /api/documents/:id/history
+ * @desc    Obtener historial completo de un documento con timeline
+ * @access  Private
+ */
+router.get('/:id/history', authMiddleware, documentController.getDocumentHistory);
 
 /**
  * @route   GET /api/documents/:id

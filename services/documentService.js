@@ -507,37 +507,77 @@ class DocumentService {
   }
 
   /**
-   * Obtener documentos con filtros
+   * Obtener documentos con filtros avanzados
    * @param {Object} filters - Filtros de búsqueda
    * @returns {Array} Lista de documentos
    */
   async getDocuments(filters = {}) {
     try {
-      const { status, area, priority, search } = filters;
+      const { 
+        status, 
+        area, 
+        priority, 
+        search, 
+        archived, 
+        dateFrom, 
+        dateTo, 
+        sender, 
+        type,
+        limit,
+        offset 
+      } = filters;
       
       const where = {};
       
+      // Filtros básicos
       if (status) where.statusId = status;
       if (area) where.currentAreaId = area;
       if (priority) where.prioridad = priority;
+      if (type) where.documentTypeId = type;
       
+      // Filtro de archivados
+      if (archived === 'true') {
+        where.statusId = 6; // Estado "Archivado"
+      } else if (archived === 'false') {
+        where.statusId = { [Op.ne]: 6 };
+      }
+      
+      // Filtro por rango de fechas
+      if (dateFrom || dateTo) {
+        where.created_at = {};
+        if (dateFrom) where.created_at[Op.gte] = new Date(dateFrom);
+        if (dateTo) where.created_at[Op.lte] = new Date(dateTo);
+      }
+      
+      // Búsqueda avanzada
       if (search) {
         where[Op.or] = [
           { trackingCode: { [Op.like]: `%${search}%` } },
-          { asunto: { [Op.like]: `%${search}%` } }
+          { asunto: { [Op.like]: `%${search}%` } },
+          { descripcion: { [Op.like]: `%${search}%` } }
         ];
       }
 
+      // Include con filtro de sender si se proporciona
+      const include = [
+        { 
+          model: Sender, 
+          as: 'sender',
+          where: sender ? { nombreCompleto: { [Op.like]: `%${sender}%` } } : undefined,
+          required: sender ? true : false
+        },
+        { model: DocumentType, as: 'documentType' },
+        { model: DocumentStatus, as: 'status' },
+        { model: Area, as: 'currentArea' },
+        { model: User, as: 'currentUser', attributes: ['id', 'nombre'], required: false }
+      ];
+
       const documents = await Document.findAll({
         where,
-        include: [
-          { model: Sender, as: 'sender' },
-          { model: DocumentType, as: 'documentType' },
-          { model: DocumentStatus, as: 'status' },
-          { model: Area, as: 'currentArea' },
-          { model: User, as: 'currentUser', attributes: ['id', 'nombre'] }
-        ],
-        order: [['created_at', 'DESC']]
+        include,
+        order: [['created_at', 'DESC']],
+        limit: limit ? parseInt(limit) : undefined,
+        offset: offset ? parseInt(offset) : undefined
       });
 
       return documents;
@@ -706,6 +746,223 @@ class DocumentService {
         byPriority
       };
 
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Obtener documentos archivados por área
+   * @param {Number} areaId - ID del área
+   * @param {Object} filters - Filtros adicionales
+   * @returns {Array} Lista de documentos archivados
+   */
+  async getArchivedDocumentsByArea(areaId, filters = {}) {
+    try {
+      const { dateFrom, dateTo, search } = filters;
+      
+      const where = {
+        currentAreaId: areaId,
+        statusId: 6 // Estado "Archivado"
+      };
+      
+      if (dateFrom || dateTo) {
+        where.created_at = {};
+        if (dateFrom) where.created_at[Op.gte] = new Date(dateFrom);
+        if (dateTo) where.created_at[Op.lte] = new Date(dateTo);
+      }
+      
+      if (search) {
+        where[Op.or] = [
+          { trackingCode: { [Op.like]: `%${search}%` } },
+          { asunto: { [Op.like]: `%${search}%` } }
+        ];
+      }
+
+      const documents = await Document.findAll({
+        where,
+        include: [
+          { model: Sender, as: 'sender', attributes: ['id', 'nombreCompleto'] },
+          { model: DocumentType, as: 'documentType', attributes: ['id', 'nombre'] },
+          { model: DocumentStatus, as: 'status' },
+          { model: User, as: 'currentUser', attributes: ['id', 'nombre'], required: false }
+        ],
+        order: [['updated_at', 'DESC']]
+      });
+
+      return documents;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Búsqueda avanzada de documentos
+   * @param {Object} criteria - Criterios de búsqueda
+   * @returns {Object} Documentos con paginación
+   */
+  async advancedSearch(criteria) {
+    try {
+      const {
+        trackingCode, asunto, remitente, area, status, priority, type,
+        dateFrom, dateTo, page = 1, pageSize = 20
+      } = criteria;
+
+      const where = {};
+      const senderWhere = {};
+
+      if (trackingCode) where.trackingCode = { [Op.like]: `%${trackingCode}%` };
+      if (asunto) where.asunto = { [Op.like]: `%${asunto}%` };
+      if (area) where.currentAreaId = area;
+      if (status) where.statusId = status;
+      if (priority) where.prioridad = priority;
+      if (type) where.documentTypeId = type;
+      if (remitente) senderWhere.nombreCompleto = { [Op.like]: `%${remitente}%` };
+      
+      if (dateFrom || dateTo) {
+        where.created_at = {};
+        if (dateFrom) where.created_at[Op.gte] = new Date(dateFrom);
+        if (dateTo) where.created_at[Op.lte] = new Date(dateTo);
+      }
+
+      const offset = (page - 1) * pageSize;
+
+      const { count, rows } = await Document.findAndCountAll({
+        where,
+        include: [
+          { 
+            model: Sender, as: 'sender',
+            where: Object.keys(senderWhere).length > 0 ? senderWhere : undefined,
+            required: Object.keys(senderWhere).length > 0
+          },
+          { model: DocumentType, as: 'documentType' },
+          { model: DocumentStatus, as: 'status' },
+          { model: Area, as: 'currentArea' },
+          { model: User, as: 'currentUser', attributes: ['id', 'nombre'], required: false }
+        ],
+        order: [['created_at', 'DESC']],
+        limit: pageSize,
+        offset
+      });
+
+      return {
+        documents: rows,
+        pagination: {
+          total: count,
+          page,
+          pageSize,
+          totalPages: Math.ceil(count / pageSize)
+        }
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Obtener historial completo de un documento
+   * @param {Number} documentId - ID del documento
+   * @returns {Object} Historial con timeline
+   */
+  async getDocumentHistory(documentId) {
+    try {
+      const document = await Document.findByPk(documentId, {
+        include: [
+          { model: Sender, as: 'sender' },
+          { model: DocumentType, as: 'documentType' },
+          { model: DocumentStatus, as: 'status' }
+        ]
+      });
+
+      if (!document) {
+        throw new Error('Documento no encontrado');
+      }
+
+      const movements = await DocumentMovement.findAll({
+        where: { documentId },
+        include: [
+          { model: Area, as: 'fromArea', attributes: ['id', 'nombre', 'sigla'] },
+          { model: Area, as: 'toArea', attributes: ['id', 'nombre', 'sigla'] },
+          { model: User, as: 'user', attributes: ['id', 'nombre', 'email'] }
+        ],
+        order: [['timestamp', 'ASC']]
+      });
+
+      const timeline = movements.map((mov, index) => {
+        const nextMov = movements[index + 1];
+        const permanencia = nextMov 
+          ? Math.floor((new Date(nextMov.timestamp) - new Date(mov.timestamp)) / (1000 * 60 * 60 * 24))
+          : null;
+
+        return {
+          id: mov.id,
+          accion: mov.accion,
+          fromArea: mov.fromArea,
+          toArea: mov.toArea,
+          user: mov.user,
+          observacion: mov.observacion,
+          timestamp: mov.timestamp,
+          diasPermanencia: permanencia
+        };
+      });
+
+      const totalDias = movements.length > 0 
+        ? Math.floor((new Date() - new Date(document.created_at)) / (1000 * 60 * 60 * 24))
+        : 0;
+
+      const areasVisitadas = [...new Set(movements.map(m => m.toAreaId))].length;
+
+      return {
+        document: {
+          id: document.id,
+          trackingCode: document.trackingCode,
+          asunto: document.asunto,
+          prioridad: document.prioridad,
+          status: document.status,
+          documentType: document.documentType,
+          sender: document.sender,
+          createdAt: document.created_at
+        },
+        timeline,
+        estadisticas: {
+          totalMovimientos: movements.length,
+          totalDias,
+          areasVisitadas,
+          estadoActual: document.status.nombre
+        }
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Obtener documentos agrupados por estado
+   * @param {Number} areaId - ID del área (opcional)
+   * @returns {Object} Documentos por estado
+   */
+  async getDocumentsByStatus(areaId = null) {
+    try {
+      const where = areaId ? { currentAreaId: areaId } : {};
+
+      const documents = await Document.findAll({
+        where,
+        attributes: [
+          'statusId',
+          [sequelize.fn('COUNT', sequelize.col('Document.id')), 'count']
+        ],
+        include: [
+          { 
+            model: DocumentStatus, 
+            as: 'status',
+            attributes: ['id', 'nombre', 'codigo', 'color']
+          }
+        ],
+        group: ['statusId', 'status.id'],
+        raw: false
+      });
+
+      return documents;
     } catch (error) {
       throw error;
     }

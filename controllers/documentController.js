@@ -312,3 +312,103 @@ exports.getDocumentStats = async (req, res) => {
     });
   }
 };
+
+/**
+ * Obtener documentos archivados por área
+ */
+exports.getArchivedDocumentsByArea = async (req, res) => {
+  try {
+    const { areaId } = req.params;
+    const { dateFrom, dateTo, search } = req.query;
+    
+    const documents = await documentService.getArchivedDocumentsByArea(areaId, {
+      dateFrom,
+      dateTo,
+      search
+    });
+
+    res.status(200).json({
+      success: true,
+      count: documents.length,
+      data: documents
+    });
+
+  } catch (error) {
+    console.error('Error en getArchivedDocumentsByArea:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener documentos archivados',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Búsqueda avanzada de documentos
+ */
+exports.advancedSearch = async (req, res) => {
+  try {
+    const criteria = req.query;
+    const result = await documentService.advancedSearch(criteria);
+
+    res.status(200).json({
+      success: true,
+      ...result
+    });
+
+  } catch (error) {
+    console.error('Error en advancedSearch:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error en búsqueda avanzada',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Obtener historial completo de un documento
+ */
+exports.getDocumentHistory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const history = await documentService.getDocumentHistory(id);
+
+    res.status(200).json({
+      success: true,
+      data: history
+    });
+
+  } catch (error) {
+    console.error('Error en getDocumentHistory:', error);
+    const statusCode = error.message === 'Documento no encontrado' ? 404 : 500;
+    res.status(statusCode).json({
+      success: false,
+      message: error.message || 'Error al obtener historial',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Obtener documentos agrupados por estado
+ */
+exports.getDocumentsByStatus = async (req, res) => {
+  try {
+    const { areaId } = req.query;
+    const documents = await documentService.getDocumentsByStatus(areaId);
+
+    res.status(200).json({
+      success: true,
+      data: documents
+    });
+
+  } catch (error) {
+    console.error('Error en getDocumentsByStatus:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener documentos por estado',
+      error: error.message
+    });
+  }
+};

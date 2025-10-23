@@ -15,6 +15,10 @@ const documentRoutes = require('./routes/documentRoutes');
 const documentTypeRoutes = require('./routes/documentTypeRoutes');
 const movementRoutes = require('./routes/movementRoutes');
 const attachmentRoutes = require('./routes/attachmentRoutes');
+// Rutas administrativas
+const areaRoutes = require('./routes/areaRoutes');
+const roleRoutes = require('./routes/roleRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 // Importar servicios
 const { startCleanupSchedule } = require('./services/sessionCleanupService');
@@ -56,6 +60,10 @@ app.use('/api/documents', documentRoutes);
 app.use('/api/document-types', documentTypeRoutes);
 app.use('/api/movements', movementRoutes);
 app.use('/api/attachments', attachmentRoutes);
+// Rutas administrativas
+app.use('/api/areas', areaRoutes);
+app.use('/api/roles', roleRoutes);
+app.use('/api/users', userRoutes);
 
 // Configurar Socket.IO
 io.on('connection', (socket) => {
