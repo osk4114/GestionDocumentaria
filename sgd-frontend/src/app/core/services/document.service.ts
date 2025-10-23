@@ -109,4 +109,25 @@ export class DocumentService {
   getAllDocuments(): Observable<any> {
     return this.http.get(`${this.apiUrl}/documents`);
   }
+
+  /**
+   * Deriva un documento a otra área
+   */
+  deriveDocument(documentId: number, data: { toAreaId: number; toUserId: number | null; observacion: string }): Observable<any> {
+    return this.http.post(`${this.apiUrl}/documents/${documentId}/derive`, data);
+  }
+
+  /**
+   * Obtiene el historial de un documento
+   */
+  getDocumentHistory(documentId: number): Observable<any> {
+    return this.http.get(`${this.apiUrl}/documents/${documentId}/history`);
+  }
+
+  /**
+   * Finaliza/atiende un documento
+   */
+  finalizeDocument(documentId: number, observacion: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/documents/${documentId}/finalize`, { observacion });
+  }
 }

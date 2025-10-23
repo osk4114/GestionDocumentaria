@@ -1,0 +1,204 @@
+<div class="modal-overlay" (click)="close()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    
+    <!-- Loading State -->
+    @if (loading()) {
+      <div class="loading-container">
+        <div class="spinner"></div>
+        <p>Cargando detalles del documento...</p>
+      </div>
+    }
+
+    <!-- Document Details -->
+    @if (!loading() && document()) {
+      <!-- Header -->
+      <div class="modal-header">
+        <div>
+          <h2 class="modal-title">📄 Detalles del Documento</h2>
+          <p class="tracking-code">{{ document()!.trackingCode }}</p>
+        </div>
+        <button class="modal-close" (click)="close()">✕</button>
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button 
+          class="tab" 
+          [class.active]="activeTab() === 'info'"
+          (click)="setTab('info')"
+        >
+          📋 Información
+        </button>
+        <button 
+          class="tab" 
+          [class.active]="activeTab() === 'history'"
+          (click)="setTab('history')"
+        >
+          🕐 Historial ({{ document()!.movements.length }})
+        </button>
+      </div>
+
+      <!-- Tab Content -->
+      <div class="modal-body">
+        
+        <!-- Información General -->
+        @if (activeTab() === 'info') {
+          <div class="info-section">
+            
+            <!-- Estado y Prioridad -->
+            <div class="info-grid">
+              <div class="info-item">
+                <label class="info-label">Estado</label>
+                <span 
+                  class="status-badge" 
+                  [style.background-color]="document()!.status.color"
+                >
+                  {{ document()!.status.nombre }}
+                </span>
+              </div>
+              
+              <div class="info-item">
+                <label class="info-label">Prioridad</label>
+                <span 
+                  class="priority-badge" 
+                  [ngClass]="getPriorityClass(document()!.prioridad)"
+                >
+                  {{ getPriorityLabel(document()!.prioridad) }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Documento -->
+            <div class="section">
+              <h3 class="section-title">📄 Información del Documento</h3>
+              
+              <div class="info-item">
+                <label class="info-label">Tipo de Documento</label>
+                <p class="info-value">{{ document()!.documentType.nombre }}</p>
+              </div>
+
+              <div class="info-item">
+                <label class="info-label">Asunto</label>
+                <p class="info-value">{{ document()!.asunto }}</p>
+              </div>
+
+              @if (document()!.descripcion) {
+                <div class="info-item">
+                  <label class="info-label">Descripción</label>
+                  <p class="info-value">{{ document()!.descripcion }}</p>
+                </div>
+              }
+
+              <div class="info-item">
+                <label class="info-label">Fecha de Recepción</label>
+                <p class="info-value">{{ formatDate(document()!.created_at) }}</p>
+              </div>
+
+              <div class="info-item">
+                <label class="info-label">Área Actual</label>
+                <p class="info-value">
+                  {{ document()!.currentArea.nombre }} ({{ document()!.currentArea.sigla }})
+                </p>
+              </div>
+            </div>
+
+            <!-- Remitente -->
+            <div class="section">
+              <h3 class="section-title">👤 Información del Remitente</h3>
+              
+              <div class="info-grid">
+                <div class="info-item">
+                  <label class="info-label">Nombre Completo</label>
+                  <p class="info-value">{{ document()!.sender.nombreCompleto }}</p>
+                </div>
+
+                <div class="info-item">
+                  <label class="info-label">{{ document()!.sender.tipoDocumento }}</label>
+                  <p class="info-value">{{ document()!.sender.numeroDocumento }}</p>
+                </div>
+              </div>
+
+              @if (document()!.sender.email || document()!.sender.telefono) {
+                <div class="info-grid">
+                  @if (document()!.sender.email) {
+                    <div class="info-item">
+                      <label class="info-label">Email</label>
+                      <p class="info-value">{{ document()!.sender.email }}</p>
+                    </div>
+                  }
+
+                  @if (document()!.sender.telefono) {
+                    <div class="info-item">
+                      <label class="info-label">Teléfono</label>
+                      <p class="info-value">{{ document()!.sender.telefono }}</p>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+
+          </div>
+        }
+
+        <!-- Historial de Movimientos -->
+        @if (activeTab() === 'history') {
+          <div class="history-section">
+            @if (document()!.movements.length === 0) {
+              <div class="empty-history">
+                <p>No hay movimientos registrados</p>
+              </div>
+            } @else {
+              <div class="timeline">
+                @for (movement of document()!.movements; track movement.id) {
+                  <div class="timeline-item">
+                    <div class="timeline-icon">
+                      {{ getActionIcon(movement.accion) }}
+                    </div>
+                    <div class="timeline-content">
+                      <div class="timeline-header">
+                        <h4 class="timeline-action">{{ movement.accion }}</h4>
+                        <span class="timeline-date">{{ formatDate(movement.timestamp) }}</span>
+                      </div>
+                      
+                      <div class="timeline-details">
+                        @if (movement.fromArea) {
+                          <p class="timeline-from">
+                            <strong>De:</strong> {{ movement.fromArea.nombre }} ({{ movement.fromArea.sigla }})
+                          </p>
+                        }
+                        
+                        <p class="timeline-to">
+                          <strong>A:</strong> {{ movement.toArea.nombre }} ({{ movement.toArea.sigla }})
+                        </p>
+
+                        <p class="timeline-user">
+                          <strong>Usuario:</strong> {{ movement.user.nombre }} - {{ movement.user.role.nombre }}
+                        </p>
+
+                        @if (movement.observacion) {
+                          <div class="timeline-observation">
+                            <strong>Observación:</strong>
+                            <p>{{ movement.observacion }}</p>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+
+      </div>
+
+      <!-- Footer -->
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="close()">
+          Cerrar
+        </button>
+      </div>
+    }
+
+  </div>
+</div>

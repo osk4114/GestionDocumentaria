@@ -5,37 +5,45 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Colores institucionales - Gobierno del Perú */
+/* Colores institucionales - gob.pe (Gobierno del Perú) */
 :root {
-  /* Colores primarios */
-  --color-primary: #C1272D;        /* Rojo institucional */
+  /* Colores primarios - Rojo institucional */
+  --color-primary: #C1272D;        /* Rojo gob.pe */
   --color-primary-dark: #9A1F24;   /* Rojo oscuro */
-  --color-primary-light: #E84855;  /* Rojo claro */
+  --color-primary-light: #E63946;  /* Rojo claro */
   
-  /* Colores secundarios */
-  --color-secondary: #0066CC;      /* Azul institucional */
-  --color-secondary-dark: #0052A3; /* Azul oscuro */
-  --color-secondary-light: #3399FF; /* Azul claro */
+  /* Colores secundarios - Azul institucional */
+  --color-secondary: #003876;      /* Azul oscuro gob.pe (navegación) */
+  --color-secondary-medium: #0064AF; /* Azul medio gob.pe (enlaces) */
+  --color-secondary-light: #4A90E2; /* Azul claro */
   
-  /* Colores neutros */
-  --color-text-primary: #2c3e50;   /* Texto principal */
-  --color-text-secondary: #666666; /* Texto secundario */
-  --color-text-muted: #999999;     /* Texto deshabilitado */
+  /* Colores neutros - Textos */
+  --color-text-primary: #3C3C3B;   /* Gris oscuro gob.pe */
+  --color-text-secondary: #666666; /* Gris medio */
+  --color-text-muted: #999999;     /* Gris claro */
+  --color-text-white: #FFFFFF;     /* Blanco para fondos oscuros */
   
   /* Fondos */
-  --color-bg-primary: #ffffff;     /* Fondo principal */
-  --color-bg-secondary: #f5f5f5;   /* Fondo secundario */
-  --color-bg-tertiary: #e9ecef;    /* Fondo terciario */
+  --color-bg-primary: #FFFFFF;     /* Fondo blanco principal */
+  --color-bg-secondary: #F5F5F5;   /* Gris muy claro gob.pe */
+  --color-bg-tertiary: #E8E8E8;    /* Gris claro */
+  --color-bg-dark: #003876;        /* Fondo azul oscuro */
   
   /* Bordes */
-  --color-border: #e5e7eb;         /* Borde estándar */
-  --color-border-dark: #d1d5db;    /* Borde oscuro */
+  --color-border: #D9D9D9;         /* Borde estándar */
+  --color-border-light: #E8E8E8;   /* Borde claro */
+  --color-border-dark: #CCCCCC;    /* Borde oscuro */
   
   /* Estados */
-  --color-success: #10b981;        /* Éxito */
-  --color-warning: #f59e0b;        /* Advertencia */
-  --color-error: #C1272D;          /* Error */
-  --color-info: #0066CC;           /* Información */
+  --color-success: #28A745;        /* Verde éxito */
+  --color-warning: #FFC107;        /* Amarillo advertencia */
+  --color-error: #C1272D;          /* Rojo error (mismo que primary) */
+  --color-info: #0064AF;           /* Azul información */
+  
+  /* Sombras */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
 
 /* Reset básico */

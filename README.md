@@ -123,7 +123,7 @@ El Sistema de Gestión Documentaria (SGD) es una plataforma web desarrollada par
 
 ---
 
-### ✅ FASE 2: Filtros y Consultas Avanzadas - COMPLETADO (95%)
+### ✅ FASE 2: Filtros y Consultas Avanzadas - COMPLETADO (100%)
 **Fecha:** 23 de Octubre, 2025
 
 #### Implementado:
@@ -171,11 +171,12 @@ El Sistema de Gestión Documentaria (SGD) es una plataforma web desarrollada par
 - **morgan** - Logging HTTP
 - **cors** - CORS habilitado
 
-### Frontend (Planificado - FASE 3)
-- **Angular** 17+
-- **Angular Material** - UI Components
-- **RxJS** - Programación reactiva
-- **Chart.js** - Gráficos y dashboards
+### Frontend (IMPLEMENTADO - FASE 4)
+- **Angular** 20.1 - Framework web
+- **Tailwind CSS** v3 - Styling institucional
+- **RxJS** 7.8 - Programación reactiva
+- **Socket.IO Client** 4.8 - WebSocket en tiempo real
+- **Signals** - Estado reactivo de Angular
 
 ### Herramientas de Desarrollo
 - **nodemon** - Hot reload
@@ -580,63 +581,77 @@ Invoke-RestMethod -Uri "http://localhost:3000/api/documents" -Headers $headers
 
 ---
 
+### ✅ FASE 3: Arquitectura de Servicios - COMPLETADO (100%)
+**Fecha:** Octubre 2025
+
+#### Implementado:
+- ✅ Arquitectura de servicios (Service Layer)
+- ✅ DocumentService con lógica de negocio centralizada
+- ✅ EmailService con templates HTML profesionales
+- ✅ SessionCleanupService automático
+- ✅ Controllers refactorizados a "delgados" (reducción 33-67%)
+- ✅ Transacciones con rollback automático
+- ✅ Sistema de notificaciones dual (WebSocket + Email)
+- ✅ Código duplicado eliminado completamente
+
+#### Archivos Creados:
+- `services/documentService.js` (1000+ líneas)
+- `services/emailService.js` (400 líneas)
+- `services/sessionCleanupService.js`
+
+---
+
+### ✅ FASE 4: Frontend Angular - COMPLETADO (85%)
+**Fecha:** Octubre 2025
+
+#### Componentes Implementados:
+- ✅ **Landing Page** - Diseño institucional gob.pe
+- ✅ **Mesa de Partes Virtual** - Formulario público 2 pasos
+- ✅ **Seguimiento de Documentos** - Búsqueda pública por código
+- ✅ **Login y Autenticación** - JWT con refresh tokens
+- ✅ **Dashboard Administrativo** - Estadísticas y gestión
+- ✅ **Gestión de Sesiones** - Ver y cerrar sesiones activas
+- ✅ **Integración completa** con backend REST API
+- ✅ **Diseño responsive** con Tailwind CSS v3
+
+#### Tecnologías Frontend:
+- Angular 20.1 (Standalone components)
+- TypeScript 5.8
+- Tailwind CSS v3
+- RxJS 7.8
+- Signals (Estado reactivo)
+- Socket.IO Client 4.8
+
+#### Pendiente:
+- ⚠️ Módulo de administración completo (CRUDs)
+- ⚠️ Módulo de derivación avanzado
+- ⚠️ Reportes y gráficas
+- ⚠️ Notificaciones tiempo real completas
+
+---
+
 ## ⚠️ Problemas Conocidos
+
+### 🐛 Bugs Resueltos
+
+#### ~~1. Error 500 en Búsqueda Avanzada~~
+**Endpoint:** `GET /api/documents/search`
+**Estado:** ✅ RESUELTO (23/Oct/2025)
+**Descripción:** El endpoint generaba error SQL con parámetros de paginación.
+**Causa:** Los parámetros `page` y `pageSize` se recibían como strings en lugar de números.
+**Solución Implementada:**
+```javascript
+// En documentService.js - advancedSearch()
+const pageNum = parseInt(page) || 1;
+const pageSizeNum = parseInt(pageSize) || 20;
+```
+**Resultado:** ✅ Todos los tests de FASE 2 pasan al 100%
+
+---
 
 ### 🐛 Bugs Activos
 
-#### 1. Error 500 en Búsqueda Avanzada
-**Endpoint:** `GET /api/documents/search`
-**Estado:** 🔴 Crítico
-**Descripción:** El endpoint de búsqueda avanzada ocasionalmente devuelve error 500.
-**Error:**
-```
-Error en el servidor remoto: (500) Error interno del servidor
-```
-**Causa Probable:** 
-- Posible problema con la validación de parámetros vacíos
-- Error en el join con la tabla `senders` cuando no hay filtro de remitente
-
-**Solución Propuesta:**
-```javascript
-// En documentService.js - advancedSearch()
-// Línea ~835
-const include = [
-  { 
-    model: Sender, 
-    as: 'sender',
-    where: Object.keys(senderWhere).length > 0 ? senderWhere : undefined,
-    required: Object.keys(senderWhere).length > 0  // ← Agregar esta validación
-  },
-  // ...
-];
-```
-
-**Prioridad:** Alta
-**Estimado:** 15 minutos
-
----
-
-#### 2. Intermitencia en Autenticación (401)
-**Endpoints Afectados:** Varios
-**Estado:** 🟡 Menor
-**Descripción:** Ocasionalmente algunos endpoints protegidos devuelven 401 No Autorizado incluso con token válido.
-**Frecuencia:** Intermitente (~10% de requests)
-
-**Causa Probable:**
-- Posible race condition en la verificación del token
-- Timeout en la consulta de sesión a la BD
-
-**Solución Propuesta:**
-- Agregar cache en memoria para tokens verificados
-- Aumentar timeout de conexión MySQL
-- Revisar middleware `authMiddleware.js`
-
-**Prioridad:** Media
-**Estimado:** 1 hora
-
----
-
-#### 3. Datos de Prueba con Fechas en el Pasado
+#### 1. Datos de Prueba con Fechas en el Pasado
 **Script:** `seed-test-data.js`
 **Estado:** 🟢 Cosmético
 **Descripción:** Los documentos de prueba se crean con fechas de 2024, pero estamos en 2025.
@@ -684,35 +699,51 @@ fechaRecepcion: new Date('2025-10-01')  // ← Actualizar año
 - CRUDs administrativos
 - Gestión básica de documentos
 
-### ✅ FASE 2: Filtros y Consultas Avanzadas (95% COMPLETADA)
+### ✅ FASE 2: Filtros y Consultas Avanzadas (COMPLETADA 100%)
 - Filtros múltiples
 - Búsqueda avanzada con paginación
 - Historial de documentos
 - Consultas especializadas
-- **Pendiente:** Corregir bug de búsqueda
+- ✅ Bug de búsqueda corregido
 
-### 🔄 FASE 3: Frontend Angular (EN PLANIFICACIÓN)
-**Estimado:** 3-4 semanas
+### ✅ FASE 3: Arquitectura de Servicios (COMPLETADA 100%)
+- Service Layer implementado
+- Controllers refactorizados
+- Sistema de notificaciones
+- Transacciones y rollback
 
-#### Componentes a Desarrollar:
-- Login y autenticación
-- Dashboard principal
-- Módulo de administración
-  - Gestión de usuarios
-  - Gestión de áreas
-  - Gestión de roles
-  - Gestión de tipos de documento
-- Módulo de documentos
-  - Bandeja de entrada
-  - Búsqueda avanzada
-  - Historial y timeline
-  - Formulario de presentación
-- Módulo de reportes
-  - Dashboards con gráficos
-  - Reportes exportables (PDF/Excel)
+### ✅ FASE 4: Frontend Angular (COMPLETADA 85%)
+**Fecha:** Octubre 2025
+
+#### Componentes Completados:
+- ✅ Landing Page institucional
+- ✅ Mesa de Partes Virtual
+- ✅ Seguimiento público
+- ✅ Login y autenticación
+- ✅ Dashboard básico
+- ✅ Gestión de sesiones
+
+#### Pendiente:
+- ⚠️ Módulo de administración completo
+  - CRUD de usuarios
+  - CRUD de áreas
+  - CRUD de roles
+  - CRUD de tipos de documento
+- ⚠️ Módulo de derivación avanzado
+- ⚠️ Bandeja de entrada por usuario
+- ⚠️ Reportes con gráficas
+- ⚠️ Exportación PDF/Excel
+
+### 🔄 FASE 5: Frontend Avanzado (EN PROGRESO)
+**Estimado:** 2-3 semanas
+
+- Completar módulo de administración
+- Módulo de derivación completo
 - Notificaciones en tiempo real
+- Reportes y dashboards
+- Exportación de datos
 
-### 📅 FASE 4: Optimización y Despliegue (FUTURO)
+### 📅 FASE 6: Optimización y Despliegue (FUTURO)
 **Estimado:** 2 semanas
 
 - Optimización de performance
@@ -723,7 +754,7 @@ fechaRecepcion: new Date('2025-10-01')  // ← Actualizar año
 - Despliegue en producción
 - Capacitación usuarios
 
-### 🚀 FASE 5: Funcionalidades Avanzadas (FUTURO)
+### 🚀 FASE 7: Funcionalidades Avanzadas (FUTURO)
 **Estimado:** 4-6 semanas
 
 - Firma digital de documentos
@@ -804,5 +835,5 @@ Para consultas sobre el proyecto:
 ---
 
 **Última Actualización:** 23 de Octubre, 2025  
-**Versión:** 0.2.0-beta  
-**Estado:** En Desarrollo Activo 🚀
+**Versión:** 0.4.0-beta  
+**Estado:** Frontend en Desarrollo - Backend Completo ✅

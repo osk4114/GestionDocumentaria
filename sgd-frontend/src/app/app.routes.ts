@@ -6,6 +6,12 @@ import { DashboardComponent } from './features/dashboard/dashboard.component';
 import { SessionsComponent } from './features/sessions/sessions.component';
 import { SubmitDocumentComponent } from './features/submit-document/submit-document.component';
 import { TrackDocumentComponent } from './features/track-document/track-document.component';
+import { AdminLayoutComponent } from './features/admin/admin-layout/admin-layout.component';
+import { AreasListComponent } from './features/admin/areas/areas-list.component';
+import { RolesListComponent } from './features/admin/roles/roles-list.component';
+import { UsersListComponent } from './features/admin/users/users-list.component';
+import { DocumentTypesListComponent } from './features/admin/document-types/document-types-list.component';
+import { ReportsComponent } from './features/admin/reports/reports.component';
 
 export const routes: Routes = [
   // Landing Page (Página de inicio)
@@ -39,6 +45,40 @@ export const routes: Routes = [
     path: 'sessions',
     component: SessionsComponent,
     canActivate: [authGuard]
+  },
+  
+  // Rutas de administración (requieren autenticación)
+  {
+    path: 'admin',
+    component: AdminLayoutComponent,
+    canActivate: [authGuard],
+    children: [
+      {
+        path: '',
+        redirectTo: 'areas',
+        pathMatch: 'full'
+      },
+      {
+        path: 'areas',
+        component: AreasListComponent
+      },
+      {
+        path: 'roles',
+        component: RolesListComponent
+      },
+      {
+        path: 'users',
+        component: UsersListComponent
+      },
+      {
+        path: 'document-types',
+        component: DocumentTypesListComponent
+      },
+      {
+        path: 'reports',
+        component: ReportsComponent
+      }
+    ]
   },
   
   // Redirección catch-all

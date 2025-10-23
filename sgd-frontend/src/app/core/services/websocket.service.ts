@@ -119,4 +119,31 @@ export class WebSocketService {
   isConnected(): boolean {
     return this.socket?.connected || false;
   }
+
+  /**
+   * Escuchar eventos personalizados
+   */
+  on(event: string, callback: (data: any) => void): void {
+    if (this.socket) {
+      this.socket.on(event, callback);
+    }
+  }
+
+  /**
+   * Dejar de escuchar eventos
+   */
+  off(event: string): void {
+    if (this.socket) {
+      this.socket.off(event);
+    }
+  }
+
+  /**
+   * Emitir evento al servidor
+   */
+  emit(event: string, data?: any): void {
+    if (this.socket) {
+      this.socket.emit(event, data);
+    }
+  }
 }

@@ -27,7 +27,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:4200',
+    origin: '*', // Permitir todas las conexiones en red local (cambiar en producción)
     methods: ['GET', 'POST']
   }
 });
@@ -125,11 +125,28 @@ const startServer = async () => {
     // Iniciar servicio de limpieza automática de sesiones
     startCleanupSchedule(); // Ejecuta cada hora por defecto
     
-    // Iniciar servidor HTTP (no solo Express)
-    server.listen(PORT, () => {
-      console.log(`✓ Servidor HTTP corriendo en http://localhost:${PORT}`);
-      console.log(`✓ WebSocket corriendo en ws://localhost:${PORT}`);
-      console.log(`✓ Health check: http://localhost:${PORT}/api/health`);
+    // Iniciar servidor HTTP (escuchando en todas las interfaces)
+    server.listen(PORT, '0.0.0.0', () => {
+      const os = require('os');
+      const networkInterfaces = os.networkInterfaces();
+      let localIP = 'localhost';
+      
+      // Obtener la IP de la red local
+      Object.keys(networkInterfaces).forEach(interfaceName => {
+        networkInterfaces[interfaceName].forEach(iface => {
+          if (iface.family === 'IPv4' && !iface.internal) {
+            localIP = iface.address;
+          }
+        });
+      });
+      
+      console.log(`✓ Servidor HTTP corriendo en:`);
+      console.log(`  - Local:   http://localhost:${PORT}`);
+      console.log(`  - Red:     http://${localIP}:${PORT}`);
+      console.log(`✓ WebSocket corriendo en:`);
+      console.log(`  - Local:   ws://localhost:${PORT}`);
+      console.log(`  - Red:     ws://${localIP}:${PORT}`);
+      console.log(`✓ Health check: http://${localIP}:${PORT}/api/health`);
     });
   } catch (error) {
     console.error('✗ Error al iniciar el servidor:', error.message);

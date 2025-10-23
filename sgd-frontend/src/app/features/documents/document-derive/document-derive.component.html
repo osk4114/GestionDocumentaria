@@ -1,0 +1,126 @@
+<div class="modal-overlay" (click)="close()">
+  <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title">📤 Derivar Documento</h2>
+        <p class="modal-subtitle">{{ documentCode }} - {{ documentSubject }}</p>
+      </div>
+      <button class="modal-close" (click)="close()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      @if (errorMessage()) {
+        <div class="alert alert-error">
+          ✗ {{ errorMessage() }}
+        </div>
+      }
+
+      <!-- Área actual -->
+      <div class="info-box">
+        <span class="info-label">📍 Área actual:</span>
+        <span class="info-value">{{ currentArea }}</span>
+      </div>
+
+      <!-- Seleccionar área destino -->
+      <div class="form-group">
+        <label class="form-label">
+          Área de destino <span class="required">*</span>
+        </label>
+        <select 
+          [(ngModel)]="formData().toAreaId"
+          (ngModelChange)="onAreaChange()"
+          class="form-select"
+        >
+          <option [value]="0" disabled>Seleccionar área...</option>
+          @for (area of areas(); track area.id) {
+            <option [value]="area.id">
+              {{ area.nombre }} ({{ area.sigla }})
+            </option>
+          }
+        </select>
+        <p class="form-hint">Selecciona el área a la que deseas derivar el documento</p>
+      </div>
+
+      <!-- Seleccionar usuario (opcional) -->
+      <div class="form-group">
+        <label class="form-label">
+          Usuario responsable (opcional)
+        </label>
+        
+        @if (loadingUsers()) {
+          <div class="loading-users">
+            <div class="spinner-small"></div>
+            <span>Cargando usuarios...</span>
+          </div>
+        } @else if (formData().toAreaId === 0) {
+          <p class="form-hint disabled">Primero selecciona un área</p>
+        } @else if (users().length === 0) {
+          <p class="form-hint disabled">No hay usuarios disponibles en esta área</p>
+        } @else {
+          <select 
+            [(ngModel)]="formData().toUserId"
+            class="form-select"
+          >
+            <option [value]="undefined">Sin asignar (área en general)</option>
+            @for (user of users(); track user.id) {
+              <option [value]="user.id">
+                {{ user.nombre }} - {{ user.role?.nombre }}
+              </option>
+            }
+          </select>
+          <p class="form-hint">Opcionalmente asigna el documento a un usuario específico</p>
+        }
+      </div>
+
+      <!-- Observación -->
+      <div class="form-group">
+        <label class="form-label">
+          Observación <span class="required">*</span>
+        </label>
+        <textarea 
+          [(ngModel)]="formData().observacion"
+          class="form-textarea"
+          rows="4"
+          placeholder="Motivo de la derivación, instrucciones o comentarios..."
+        ></textarea>
+        <p class="form-hint">Describe el motivo de la derivación</p>
+      </div>
+
+      <!-- Resumen -->
+      @if (formData().toAreaId) {
+        <div class="summary-box">
+          <h4 class="summary-title">📋 Resumen de la derivación</h4>
+          <div class="summary-item">
+            <span class="summary-label">De:</span>
+            <span class="summary-value">{{ currentArea }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">A:</span>
+            <span class="summary-value">
+              {{ getAreaName(formData().toAreaId) }}
+              @if (formData().toUserId) {
+                → {{ getUserName(formData().toUserId) }}
+              }
+            </span>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="close()" [disabled]="loading()">
+        Cancelar
+      </button>
+      <button 
+        class="btn-primary" 
+        (click)="derive()"
+        [disabled]="loading() || !formData().toAreaId || !formData().observacion"
+      >
+        @if (loading()) {
+          <span class="spinner-small"></span>
+        }
+        📤 Derivar Documento
+      </button>
+    </div>
+  </div>
+</div>

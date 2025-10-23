@@ -1,0 +1,340 @@
+/* Reports Container */
+.reports-container {
+  padding: 2rem;
+  max-width: 1600px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Header */
+.reports-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding-bottom: 2rem;
+  border-bottom: 3px solid var(--color-primary);
+
+  .header-content {
+    .page-title {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--color-text-primary);
+      margin: 0 0 0.5rem 0;
+    }
+
+    .page-subtitle {
+      font-size: 1rem;
+      color: var(--color-text-secondary);
+      margin: 0;
+    }
+  }
+
+  .header-actions {
+    display: flex;
+    gap: 0.75rem;
+  }
+}
+
+/* Buttons */
+.btn-refresh,
+.btn-export {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  border: none;
+  border-radius: 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
+.btn-refresh {
+  background: var(--color-secondary);
+  color: white;
+
+  &:hover:not(:disabled) {
+    background: var(--color-secondary-medium);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 56, 118, 0.3);
+  }
+}
+
+.btn-export {
+  background: white;
+  color: var(--color-secondary);
+  border: 1px solid var(--color-secondary);
+
+  &:hover {
+    background: var(--color-secondary);
+    color: white;
+  }
+}
+
+/* Loading */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem;
+  color: #6b7280;
+
+  .spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid #e5e7eb;
+    border-top-color: var(--color-primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 1rem;
+  }
+
+  p {
+    font-size: 1rem;
+    margin: 0;
+  }
+}
+
+/* KPIs Grid */
+.kpis-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+}
+
+.kpi-card {
+  background: white;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
+  border-left: 4px solid #e5e7eb;
+
+  &:hover {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+  }
+
+  &.total {
+    border-left-color: var(--color-primary);
+
+    .kpi-icon {
+      background: linear-gradient(135deg, var(--color-primary) 0%, #e84855 100%);
+    }
+  }
+
+  .kpi-icon {
+    width: 4rem;
+    height: 4rem;
+    background: linear-gradient(135deg, var(--color-secondary) 0%, var(--color-secondary-medium) 100%);
+    border-radius: 0.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    flex-shrink: 0;
+  }
+
+  .kpi-badge {
+    width: 1rem;
+    height: 4rem;
+    border-radius: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .kpi-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    .kpi-label {
+      font-size: 0.875rem;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .kpi-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--color-text-primary);
+      line-height: 1;
+    }
+  }
+}
+
+/* Charts Grid */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.chart-card {
+  background: white;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  border-top: 3px solid var(--color-secondary);
+
+  &.large {
+    grid-column: span 2;
+  }
+
+  .chart-header {
+    margin-bottom: 1.5rem;
+
+    .chart-title {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: var(--color-text-primary);
+      margin: 0;
+    }
+  }
+
+  .chart-body {
+    flex: 1;
+    min-height: 300px;
+    position: relative;
+  }
+}
+
+/* Tables Grid */
+.tables-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 1.5rem;
+}
+
+.table-card {
+  background: white;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  border-top: 3px solid var(--color-secondary);
+
+  .table-title {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin: 0 0 1rem 0;
+  }
+}
+
+.summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9375rem;
+
+  thead {
+    background: #f9fafb;
+    border-bottom: 2px solid #e5e7eb;
+
+    th {
+      padding: 0.75rem 1rem;
+      text-align: left;
+      font-weight: 600;
+      color: var(--color-text-secondary);
+      text-transform: uppercase;
+      font-size: 0.8125rem;
+      letter-spacing: 0.05em;
+    }
+  }
+
+  tbody {
+    tr {
+      border-bottom: 1px solid #e5e7eb;
+      transition: background-color 0.2s;
+
+      &:hover {
+        background: #f9fafb;
+      }
+
+      &:last-child {
+        border-bottom: none;
+      }
+    }
+
+    td {
+      padding: 0.875rem 1rem;
+      color: var(--color-text-primary);
+
+      &.text-center {
+        text-align: center;
+      }
+    }
+  }
+
+  .status-dot {
+    display: inline-block;
+    width: 0.625rem;
+    height: 0.625rem;
+    border-radius: 50%;
+    margin-right: 0.5rem;
+  }
+}
+
+/* Animations */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Responsive */
+@media (max-width: 1200px) {
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-card.large {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 768px) {
+  .reports-container {
+    padding: 1rem;
+  }
+
+  .reports-header {
+    flex-direction: column;
+    gap: 1rem;
+
+    .header-actions {
+      width: 100%;
+      justify-content: stretch;
+
+      button {
+        flex: 1;
+      }
+    }
+  }
+
+  .kpis-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .tables-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-body {
+    min-height: 250px !important;
+  }
+}

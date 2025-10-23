@@ -808,6 +808,10 @@ class DocumentService {
         dateFrom, dateTo, page = 1, pageSize = 20
       } = criteria;
 
+      // Convertir a números para evitar problemas con SQL
+      const pageNum = parseInt(page) || 1;
+      const pageSizeNum = parseInt(pageSize) || 20;
+
       const where = {};
       const senderWhere = {};
 
@@ -825,7 +829,7 @@ class DocumentService {
         if (dateTo) where.created_at[Op.lte] = new Date(dateTo);
       }
 
-      const offset = (page - 1) * pageSize;
+      const offset = (pageNum - 1) * pageSizeNum;
 
       const { count, rows } = await Document.findAndCountAll({
         where,
@@ -841,7 +845,7 @@ class DocumentService {
           { model: User, as: 'currentUser', attributes: ['id', 'nombre'], required: false }
         ],
         order: [['created_at', 'DESC']],
-        limit: pageSize,
+        limit: pageSizeNum,
         offset
       });
 
@@ -849,9 +853,9 @@ class DocumentService {
         documents: rows,
         pagination: {
           total: count,
-          page,
-          pageSize,
-          totalPages: Math.ceil(count / pageSize)
+          page: pageNum,
+          pageSize: pageSizeNum,
+          totalPages: Math.ceil(count / pageSizeNum)
         }
       };
     } catch (error) {

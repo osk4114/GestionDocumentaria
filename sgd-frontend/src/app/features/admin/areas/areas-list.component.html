@@ -1,0 +1,213 @@
+<div class="areas-container">
+  <!-- Header -->
+  <div class="page-header">
+    <div class="header-left">
+      <h1 class="page-title">Gestión de Áreas</h1>
+      <p class="page-subtitle">Administra las áreas y departamentos del sistema</p>
+    </div>
+    <button class="btn-primary" (click)="openCreateModal()">
+      <span class="btn-icon">➕</span>
+      Nueva Área
+    </button>
+  </div>
+
+  <!-- Mensajes -->
+  @if (successMessage()) {
+    <div class="alert alert-success">
+      ✓ {{ successMessage() }}
+    </div>
+  }
+  @if (errorMessage()) {
+    <div class="alert alert-error">
+      ✗ {{ errorMessage() }}
+    </div>
+  }
+
+  <!-- Filtros -->
+  <div class="filters-card">
+    <div class="filters-row">
+      <div class="search-box">
+        <input 
+          type="text" 
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="applyFilters()"
+          placeholder="Buscar por nombre o sigla..."
+          class="search-input"
+        />
+        <span class="search-icon">🔍</span>
+      </div>
+
+      <select 
+        [(ngModel)]="filterStatus"
+        (ngModelChange)="applyFilters()"
+        class="filter-select"
+      >
+        <option value="all">Todos los estados</option>
+        <option value="active">Activos</option>
+        <option value="inactive">Inactivos</option>
+      </select>
+
+      <div class="results-count">
+        <span class="count-badge">{{ filteredAreas().length }}</span>
+        resultados
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabla -->
+  <div class="table-card">
+    @if (loading()) {
+      <div class="loading-state">
+        <div class="spinner"></div>
+        <p>Cargando áreas...</p>
+      </div>
+    } @else if (filteredAreas().length === 0) {
+      <div class="empty-state">
+        <span class="empty-icon">📭</span>
+        <h3>No se encontraron áreas</h3>
+        <p>{{ searchTerm || filterStatus !== 'all' ? 'Intenta ajustar los filtros' : 'Comienza creando una nueva área' }}</p>
+      </div>
+    } @else {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Sigla</th>
+            <th>Descripción</th>
+            <th>Estado</th>
+            <th>Fecha Creación</th>
+            <th class="actions-col">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (area of filteredAreas(); track area.id) {
+            <tr>
+              <td>{{ area.id }}</td>
+              <td class="font-semibold">{{ area.nombre }}</td>
+              <td>
+                <span class="badge badge-info">{{ area.sigla }}</span>
+              </td>
+              <td class="description-col">{{ area.descripcion || '-' }}</td>
+              <td>
+                <span 
+                  class="status-badge"
+                  [class.status-active]="area.isActive"
+                  [class.status-inactive]="!area.isActive"
+                >
+                  {{ area.isActive ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td>{{ area.created_at ? (area.created_at | date:'dd/MM/yyyy') : '-' }}</td>
+              <td class="actions-col">
+                <div class="action-buttons">
+                  <button 
+                    class="btn-icon btn-edit" 
+                    (click)="openEditModal(area)"
+                    title="Editar"
+                  >
+                    ✏️
+                  </button>
+                  <button 
+                    class="btn-icon btn-toggle" 
+                    (click)="toggleStatus(area)"
+                    [title]="area.isActive ? 'Desactivar' : 'Activar'"
+                  >
+                    {{ area.isActive ? '🚫' : '✅' }}
+                  </button>
+                  <button 
+                    class="btn-icon btn-delete" 
+                    (click)="deleteArea(area)"
+                    title="Eliminar"
+                  >
+                    🗑️
+                  </button>
+                </div>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</div>
+
+<!-- Modal -->
+@if (showModal()) {
+  <div class="modal-overlay" (click)="closeModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h2 class="modal-title">
+          {{ modalMode() === 'create' ? 'Nueva Área' : 'Editar Área' }}
+        </h2>
+        <button class="modal-close" (click)="closeModal()">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">
+            Nombre <span class="required">*</span>
+          </label>
+          <input 
+            type="text" 
+            [(ngModel)]="formData().nombre"
+            class="form-input"
+            placeholder="Ej: Mesa de Partes"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">
+            Sigla <span class="required">*</span>
+          </label>
+          <input 
+            type="text" 
+            [(ngModel)]="formData().sigla"
+            class="form-input"
+            placeholder="Ej: MP"
+            maxlength="10"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Descripción</label>
+          <textarea 
+            [(ngModel)]="formData().descripcion"
+            class="form-textarea"
+            rows="3"
+            placeholder="Descripción opcional del área..."
+          ></textarea>
+        </div>
+
+        @if (modalMode() === 'create') {
+          <div class="form-group">
+            <label class="checkbox-label">
+              <input 
+                type="checkbox" 
+                [(ngModel)]="formData().isActive"
+                class="form-checkbox"
+              />
+              <span>Activar área al crearla</span>
+            </label>
+          </div>
+        }
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn-secondary" (click)="closeModal()">
+          Cancelar
+        </button>
+        <button 
+          class="btn-primary" 
+          (click)="saveArea()"
+          [disabled]="loading()"
+        >
+          @if (loading()) {
+            <span class="spinner-small"></span>
+          }
+          {{ modalMode() === 'create' ? 'Crear Área' : 'Guardar Cambios' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

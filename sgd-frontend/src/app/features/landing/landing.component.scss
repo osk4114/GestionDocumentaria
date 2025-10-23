@@ -73,9 +73,9 @@
     white-space: nowrap;
 
     &:hover {
-      background: var(--color-secondary-dark);
+      background: var(--color-secondary-medium);
       transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(0, 102, 204, 0.3);
+      box-shadow: 0 4px 12px rgba(0, 56, 118, 0.3);
     }
   }
 }

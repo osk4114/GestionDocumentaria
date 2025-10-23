@@ -1,0 +1,198 @@
+<div class="reports-container">
+  
+  <!-- Header -->
+  <div class="reports-header">
+    <div class="header-content">
+      <h1 class="page-title">📊 Reportes y Estadísticas</h1>
+      <p class="page-subtitle">Dashboard analítico del sistema</p>
+    </div>
+    
+    <div class="header-actions">
+      <button class="btn-refresh" (click)="refresh()" [disabled]="loading()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        Actualizar
+      </button>
+      
+      <!-- <button class="btn-export" (click)="exportToPDF()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+        </svg>
+        PDF
+      </button>
+      
+      <button class="btn-export" (click)="exportToExcel()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        Excel
+      </button> -->
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  @if (loading()) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <p>Cargando reportes...</p>
+    </div>
+  }
+
+  <!-- Content -->
+  @if (!loading() && stats()) {
+    
+    <!-- KPIs -->
+    <div class="kpis-grid">
+      <div class="kpi-card total">
+        <div class="kpi-icon">📄</div>
+        <div class="kpi-content">
+          <span class="kpi-label">Total Documentos</span>
+          <span class="kpi-value">{{ stats()!.totalDocuments }}</span>
+        </div>
+      </div>
+
+      @for (status of stats()!.byStatus.slice(0, 3); track status.status) {
+        <div class="kpi-card">
+          <div class="kpi-badge" [style.background-color]="status.color"></div>
+          <div class="kpi-content">
+            <span class="kpi-label">{{ status.status }}</span>
+            <span class="kpi-value">{{ status.count }}</span>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Charts Grid -->
+    <div class="charts-grid">
+      
+      <!-- Documentos por Estado (Pie) -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h2 class="chart-title">📊 Documentos por Estado</h2>
+        </div>
+        <div class="chart-body">
+          <canvas 
+            baseChart
+            [data]="statusChartData()"
+            [type]="pieChartType"
+            [options]="pieChartOptions"
+          >
+          </canvas>
+        </div>
+      </div>
+
+      <!-- Documentos por Prioridad (Pie) -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <h2 class="chart-title">⚡ Documentos por Prioridad</h2>
+        </div>
+        <div class="chart-body">
+          <canvas 
+            baseChart
+            [data]="priorityChartData()"
+            [type]="pieChartType"
+            [options]="pieChartOptions"
+          >
+          </canvas>
+        </div>
+      </div>
+
+      <!-- Documentos por Área (Bar) -->
+      <div class="chart-card large">
+        <div class="chart-header">
+          <h2 class="chart-title">🏢 Documentos por Área</h2>
+        </div>
+        <div class="chart-body">
+          <canvas 
+            baseChart
+            [data]="areaChartData()"
+            [type]="barChartType"
+            [options]="barChartOptions"
+          >
+          </canvas>
+        </div>
+      </div>
+
+      <!-- Tendencia Mensual (Line) -->
+      <div class="chart-card large">
+        <div class="chart-header">
+          <h2 class="chart-title">📈 Tendencia Mensual</h2>
+        </div>
+        <div class="chart-body">
+          <canvas 
+            baseChart
+            [data]="monthChartData()"
+            [type]="lineChartType"
+            [options]="lineChartOptions"
+          >
+          </canvas>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Summary Tables -->
+    <div class="tables-grid">
+      
+      <!-- Por Estado -->
+      <div class="table-card">
+        <h3 class="table-title">Resumen por Estado</h3>
+        <table class="summary-table">
+          <thead>
+            <tr>
+              <th>Estado</th>
+              <th>Cantidad</th>
+              <th>%</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of stats()!.byStatus; track item.status) {
+              <tr>
+                <td>
+                  <span class="status-dot" [style.background-color]="item.color"></span>
+                  {{ item.status }}
+                </td>
+                <td class="text-center">{{ item.count }}</td>
+                <td class="text-center">
+                  {{ ((item.count / stats()!.totalDocuments) * 100).toFixed(1) }}%
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Por Área -->
+      <div class="table-card">
+        <h3 class="table-title">Resumen por Área</h3>
+        <table class="summary-table">
+          <thead>
+            <tr>
+              <th>Área</th>
+              <th>Cantidad</th>
+              <th>%</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of stats()!.byArea; track item.area) {
+              <tr>
+                <td>{{ item.area }}</td>
+                <td class="text-center">{{ item.count }}</td>
+                <td class="text-center">
+                  {{ ((item.count / stats()!.totalDocuments) * 100).toFixed(1) }}%
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+  }
+
+</div>

@@ -1,0 +1,63 @@
+<div class="admin-layout">
+  <!-- Sidebar -->
+  <aside class="sidebar" [class.sidebar-collapsed]="!sidebarOpen()">
+    <!-- Logo y Título -->
+    <div class="sidebar-header">
+      <div class="logo">
+        <span class="logo-icon">⚙️</span>
+        @if (sidebarOpen()) {
+          <span class="logo-text">Administración</span>
+        }
+      </div>
+    </div>
+
+    <!-- Menú -->
+    <nav class="sidebar-menu">
+      @for (item of menuItems; track item.route; let i = $index) {
+        <a 
+          [routerLink]="item.route" 
+          routerLinkActive="active"
+          class="menu-item"
+          (click)="setActive(i)"
+        >
+          <span class="menu-icon">{{ item.icon }}</span>
+          @if (sidebarOpen()) {
+            <span class="menu-label">{{ item.label }}</span>
+          }
+        </a>
+      }
+    </nav>
+
+    <!-- Botón de toggle -->
+    <button class="toggle-btn" (click)="toggleSidebar()">
+      <span>{{ sidebarOpen() ? '◀' : '▶' }}</span>
+    </button>
+  </aside>
+
+  <!-- Contenido Principal -->
+  <div class="main-content">
+    <!-- Header -->
+    <header class="content-header">
+      <div class="header-left">
+        <button class="back-btn" (click)="goToDashboard()">
+          ← Volver al Dashboard
+        </button>
+      </div>
+      
+      <div class="header-right">
+        <div class="user-info">
+          <span class="user-name">{{ currentUser()?.nombre }}</span>
+          <span class="user-role">{{ currentUser()?.role?.nombre }}</span>
+        </div>
+        <button class="logout-btn" (click)="logout()">
+          Cerrar Sesión
+        </button>
+      </div>
+    </header>
+
+    <!-- Área de contenido dinámico -->
+    <main class="content-body">
+      <router-outlet></router-outlet>
+    </main>
+  </div>
+</div>

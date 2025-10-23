@@ -1,0 +1,26 @@
+<div class="toast-container">
+  @for (toast of toastService.toasts$(); track toast.id) {
+    <div 
+      class="toast" 
+      [ngClass]="getTypeClass(toast.type)"
+      [@slideIn]
+    >
+      <div class="toast-icon">
+        {{ getIcon(toast.type) }}
+      </div>
+      
+      <div class="toast-content">
+        <h4 class="toast-title">{{ toast.title }}</h4>
+        <p class="toast-message">{{ toast.message }}</p>
+      </div>
+      
+      <button 
+        class="toast-close" 
+        (click)="close(toast.id)"
+        aria-label="Cerrar notificación"
+      >
+        ✕
+      </button>
+    </div>
+  }
+</div>

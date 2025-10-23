@@ -5,6 +5,10 @@ import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../core/services/auth.service';
 import { DocumentService } from '../../core/services/document.service';
 import { User } from '../../core/models/user.model';
+import { DocumentDeriveComponent } from '../documents/document-derive/document-derive.component';
+import { DocumentDetailsComponent } from '../documents/document-details/document-details.component';
+import { NotificationsPanelComponent } from '../../shared/components/notifications-panel/notifications-panel.component';
+import { ToastService } from '../../core/services/toast.service';
 
 interface Document {
   id: number;
@@ -29,7 +33,7 @@ interface Stats {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, DocumentDeriveComponent, DocumentDetailsComponent, NotificationsPanelComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
@@ -40,20 +44,54 @@ export class DashboardComponent implements OnInit {
   stats = signal<Stats>({ total: 0, recibidos: 0, enProceso: 0, finalizados: 0, urgentes: 0 });
   loading = signal(false);
   
+  // Modales
+  showDeriveModal = signal(false);
+  showDetailsModal = signal(false);
+  selectedDocument = signal<Document>({
+    id: 0,
+    trackingCode: '',
+    asunto: '',
+    prioridad: '',
+    created_at: '',
+    sender: { nombreCompleto: '' },
+    documentType: { nombre: '' },
+    status: { nombre: '', color: '' },
+    currentArea: { nombre: '' }
+  });
+  selectedDocumentId = signal(0);
+  
   // Filtros
   searchTerm = '';
   statusFilter = '';
   priorityFilter = '';
   
+  // Paginación
+  currentPage = signal(1);
+  pageSize = signal(10);
+  totalPages = computed(() => Math.ceil(this.filteredDocuments().length / this.pageSize()));
+  paginatedDocuments = computed(() => {
+    const start = (this.currentPage() - 1) * this.pageSize();
+    const end = start + this.pageSize();
+    return this.filteredDocuments().slice(start, end);
+  });
+  
+  // Ordenamiento
+  sortColumn = signal<string>('');
+  sortDirection = signal<'asc' | 'desc'>('asc');
+  
   // Computed values
   userName = computed(() => this.user()?.nombre || 'Usuario');
   userRole = computed(() => this.user()?.role?.nombre || 'Sin rol');
   userArea = computed(() => this.user()?.area?.nombre || 'Sin área');
+  
+  // Exponer Math para el template
+  Math = Math;
 
   constructor(
     private authService: AuthService,
     private documentService: DocumentService,
-    private router: Router
+    private router: Router,
+    private toastService: ToastService
   ) {}
 
   ngOnInit(): void {
@@ -177,5 +215,95 @@ export class DashboardComponent implements OnInit {
 
   navigateToHome(): void {
     this.router.navigate(['/']);
+  }
+
+  openDeriveModal(document: Document): void {
+    this.selectedDocument.set(document);
+    this.showDeriveModal.set(true);
+  }
+
+  closeDeriveModal(): void {
+    this.showDeriveModal.set(false);
+  }
+
+  onDeriveSuccess(): void {
+    this.showDeriveModal.set(false);
+    this.toastService.success(
+      'Documento Derivado',
+      'El documento ha sido derivado exitosamente'
+    );
+    this.loadDocuments();
+  }
+
+  // Modal de detalles
+  openDetailsModal(document: Document): void {
+    this.selectedDocumentId.set(document.id);
+    this.showDetailsModal.set(true);
+  }
+
+  closeDetailsModal(): void {
+    this.showDetailsModal.set(false);
+  }
+
+  // Paginación
+  setPageSize(size: number): void {
+    this.pageSize.set(size);
+    this.currentPage.set(1); // Resetear a primera página
+  }
+
+  goToPage(page: number): void {
+    if (page >= 1 && page <= this.totalPages()) {
+      this.currentPage.set(page);
+    }
+  }
+
+  nextPage(): void {
+    if (this.currentPage() < this.totalPages()) {
+      this.currentPage.set(this.currentPage() + 1);
+    }
+  }
+
+  previousPage(): void {
+    if (this.currentPage() > 1) {
+      this.currentPage.set(this.currentPage() - 1);
+    }
+  }
+
+  // Ordenamiento
+  sortBy(column: string): void {
+    if (this.sortColumn() === column) {
+      // Toggle direction
+      this.sortDirection.set(this.sortDirection() === 'asc' ? 'desc' : 'asc');
+    } else {
+      this.sortColumn.set(column);
+      this.sortDirection.set('asc');
+    }
+
+    // Ordenar documentos
+    const sorted = [...this.filteredDocuments()].sort((a, b) => {
+      let aVal: any = a[column as keyof Document];
+      let bVal: any = b[column as keyof Document];
+
+      // Manejar valores anidados
+      if (column === 'sender') aVal = a.sender.nombreCompleto;
+      if (column === 'sender') bVal = b.sender.nombreCompleto;
+      if (column === 'documentType') aVal = a.documentType.nombre;
+      if (column === 'documentType') bVal = b.documentType.nombre;
+      if (column === 'status') aVal = a.status.nombre;
+      if (column === 'status') bVal = b.status.nombre;
+      if (column === 'currentArea') aVal = a.currentArea.nombre;
+      if (column === 'currentArea') bVal = b.currentArea.nombre;
+
+      if (aVal < bVal) return this.sortDirection() === 'asc' ? -1 : 1;
+      if (aVal > bVal) return this.sortDirection() === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    this.filteredDocuments.set(sorted);
+  }
+
+  getSortIcon(column: string): string {
+    if (this.sortColumn() !== column) return '⇅';
+    return this.sortDirection() === 'asc' ? '↑' : '↓';
   }
 }

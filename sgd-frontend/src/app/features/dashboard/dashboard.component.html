@@ -14,6 +14,13 @@
           <span class="user-name">{{ userName() }}</span>
           <span class="user-role">{{ userRole() }} - {{ userArea() }}</span>
         </div>
+        
+        <!-- Panel de Notificaciones -->
+        <app-notifications-panel />
+        
+        <button class="btn-admin" routerLink="/admin">
+          ⚙️ Administración
+        </button>
         <button class="btn-logout" (click)="onLogout()">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -146,19 +153,35 @@
         <table class="documents-table" *ngIf="!loading() && filteredDocuments().length > 0">
           <thead>
             <tr>
-              <th>Código</th>
-              <th>Asunto</th>
-              <th>Remitente</th>
-              <th>Tipo</th>
-              <th>Estado</th>
-              <th>Prioridad</th>
-              <th>Área Actual</th>
-              <th>Fecha</th>
+              <th class="sortable" (click)="sortBy('trackingCode')">
+                Código {{ getSortIcon('trackingCode') }}
+              </th>
+              <th class="sortable" (click)="sortBy('asunto')">
+                Asunto {{ getSortIcon('asunto') }}
+              </th>
+              <th class="sortable" (click)="sortBy('sender')">
+                Remitente {{ getSortIcon('sender') }}
+              </th>
+              <th class="sortable" (click)="sortBy('documentType')">
+                Tipo {{ getSortIcon('documentType') }}
+              </th>
+              <th class="sortable" (click)="sortBy('status')">
+                Estado {{ getSortIcon('status') }}
+              </th>
+              <th class="sortable" (click)="sortBy('prioridad')">
+                Prioridad {{ getSortIcon('prioridad') }}
+              </th>
+              <th class="sortable" (click)="sortBy('currentArea')">
+                Área Actual {{ getSortIcon('currentArea') }}
+              </th>
+              <th class="sortable" (click)="sortBy('created_at')">
+                Fecha {{ getSortIcon('created_at') }}
+              </th>
               <th>Acciones</th>
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let doc of filteredDocuments()" (click)="viewDocument(doc)">
+            <tr *ngFor="let doc of paginatedDocuments()">
               <td class="code">{{ doc.trackingCode }}</td>
               <td class="subject">{{ doc.asunto }}</td>
               <td>{{ doc.sender.nombreCompleto }}</td>
@@ -175,19 +198,82 @@
               </td>
               <td>{{ doc.currentArea.nombre }}</td>
               <td class="date">{{ formatDate(doc.created_at) }}</td>
-              <td>
-                <button class="btn-view" (click)="viewDocument(doc); $event.stopPropagation()" title="Ver detalles">
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                  </svg>
+              <td class="actions-cell">
+                <button class="btn-action btn-view" (click)="openDetailsModal(doc); $event.stopPropagation()" title="Ver detalles">
+                  👁️
+                </button>
+                <button class="btn-action btn-derive" (click)="openDeriveModal(doc); $event.stopPropagation()" title="Derivar">
+                  📤
                 </button>
               </td>
             </tr>
           </tbody>
         </table>
+
+        <!-- Paginación -->
+        <div class="pagination" *ngIf="!loading() && filteredDocuments().length > 0">
+          <div class="pagination-info">
+            <span>Mostrando {{ (currentPage() - 1) * pageSize() + 1 }} - {{ Math.min(currentPage() * pageSize(), filteredDocuments().length) }} de {{ filteredDocuments().length }} documentos</span>
+            <select class="page-size-select" [(ngModel)]="pageSize" (ngModelChange)="setPageSize($event)">
+              <option [value]="10">10 por página</option>
+              <option [value]="25">25 por página</option>
+              <option [value]="50">50 por página</option>
+              <option [value]="100">100 por página</option>
+            </select>
+          </div>
+          
+          <div class="pagination-controls">
+            <button 
+              class="pagination-btn" 
+              (click)="previousPage()" 
+              [disabled]="currentPage() === 1"
+            >
+              ← Anterior
+            </button>
+            
+            <div class="pagination-pages">
+              @for (page of [].constructor(totalPages()); track $index) {
+                <button 
+                  class="pagination-page" 
+                  [class.active]="currentPage() === $index + 1"
+                  (click)="goToPage($index + 1)"
+                >
+                  {{ $index + 1 }}
+                </button>
+              }
+            </div>
+            
+            <button 
+              class="pagination-btn" 
+              (click)="nextPage()" 
+              [disabled]="currentPage() === totalPages()"
+            >
+              Siguiente →
+            </button>
+          </div>
+        </div>
       </div>
     </div>
 
   </main>
 </div>
+
+<!-- Modal de Derivación -->
+@if (showDeriveModal()) {
+  <app-document-derive
+    [documentId]="selectedDocument().id"
+    [documentCode]="selectedDocument().trackingCode"
+    [documentSubject]="selectedDocument().asunto"
+    [currentArea]="selectedDocument().currentArea.nombre"
+    (onClose)="closeDeriveModal()"
+    (onSuccess)="onDeriveSuccess()"
+  ></app-document-derive>
+}
+
+<!-- Modal de Detalles -->
+@if (showDetailsModal()) {
+  <app-document-details
+    [documentId]="selectedDocumentId()"
+    (onClose)="closeDetailsModal()"
+  ></app-document-details>
+}

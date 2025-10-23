@@ -41,6 +41,7 @@ Write-Host ""
 # Test 2: Busqueda avanzada
 Write-Host "[3/7] Test: Búsqueda Avanzada (asunto=solicitud)" -ForegroundColor Yellow
 try {
+    $ErrorActionPreference = 'Stop'
     $result = Invoke-RestMethod -Uri "http://localhost:3000/api/documents/search?asunto=solicitud&page=1&pageSize=5" -Headers $headers
     Write-Host "OK - Total: $($result.pagination.total), Página: $($result.pagination.page)/$($result.pagination.totalPages)" -ForegroundColor Green
     if ($result.documents.Count -gt 0) {
@@ -51,7 +52,11 @@ try {
     }
 } catch {
     Write-Host "ERROR: $($_.Exception.Message)" -ForegroundColor Red
+    if ($_.ErrorDetails.Message) {
+        Write-Host "Detalles: $($_.ErrorDetails.Message)" -ForegroundColor Yellow
+    }
 }
+$ErrorActionPreference = 'Continue'
 Write-Host ""
 
 # Test 3: Documentos por estado
