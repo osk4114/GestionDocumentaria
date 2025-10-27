@@ -67,6 +67,22 @@ export interface TrackingResponse {
   };
 }
 
+export interface DocumentFilters {
+  area?: number;
+  status?: number;
+  archived?: boolean;
+  search?: string;
+  limit?: number;
+  offset?: number;
+}
+
+export interface ApiResponse<T> {
+  success: boolean;
+  message?: string;
+  data?: T;
+  count?: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -129,5 +145,43 @@ export class DocumentService {
    */
   finalizeDocument(documentId: number, observacion: string): Observable<any> {
     return this.http.post(`${this.apiUrl}/documents/${documentId}/finalize`, { observacion });
+  }
+
+  /**
+   * Obtiene documentos con filtros (para bandeja por área)
+   */
+  getDocumentsWithFilters(filters: DocumentFilters): Observable<ApiResponse<any[]>> {
+    let params: string[] = [];
+    
+    if (filters.area !== undefined) params.push(`area=${filters.area}`);
+    if (filters.status !== undefined) params.push(`status=${filters.status}`);
+    if (filters.archived !== undefined) params.push(`archived=${filters.archived}`);
+    if (filters.search) params.push(`search=${encodeURIComponent(filters.search)}`);
+    if (filters.limit) params.push(`limit=${filters.limit}`);
+    if (filters.offset) params.push(`offset=${filters.offset}`);
+    
+    const queryString = params.length > 0 ? `?${params.join('&')}` : '';
+    return this.http.get<ApiResponse<any[]>>(`${this.apiUrl}/documents${queryString}`);
+  }
+
+  /**
+   * Obtiene un documento por ID
+   */
+  getDocumentById(documentId: number): Observable<ApiResponse<any>> {
+    return this.http.get<ApiResponse<any>>(`${this.apiUrl}/documents/${documentId}`);
+  }
+
+  /**
+   * Archiva un documento
+   */
+  archiveDocument(documentId: number): Observable<ApiResponse<void>> {
+    return this.http.delete<ApiResponse<void>>(`${this.apiUrl}/documents/${documentId}`);
+  }
+
+  /**
+   * Obtiene documentos archivados por área
+   */
+  getArchivedByArea(areaId: number): Observable<ApiResponse<any[]>> {
+    return this.http.get<ApiResponse<any[]>>(`${this.apiUrl}/documents/area/${areaId}/archived`);
   }
 }

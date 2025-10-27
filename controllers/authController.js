@@ -165,6 +165,8 @@ const createSession = async (user, ipAddress, userAgent) => {
   const jti = uuidv4(); // JWT ID único
   
   // ⚠️ SESIÓN ÚNICA: Invalidar TODAS las sesiones anteriores del usuario
+  console.log(`🔍 [SESIÓN ÚNICA] Buscando sesiones anteriores del usuario ${user.id}...`);
+  
   const previousSessions = await UserSession.update(
     { isActive: false },
     {
@@ -177,7 +179,7 @@ const createSession = async (user, ipAddress, userAgent) => {
   );
 
   if (previousSessions[0] > 0) {
-    console.log(`🔒 Sesión única activada: ${previousSessions[0]} sesión(es) anterior(es) cerrada(s) automáticamente para usuario ${user.id}`);
+    console.log(`🔒 [SESIÓN ÚNICA] ${previousSessions[0]} sesión(es) anterior(es) cerrada(s) para usuario ${user.id}`);
     
     // 📢 Notificar via WebSocket a las sesiones cerradas
     if (global.io) {
@@ -185,8 +187,10 @@ const createSession = async (user, ipAddress, userAgent) => {
         reason: 'new-login',
         message: 'Tu sesión fue cerrada porque iniciaste sesión desde otro dispositivo'
       });
-      console.log(`📢 Notificación WebSocket enviada a usuario ${user.id}`);
+      console.log(`📢 [SESIÓN ÚNICA] Notificación WebSocket enviada a usuario ${user.id}`);
     }
+  } else {
+    console.log(`✓ [SESIÓN ÚNICA] No hay sesiones anteriores para cerrar`);
   }
   
   // Calcular fecha de expiración
@@ -224,6 +228,15 @@ const createSession = async (user, ipAddress, userAgent) => {
     expiresAt,
     isActive: true
   });
+
+  console.log(`✅ [CREATE SESSION] Sesión creada exitosamente:`);
+  console.log(`   Sesión ID: ${session.id}`);
+  console.log(`   Usuario ID: ${user.id}`);
+  console.log(`   JTI: ${jti}`);
+  console.log(`   Fecha actual: ${new Date().toISOString()}`);
+  console.log(`   Expira en: ${expiresAt.toISOString()}`);
+  console.log(`   Activa: ${session.isActive}`);
+  console.log(`   IP: ${ipAddress}`);
 
   return { token, refreshToken, session };
 };

@@ -133,10 +133,26 @@ export class RolesListComponent implements OnInit {
   ngOnInit(): void { this.loadRoles(); }
 
   loadRoles(): void {
+    console.log('🔄 [ROLES] Iniciando carga de roles...');
     this.loading.set(true);
     this.roleService.getAll().subscribe({
-      next: (res) => { if (res.success && res.data) { this.roles.set(res.data); this.applyFilters(); } this.loading.set(false); },
-      error: (err) => { this.showError('Error al cargar roles'); this.loading.set(false); }
+      next: (res) => {
+        console.log('✅ [ROLES] Respuesta recibida:', res);
+        if (res.success && res.data) {
+          console.log(`✅ [ROLES] ${res.data.length} roles cargados`);
+          this.roles.set(res.data);
+          this.applyFilters();
+        }
+        this.loading.set(false);
+      },
+      error: (err) => {
+        console.error('❌ [ROLES] Error al cargar roles:');
+        console.error('   Status:', err.status);
+        console.error('   Message:', err.message);
+        console.error('   Error completo:', err);
+        this.showError('Error al cargar roles');
+        this.loading.set(false);
+      }
     });
   }
 
@@ -165,14 +181,46 @@ export class RolesListComponent implements OnInit {
 
   saveRole(): void {
     const data = this.formData();
-    if (!data.nombre) { this.showError('El nombre es obligatorio'); return; }
+    const mode = this.modalMode();
+    
+    console.log(`🔄 [ROLES] Guardando rol (${mode})...`);
+    console.log('   Datos:', data);
+    
+    if (!data.nombre) {
+      console.warn('⚠️ [ROLES] Validación fallida: nombre vacío');
+      this.showError('El nombre es obligatorio');
+      return;
+    }
+    
     this.loading.set(true);
-    const action = this.modalMode() === 'create' 
-      ? this.roleService.create({ nombre: data.nombre, descripcion: data.descripcion })
-      : this.roleService.update(data.id, { nombre: data.nombre, descripcion: data.descripcion });
+    const payload = { nombre: data.nombre, descripcion: data.descripcion };
+    
+    console.log(`📤 [ROLES] Enviando ${mode === 'create' ? 'POST' : 'PUT'} request:`, payload);
+    
+    const action = mode === 'create' 
+      ? this.roleService.create(payload)
+      : this.roleService.update(data.id, payload);
+      
     action.subscribe({
-      next: () => { this.showSuccess(`Rol ${this.modalMode() === 'create' ? 'creado' : 'actualizado'} exitosamente`); this.loadRoles(); this.closeModal(); this.loading.set(false); },
-      error: (err) => { this.showError(err.error?.message || 'Error al guardar'); this.loading.set(false); }
+      next: (res) => {
+        console.log(`✅ [ROLES] Rol ${mode === 'create' ? 'creado' : 'actualizado'} exitosamente:`, res);
+        this.showSuccess(`Rol ${mode === 'create' ? 'creado' : 'actualizado'} exitosamente`);
+        this.loadRoles();
+        this.closeModal();
+        this.loading.set(false);
+      },
+      error: (err) => {
+        console.error(`❌ [ROLES] Error al ${mode === 'create' ? 'crear' : 'actualizar'} rol:`);
+        console.error('   Status:', err.status);
+        console.error('   StatusText:', err.statusText);
+        console.error('   Message:', err.message);
+        console.error('   Error body:', err.error);
+        console.error('   URL:', err.url);
+        console.error('   Error completo:', err);
+        
+        this.showError(err.error?.message || `Error al ${mode === 'create' ? 'crear' : 'actualizar'} rol`);
+        this.loading.set(false);
+      }
     });
   }
 

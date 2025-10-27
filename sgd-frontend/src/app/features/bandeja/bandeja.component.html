@@ -1,0 +1,237 @@
+<div class="bandeja-container">
+  <!-- Header -->
+  <header class="bandeja-header">
+    <div class="header-content">
+      <div class="header-left">
+        <button class="btn-back" (click)="goToDashboard()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+          </svg>
+        </button>
+        <div class="header-title">
+          <h1>Bandeja de Entrada</h1>
+          <p>{{ userArea()?.nombre || 'Sin área asignada' }}</p>
+        </div>
+      </div>
+      <button class="btn-refresh" (click)="loadDocuments()" [disabled]="loading()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        Actualizar
+      </button>
+    </div>
+  </header>
+
+  <!-- Stats Cards -->
+  <div class="stats-section">
+    <div class="stat-card stat-pendientes">
+      <div class="stat-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div class="stat-content">
+        <span class="stat-label">Pendientes</span>
+        <span class="stat-value">{{ stats().pendientes }}</span>
+      </div>
+    </div>
+
+    <div class="stat-card stat-proceso">
+      <div class="stat-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+      </div>
+      <div class="stat-content">
+        <span class="stat-label">En Proceso</span>
+        <span class="stat-value">{{ stats().enProceso }}</span>
+      </div>
+    </div>
+
+    <div class="stat-card stat-finalizados">
+      <div class="stat-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <div class="stat-content">
+        <span class="stat-label">Finalizados</span>
+        <span class="stat-value">{{ stats().finalizados }}</span>
+      </div>
+    </div>
+
+    <div class="stat-card stat-archivados">
+      <div class="stat-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
+        </svg>
+      </div>
+      <div class="stat-content">
+        <span class="stat-label">Archivados</span>
+        <span class="stat-value">{{ stats().archivados }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Tabs -->
+    <div class="tabs-container">
+      <button
+        class="tab-button"
+        [class.active]="activeTab() === 'pendientes'"
+        (click)="setActiveTab('pendientes')"
+      >
+        Pendientes
+        <span class="tab-badge badge-yellow">{{ stats().pendientes }}</span>
+      </button>
+      <button
+        class="tab-button"
+        [class.active]="activeTab() === 'proceso'"
+        (click)="setActiveTab('proceso')"
+      >
+        En Proceso
+        <span class="tab-badge badge-blue">{{ stats().enProceso }}</span>
+      </button>
+      <button
+        class="tab-button"
+        [class.active]="activeTab() === 'finalizados'"
+        (click)="setActiveTab('finalizados')"
+      >
+        Finalizados
+        <span class="tab-badge badge-green">{{ stats().finalizados }}</span>
+      </button>
+      <button
+        class="tab-button"
+        [class.active]="activeTab() === 'archivados'"
+        (click)="setActiveTab('archivados')"
+      >
+        Archivados
+        <span class="tab-badge badge-gray">{{ stats().archivados }}</span>
+      </button>
+    </div>
+
+    <!-- Search -->
+    <div class="search-section">
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Buscar por código, asunto o remitente..."
+        [ngModel]="searchTerm()"
+        (ngModelChange)="searchTerm.set($event)"
+      />
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loading()" class="loading-state">
+      <div class="spinner"></div>
+      <p>Cargando documentos...</p>
+    </div>
+
+    <!-- Documents Table -->
+    <div *ngIf="!loading()" class="documents-section">
+      <div *ngIf="filteredDocuments().length === 0" class="empty-state">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        <p>No hay documentos en esta categoría</p>
+      </div>
+
+      <div *ngIf="filteredDocuments().length > 0" class="table-container">
+        <table class="documents-table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Asunto</th>
+              <th>Tipo</th>
+              <th>Remitente</th>
+              <th>Prioridad</th>
+              <th>Estado</th>
+              <th>Fecha</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let doc of filteredDocuments()">
+              <td class="code">{{ doc.trackingCode }}</td>
+              <td class="subject">{{ doc.asunto }}</td>
+              <td>{{ doc.documentType.nombre }}</td>
+              <td>{{ doc.sender.nombreCompleto }}</td>
+              <td>
+                <span class="priority-badge" [ngClass]="{
+                  'priority-urgent': doc.prioridad === 'urgente',
+                  'priority-high': doc.prioridad === 'alta',
+                  'priority-normal': doc.prioridad === 'normal',
+                  'priority-low': doc.prioridad === 'baja'
+                }">
+                  {{ doc.prioridad }}
+                </span>
+              </td>
+              <td>
+                <span 
+                  class="status-badge"
+                  [style.background-color]="doc.status.color + '20'"
+                  [style.color]="doc.status.color"
+                >
+                  {{ doc.status.nombre }}
+                </span>
+              </td>
+              <td class="date">{{ formatDate(doc.created_at) }}</td>
+              <td class="actions-cell">
+                <button
+                  class="btn-action btn-view"
+                  (click)="viewDocument(doc)"
+                  title="Ver detalles"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                  </svg>
+                </button>
+                <button
+                  *ngIf="activeTab() !== 'archivados' && activeTab() !== 'finalizados'"
+                  class="btn-action btn-derive"
+                  (click)="deriveDocument(doc)"
+                  title="Derivar"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                  </svg>
+                </button>
+                <button
+                  *ngIf="activeTab() !== 'archivados'"
+                  class="btn-action btn-archive"
+                  (click)="archiveDocument(doc)"
+                  title="Archivar"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
+                  </svg>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Derivación -->
+<app-document-derive
+  *ngIf="showDeriveModal() && selectedDocument()"
+  [documentId]="selectedDocumentId()"
+  [documentCode]="selectedDocument()!.trackingCode"
+  [documentSubject]="selectedDocument()!.asunto"
+  [currentArea]="userArea()?.nombre || ''"
+  (onClose)="closeModals()"
+  (onSuccess)="onDeriveSuccess()"
+/>
+
+<!-- Modal de Detalles -->
+<app-document-details
+  *ngIf="showDetailsModal()"
+  [documentId]="selectedDocumentId()"
+  (onClose)="closeModals()"
+  (onAction)="loadDocuments()"
+/>

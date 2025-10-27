@@ -57,6 +57,12 @@ CREATE TABLE IF NOT EXISTS users (
 -- ============================================================
 -- Tabla: user_sessions
 -- Descripción: Gestión de sesiones de usuario (JWT refresh tokens)
+-- 
+-- ⚠️ IMPORTANTE: El campo expires_at NO debe tener ON UPDATE CURRENT_TIMESTAMP
+-- porque debe mantener su valor fijo durante toda la vida de la sesión.
+-- Si MySQL lo agrega automáticamente, ejecutar:
+-- ALTER TABLE user_sessions MODIFY COLUMN expires_at TIMESTAMP NOT NULL 
+-- DEFAULT '1970-01-01 00:00:01' COMMENT 'Fecha de expiración del token';
 -- ============================================================
 CREATE TABLE IF NOT EXISTS user_sessions (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -67,7 +73,7 @@ CREATE TABLE IF NOT EXISTS user_sessions (
     ip_address VARCHAR(45) COMMENT 'Dirección IP del cliente',
     user_agent TEXT COMMENT 'Información del navegador/dispositivo',
     is_active BOOLEAN DEFAULT TRUE COMMENT 'Si la sesión está activa',
-    expires_at TIMESTAMP NOT NULL COMMENT 'Fecha de expiración del token',
+    expires_at TIMESTAMP NOT NULL DEFAULT '1970-01-01 00:00:01' COMMENT 'Fecha de expiración del token (NO AUTO-UPDATE)',
     last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP COMMENT 'Última actividad registrada',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

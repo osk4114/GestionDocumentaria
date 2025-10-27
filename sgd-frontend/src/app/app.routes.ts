@@ -3,6 +3,7 @@ import { authGuard, publicGuard } from './core/guards/auth.guard';
 import { LandingComponent } from './features/landing/landing.component';
 import { LoginComponent } from './features/auth/login/login.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
+import { BandejaComponent } from './features/bandeja/bandeja.component';
 import { SessionsComponent } from './features/sessions/sessions.component';
 import { SubmitDocumentComponent } from './features/submit-document/submit-document.component';
 import { TrackDocumentComponent } from './features/track-document/track-document.component';
@@ -39,6 +40,11 @@ export const routes: Routes = [
   {
     path: 'dashboard',
     component: DashboardComponent,
+    canActivate: [authGuard]
+  },
+  {
+    path: 'bandeja',
+    component: BandejaComponent,
     canActivate: [authGuard]
   },
   {

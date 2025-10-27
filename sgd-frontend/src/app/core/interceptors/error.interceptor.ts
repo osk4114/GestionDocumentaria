@@ -13,33 +13,45 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(req).pipe(
     catchError((error: HttpErrorResponse) => {
+      console.log('🔍 [ERROR INTERCEPTOR] Capturado error HTTP:');
+      console.log('   URL:', req.url);
+      console.log('   Status:', error.status);
+      console.log('   Message:', error.error?.message || error.message);
+      console.log('   Error completo:', error);
+      
       // Error 401 - Token expirado o sesión inválida
       if (error.status === 401) {
+        console.log('⚠️ [ERROR INTERCEPTOR] Error 401 detectado');
         
         // Rutas públicas - no redirigir al login
         const publicRoutes = ['/login', '/register', '/submit', '/tracking/', '/document-types'];
         const isPublicRoute = publicRoutes.some(route => req.url.includes(route));
         
         if (isPublicRoute) {
+          console.log('ℹ️ [ERROR INTERCEPTOR] Ruta pública, no se redirige');
           return throwError(() => error);
         }
 
         // Verificar si la sesión fue cerrada desde otro dispositivo
         const errorMessage = error.error?.message || '';
+        console.log('📋 [ERROR INTERCEPTOR] Mensaje de error:', errorMessage);
         
         if (errorMessage.includes('Sesión inválida') || 
             errorMessage.includes('Sesión cerrada') ||
             errorMessage.includes('sesión no encontrada')) {
           // 🔒 Sesión cerrada desde otro dispositivo - NO intentar refresh
-          console.warn('🚨 Tu sesión fue cerrada desde otro dispositivo');
+          console.warn('🚨 [ERROR INTERCEPTOR] Sesión inválida detectada - cerrando sesión');
+          console.warn('   Razón:', errorMessage);
           authService.logout(true); // Redirigir al login
           return throwError(() => error);
         }
 
         // Si el token expiró normalmente, intentar refresh
         if (!req.url.includes('/refresh')) {
+          console.log('🔄 [ERROR INTERCEPTOR] Intentando refresh del token...');
           return authService.refreshToken().pipe(
             switchMap(() => {
+              console.log('✅ [ERROR INTERCEPTOR] Refresh exitoso, reintentando petición original');
               // Retry la petición original con el nuevo token
               const token = authService.getToken();
               const clonedReq = req.clone({
@@ -51,11 +63,16 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
             }),
             catchError(refreshError => {
               // Si el refresh falla, redirigir a login
-              console.warn('🔄 Refresh token falló - Redirigiendo al login');
+              console.error('❌ [ERROR INTERCEPTOR] Refresh falló:');
+              console.error('   Status:', refreshError.status);
+              console.error('   Message:', refreshError.error?.message || refreshError.message);
+              console.warn('🔄 [ERROR INTERCEPTOR] Redirigiendo al login');
               authService.logout(true); // Redirigir al login
               return throwError(() => refreshError);
             })
           );
+        } else {
+          console.log('⚠️ [ERROR INTERCEPTOR] Error en endpoint de refresh, no se reintenta');
         }
       }
 

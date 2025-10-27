@@ -35,6 +35,9 @@ const authMiddleware = async (req, res, next) => {
     });
 
     if (!session) {
+      console.log(`❌ [AUTH MIDDLEWARE] Sesión no encontrada o inactiva`);
+      console.log(`   JTI buscado: ${decoded.jti}`);
+      console.log(`   Usuario ID: ${decoded.id}`);
       return res.status(401).json({
         success: false,
         message: 'Sesión inválida o cerrada. Por favor inicie sesión nuevamente'
@@ -42,13 +45,28 @@ const authMiddleware = async (req, res, next) => {
     }
 
     // Verificar si la sesión no ha expirado
-    if (new Date() > session.expiresAt) {
+    const now = new Date();
+    const expiresAt = new Date(session.expiresAt);
+    
+    console.log(`🔍 [AUTH MIDDLEWARE] Verificando sesión ID ${session.id}`);
+    console.log(`   Usuario: ${decoded.id}`);
+    console.log(`   JTI: ${decoded.jti}`);
+    console.log(`   Fecha actual: ${now.toISOString()}`);
+    console.log(`   Expira en: ${expiresAt.toISOString()}`);
+    console.log(`   ¿Expirada? ${now > expiresAt ? 'SÍ ❌' : 'NO ✅'}`);
+    console.log(`   Diferencia: ${((expiresAt.getTime() - now.getTime()) / 1000 / 60 / 60).toFixed(2)} horas`);
+    
+    if (now > expiresAt) {
+      console.error(`❌ [AUTH MIDDLEWARE] Sesión ${session.id} expirada - Desactivando`);
       await session.update({ isActive: false });
       return res.status(401).json({
         success: false,
         message: 'Sesión expirada. Por favor inicie sesión nuevamente'
       });
     }
+    
+    console.log(`✅ [AUTH MIDDLEWARE] Sesión ${session.id} válida`);
+
 
     // Buscar el usuario en la base de datos
     const user = await User.findByPk(decoded.id, {

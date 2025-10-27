@@ -3,28 +3,31 @@ const { Op } = require('sequelize');
 const { cleanupOldAttempts } = require('../controllers/authController');
 
 /**
- * Invalidar TODAS las sesiones al iniciar el servidor
- * Cuando el servidor se reinicia, todas las sesiones WebSocket se pierden
- * Por lo tanto, todas las sesiones deben ser invalidadas
+ * Verificar integridad de sesiones al iniciar el servidor
+ * Solo reporta el estado, NO invalida sesiones activas
+ * Las sesiones se invalidan por expiración temporal, no por reinicio del servidor
  */
-const cleanupStaleSessionsOnStartup = async () => {
+const verifySessionsOnStartup = async () => {
   try {
-    const result = await UserSession.update(
-      { isActive: false },
-      {
-        where: {
-          isActive: true
+    const activeSessions = await UserSession.count({
+      where: { isActive: true }
+    });
+
+    const expiredSessions = await UserSession.count({
+      where: {
+        isActive: true,
+        expiresAt: {
+          [Op.lt]: new Date()
         }
       }
-    );
+    });
 
-    if (result[0] > 0) {
-      console.log(`🧹 Limpieza de inicio: ${result[0]} sesiones invalidadas (servidor reiniciado)`);
-    } else {
-      console.log(`✓ No hay sesiones activas para limpiar`);
+    console.log(`📊 Sesiones activas: ${activeSessions}`);
+    if (expiredSessions > 0) {
+      console.log(`⚠️ Sesiones expiradas que serán limpiadas: ${expiredSessions}`);
     }
   } catch (error) {
-    console.error('✗ Error en limpieza de inicio:', error);
+    console.error('✗ Error al verificar sesiones:', error);
   }
 };
 
@@ -79,13 +82,13 @@ const cleanupExpiredSessions = async () => {
  * Por defecto cada hora
  */
 const startCleanupSchedule = (intervalMs = 3600000) => {
-  // Limpiar sesiones inactivas al inicio
-  cleanupStaleSessionsOnStartup();
+  // Verificar estado de sesiones al inicio (no invalida, solo reporta)
+  verifySessionsOnStartup();
 
-  // Ejecutar limpieza de expiradas inmediatamente
+  // Ejecutar limpieza de sesiones expiradas inmediatamente
   cleanupExpiredSessions();
 
-  // Programar ejecuciones periódicas
+  // Programar ejecuciones periódicas de limpieza
   setInterval(cleanupExpiredSessions, intervalMs);
   
   console.log(`✓ Limpieza automática programada cada ${intervalMs / 1000 / 60} minutos`);
@@ -93,6 +96,6 @@ const startCleanupSchedule = (intervalMs = 3600000) => {
 
 module.exports = {
   cleanupExpiredSessions,
-  cleanupStaleSessionsOnStartup,
+  verifySessionsOnStartup,
   startCleanupSchedule
 };
