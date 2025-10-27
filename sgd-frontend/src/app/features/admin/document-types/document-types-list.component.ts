@@ -145,7 +145,7 @@ import { DocumentTypeService, DocumentType } from '../../../core/services/docume
       </div>
     }
   `,
-  styles: [`@import '../areas/areas-list.component.scss';`]
+  styles: [`@use '../areas/areas-list.component.scss';`]
 })
 export class DocumentTypesListComponent implements OnInit {
   types = signal<DocumentType[]>([]);

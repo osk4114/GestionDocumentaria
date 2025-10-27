@@ -1,0 +1,218 @@
+<div class="archivados-container">
+  <!-- Header -->
+  <header class="archivados-header">
+    <div class="header-content">
+      <div class="header-left">
+        <button class="btn-back" (click)="goBack()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+          </svg>
+        </button>
+        <div class="header-title">
+          <h1>Documentos Archivados</h1>
+          <p>{{ userArea()?.nombre || 'Sin área asignada' }}</p>
+        </div>
+      </div>
+      <button class="btn-refresh" (click)="loadDocuments()" [disabled]="loading()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+        </svg>
+        Actualizar
+      </button>
+    </div>
+  </header>
+
+  <!-- Stats Card -->
+  <div class="stats-section">
+    <div class="stat-card stat-archived">
+      <div class="stat-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
+        </svg>
+      </div>
+      <div class="stat-content">
+        <span class="stat-label">Total Archivados</span>
+        <span class="stat-value">{{ stats().total }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <!-- Filters Section -->
+    <div class="filters-section">
+      <div class="filters-header">
+        <div class="search-wrapper">
+          <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+          <input
+            type="text"
+            class="search-input"
+            placeholder="Buscar por código o asunto..."
+            [ngModel]="searchTerm()"
+            (ngModelChange)="searchTerm.set($event)"
+            (keyup.enter)="applyFilters()"
+          />
+        </div>
+        <button class="btn-toggle-filters" (click)="toggleFilters()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+          </svg>
+          {{ showFilters() ? 'Ocultar' : 'Más' }} Filtros
+        </button>
+      </div>
+
+      <!-- Advanced Filters (Collapsible) -->
+      <div class="advanced-filters" *ngIf="showFilters()">
+        <div class="filter-row">
+          <div class="filter-group">
+            <label for="priority-filter">Prioridad</label>
+            <select 
+              id="priority-filter"
+              class="filter-select"
+              [ngModel]="selectedPriority()"
+              (ngModelChange)="selectedPriority.set($event)"
+            >
+              <option value="">Todas</option>
+              <option value="baja">Baja</option>
+              <option value="normal">Normal</option>
+              <option value="alta">Alta</option>
+              <option value="urgente">Urgente</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="type-filter">Tipo de Documento</label>
+            <select 
+              id="type-filter"
+              class="filter-select"
+              [ngModel]="selectedDocumentType()"
+              (ngModelChange)="selectedDocumentType.set($event ? +$event : null)"
+            >
+              <option [value]="null">Todos</option>
+              <option *ngFor="let type of documentTypes()" [value]="type.id">
+                {{ type.nombre }}
+              </option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="date-from">Desde</label>
+            <input
+              type="date"
+              id="date-from"
+              class="filter-input"
+              [ngModel]="dateFrom()"
+              (ngModelChange)="dateFrom.set($event)"
+            />
+          </div>
+
+          <div class="filter-group">
+            <label for="date-to">Hasta</label>
+            <input
+              type="date"
+              id="date-to"
+              class="filter-input"
+              [ngModel]="dateTo()"
+              (ngModelChange)="dateTo.set($event)"
+            />
+          </div>
+        </div>
+
+        <div class="filter-actions">
+          <button class="btn-filter-apply" (click)="applyFilters()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            Aplicar Filtros
+          </button>
+          <button class="btn-filter-clear" (click)="clearFilters()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+            Limpiar
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Loading -->
+    <div *ngIf="loading()" class="loading-state">
+      <div class="spinner"></div>
+      <p>Cargando documentos archivados...</p>
+    </div>
+
+    <!-- Documents Table -->
+    <div *ngIf="!loading()" class="documents-section">
+      <div *ngIf="documents().length === 0" class="empty-state">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
+        </svg>
+        <p>No hay documentos archivados</p>
+      </div>
+
+      <div *ngIf="documents().length > 0" class="table-container">
+        <table class="documents-table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Asunto</th>
+              <th>Tipo</th>
+              <th>Remitente</th>
+              <th>Prioridad</th>
+              <th>Fecha Archivado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let doc of documents()">
+              <td>
+                <span class="tracking-code">{{ doc.trackingCode }}</span>
+              </td>
+              <td>
+                <span class="asunto">{{ doc.asunto }}</span>
+              </td>
+              <td>{{ doc.documentType?.nombre || 'Sin clasificar' }}</td>
+              <td>{{ doc.sender.nombreCompleto || doc.sender.email || 'Sin datos' }}</td>
+              <td>
+                <span class="badge badge-priority" [ngClass]="{
+                  'priority-baja': doc.prioridad === 'baja',
+                  'priority-normal': doc.prioridad === 'normal',
+                  'priority-alta': doc.prioridad === 'alta',
+                  'priority-urgente': doc.prioridad === 'urgente'
+                }">
+                  {{ doc.prioridad | titlecase }}
+                </span>
+              </td>
+              <td>{{ formatDate(doc.updated_at) }}</td>
+              <td>
+                <div class="action-buttons">
+                  <button class="btn-action btn-view" (click)="viewDocument(doc)" title="Ver detalles">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                    </svg>
+                  </button>
+                  <button class="btn-action btn-unarchive" (click)="unarchiveDocument(doc)" title="Desarchivar">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Detalles -->
+<app-document-details
+  *ngIf="showDetailsModal()"
+  [documentId]="selectedDocumentId()"
+  (close)="closeModals()"
+/>

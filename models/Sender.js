@@ -7,32 +7,37 @@ const Sender = sequelize.define('Sender', {
     primaryKey: true,
     autoIncrement: true
   },
+  tipoPersona: {
+    type: DataTypes.ENUM('natural', 'juridica'),
+    allowNull: false,
+    defaultValue: 'natural',
+    field: 'tipo_persona'
+  },
   nombreCompleto: {
     type: DataTypes.STRING(150),
-    allowNull: false,
+    allowNull: true,
     field: 'nombre_completo'
   },
   tipoDocumento: {
     type: DataTypes.ENUM('DNI', 'RUC', 'PASAPORTE', 'CARNET_EXTRANJERIA'),
-    allowNull: false,
+    allowNull: true,
     field: 'tipo_documento'
   },
   numeroDocumento: {
     type: DataTypes.STRING(20),
-    allowNull: false,
-    unique: true,
+    allowNull: true,
     field: 'numero_documento'
   },
   email: {
     type: DataTypes.STRING(100),
-    allowNull: true,
+    allowNull: false,
     validate: {
       isEmail: true
     }
   },
   telefono: {
     type: DataTypes.STRING(20),
-    allowNull: true
+    allowNull: false
   },
   direccion: {
     type: DataTypes.TEXT,

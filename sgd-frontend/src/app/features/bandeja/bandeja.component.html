@@ -24,6 +24,18 @@
 
   <!-- Stats Cards -->
   <div class="stats-section">
+    <div class="stat-card stat-total">
+      <div class="stat-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+      </div>
+      <div class="stat-content">
+        <span class="stat-label">Total</span>
+        <span class="stat-value">{{ stats().total }}</span>
+      </div>
+    </div>
+
     <div class="stat-card stat-pendientes">
       <div class="stat-icon">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
@@ -79,6 +91,14 @@
     <div class="tabs-container">
       <button
         class="tab-button"
+        [class.active]="activeTab() === 'todos'"
+        (click)="setActiveTab('todos')"
+      >
+        Todos
+        <span class="tab-badge badge-gray">{{ stats().total }}</span>
+      </button>
+      <button
+        class="tab-button"
         [class.active]="activeTab() === 'pendientes'"
         (click)="setActiveTab('pendientes')"
       >
@@ -111,15 +131,103 @@
       </button>
     </div>
 
-    <!-- Search -->
-    <div class="search-section">
-      <input
-        type="text"
-        class="search-input"
-        placeholder="Buscar por código, asunto o remitente..."
-        [ngModel]="searchTerm()"
-        (ngModelChange)="searchTerm.set($event)"
-      />
+    <!-- Filters Section -->
+    <div class="filters-section">
+      <div class="filters-header">
+        <div class="search-wrapper">
+          <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <circle cx="11" cy="11" r="8"></circle>
+            <path d="m21 21-4.35-4.35"></path>
+          </svg>
+          <input
+            type="text"
+            class="search-input"
+            placeholder="Buscar por código, asunto o remitente..."
+            [ngModel]="searchTerm()"
+            (ngModelChange)="searchTerm.set($event)"
+            (keyup.enter)="applyFilters()"
+          />
+        </div>
+        <button class="btn-toggle-filters" (click)="toggleFilters()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+          </svg>
+          {{ showFilters() ? 'Ocultar' : 'Más' }} Filtros
+        </button>
+      </div>
+
+      <!-- Advanced Filters (Collapsible) -->
+      <div class="advanced-filters" *ngIf="showFilters()">
+        <div class="filter-row">
+          <div class="filter-group">
+            <label for="priority-filter">Prioridad</label>
+            <select 
+              id="priority-filter"
+              class="filter-select"
+              [ngModel]="selectedPriority()"
+              (ngModelChange)="selectedPriority.set($event)"
+            >
+              <option value="">Todas</option>
+              <option value="baja">Baja</option>
+              <option value="normal">Normal</option>
+              <option value="alta">Alta</option>
+              <option value="urgente">Urgente</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="type-filter">Tipo de Documento</label>
+            <select 
+              id="type-filter"
+              class="filter-select"
+              [ngModel]="selectedDocumentType()"
+              (ngModelChange)="selectedDocumentType.set($event ? +$event : null)"
+            >
+              <option [value]="null">Todos</option>
+              <option *ngFor="let type of documentTypes()" [value]="type.id">
+                {{ type.nombre }}
+              </option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="date-from">Desde</label>
+            <input
+              type="date"
+              id="date-from"
+              class="filter-input"
+              [ngModel]="dateFrom()"
+              (ngModelChange)="dateFrom.set($event)"
+            />
+          </div>
+
+          <div class="filter-group">
+            <label for="date-to">Hasta</label>
+            <input
+              type="date"
+              id="date-to"
+              class="filter-input"
+              [ngModel]="dateTo()"
+              (ngModelChange)="dateTo.set($event)"
+            />
+          </div>
+        </div>
+
+        <div class="filter-actions">
+          <button class="btn-filter-apply" (click)="applyFilters()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+            Aplicar Filtros
+          </button>
+          <button class="btn-filter-clear" (click)="clearFilters()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+            Limpiar
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Loading -->
@@ -155,8 +263,8 @@
             <tr *ngFor="let doc of filteredDocuments()">
               <td class="code">{{ doc.trackingCode }}</td>
               <td class="subject">{{ doc.asunto }}</td>
-              <td>{{ doc.documentType.nombre }}</td>
-              <td>{{ doc.sender.nombreCompleto }}</td>
+              <td>{{ doc.documentType?.nombre || 'Sin clasificar' }}</td>
+              <td>{{ doc.sender.nombreCompleto || doc.sender.email || 'Sin datos' }}</td>
               <td>
                 <span class="priority-badge" [ngClass]="{
                   'priority-urgent': doc.prioridad === 'urgente',
@@ -164,16 +272,16 @@
                   'priority-normal': doc.prioridad === 'normal',
                   'priority-low': doc.prioridad === 'baja'
                 }">
-                  {{ doc.prioridad }}
+                  {{ doc.prioridad || 'normal' }}
                 </span>
               </td>
               <td>
                 <span 
                   class="status-badge"
-                  [style.background-color]="doc.status.color + '20'"
-                  [style.color]="doc.status.color"
+                  [style.background-color]="(doc.status.color || '#999') + '20'"
+                  [style.color]="doc.status.color || '#999'"
                 >
-                  {{ doc.status.nombre }}
+                  {{ doc.status.nombre || 'Sin estado' }}
                 </span>
               </td>
               <td class="date">{{ formatDate(doc.created_at) }}</td>

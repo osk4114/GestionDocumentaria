@@ -24,7 +24,7 @@ const DocumentMovement = sequelize.define('DocumentMovement', {
   },
   userId: {
     type: DataTypes.INTEGER,
-    allowNull: false,
+    allowNull: true, // Permitir NULL para acciones automáticas o públicas (Mesa de Partes Virtual)
     field: 'user_id'
   },
   accion: {

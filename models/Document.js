@@ -28,7 +28,7 @@ const Document = sequelize.define('Document', {
   },
   docTypeId: {
     type: DataTypes.INTEGER,
-    allowNull: false,
+    allowNull: true, // Permitir NULL para documentos sin clasificar desde mesa de partes
     field: 'doc_type_id'
   },
   statusId: {
@@ -55,6 +55,11 @@ const Document = sequelize.define('Document', {
     type: DataTypes.DATEONLY,
     allowNull: true,
     field: 'fecha_limite'
+  },
+  fechaRecepcion: {
+    type: DataTypes.DATE,
+    allowNull: true,
+    field: 'fecha_recepcion'
   }
 }, {
   tableName: 'documents',

@@ -115,7 +115,7 @@ import { RoleService, Role } from '../../../core/services/role.service';
       </div>
     }
   `,
-  styles: [`@import '../areas/areas-list.component.scss';`]
+  styles: [`@use '../areas/areas-list.component.scss';`]
 })
 export class RolesListComponent implements OnInit {
   roles = signal<Role[]>([]);

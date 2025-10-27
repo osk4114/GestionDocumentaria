@@ -11,50 +11,36 @@ import { DocumentService } from '../../core/services/document.service';
   styleUrl: './submit-document.component.scss'
 })
 export class SubmitDocumentComponent {
-  senderForm: FormGroup;
   documentForm: FormGroup;
   
   loading = signal(false);
   submitSuccess = signal(false);
   trackingCode = signal('');
   errorMessage = signal('');
-  
-  step = signal<'sender' | 'document'>('sender');
+  selectedFiles = signal<File[]>([]);
 
   documentTypes = signal<any[]>([]);
-  
-  tiposDocumento = [
-    { value: 'DNI', label: 'DNI' },
-    { value: 'RUC', label: 'RUC' },
-    { value: 'PASAPORTE', label: 'Pasaporte' },
-    { value: 'CARNET_EXTRANJERIA', label: 'Carnet de Extranjería' }
-  ];
-
-  prioridades = [
-    { value: 'baja', label: 'Baja' },
-    { value: 'normal', label: 'Normal' },
-    { value: 'alta', label: 'Alta' },
-    { value: 'urgente', label: 'Urgente' }
-  ];
 
   constructor(
     private fb: FormBuilder,
     private documentService: DocumentService
   ) {
-    this.senderForm = this.fb.group({
-      nombreCompleto: ['', [Validators.required, Validators.minLength(3)]],
-      tipoDocumento: ['DNI', Validators.required],
-      numeroDocumento: ['', [Validators.required, Validators.minLength(8)]],
-      email: ['', [Validators.email]],
-      telefono: [''],
-      direccion: ['']
-    });
-
     this.documentForm = this.fb.group({
-      documentTypeId: ['', Validators.required],
+      // Información del solicitante
+      tipoPersona: ['natural', Validators.required],
+      email: ['', [Validators.required, Validators.email]],
+      telefono: ['', Validators.required],
+      
+      // Descripción de la solicitud
       asunto: ['', [Validators.required, Validators.minLength(5)]],
-      descripcion: [''],
-      prioridad: ['normal', Validators.required]
+      descripcion: ['', Validators.maxLength(500)],
+      
+      // Documentos
+      linkDescarga: [''],
+      
+      // Checkboxes
+      aceptoPolitica: [false, Validators.requiredTrue],
+      aceptoDeclaracion: [false, Validators.requiredTrue]
     });
 
     this.loadDocumentTypes();
@@ -65,52 +51,69 @@ export class SubmitDocumentComponent {
       next: (response) => {
         if (response.success) {
           this.documentTypes.set(response.data);
-        } else {
-          // Fallback a tipos por defecto si falla
-          this.documentTypes.set([
-            { id: 1, nombre: 'Oficio' },
-            { id: 2, nombre: 'Solicitud' },
-            { id: 3, nombre: 'Memorándum' },
-            { id: 4, nombre: 'Informe' },
-            { id: 5, nombre: 'Carta' }
-          ]);
         }
       },
       error: () => {
         // Fallback en caso de error
         this.documentTypes.set([
-          { id: 1, nombre: 'Oficio' },
-          { id: 2, nombre: 'Solicitud' },
-          { id: 3, nombre: 'Memorándum' },
-          { id: 4, nombre: 'Informe' },
-          { id: 5, nombre: 'Carta' }
+          { id: 1, nombre: 'Solicitud' },
+          { id: 2, nombre: 'Oficio' },
+          { id: 3, nombre: 'Carta' }
         ]);
       }
     });
   }
 
-  nextStep() {
-    if (this.senderForm.valid) {
-      this.step.set('document');
+  onFileSelected(event: any) {
+    const files = Array.from(event.target.files) as File[];
+    const currentFiles = this.selectedFiles();
+    
+    // Calcular tamaño total
+    const totalSize = [...currentFiles, ...files].reduce((acc, file) => acc + file.size, 0);
+    const maxSize = 10 * 1024 * 1024; // 10 MB
+    
+    if (totalSize > maxSize) {
+      this.errorMessage.set('El tamaño total de los archivos no debe superar 10 MB');
+      return;
     }
+    
+    this.selectedFiles.set([...currentFiles, ...files]);
+    this.errorMessage.set('');
   }
 
-  previousStep() {
-    this.step.set('sender');
+  removeFile(fileToRemove: File) {
+    this.selectedFiles.set(this.selectedFiles().filter(file => file !== fileToRemove));
+  }
+
+  formatFileSize(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
   }
 
   submitDocument() {
-    if (this.senderForm.invalid || this.documentForm.invalid) {
-      this.errorMessage.set('Por favor complete todos los campos requeridos');
+    if (this.documentForm.invalid) {
+      this.errorMessage.set('Por favor complete todos los campos requeridos y acepte las condiciones');
+      Object.keys(this.documentForm.controls).forEach(key => {
+        this.documentForm.get(key)?.markAsTouched();
+      });
       return;
     }
 
     this.loading.set(true);
     this.errorMessage.set('');
 
-    const submissionData = {
-      sender: this.senderForm.value,
-      document: this.documentForm.value
+    // Preparar datos para envío según la nueva interfaz DocumentSubmission
+    const submissionData: any = {
+      tipoPersona: this.documentForm.get('tipoPersona')?.value,
+      email: this.documentForm.get('email')?.value,
+      telefono: this.documentForm.get('telefono')?.value,
+      asunto: this.documentForm.get('asunto')?.value,
+      descripcion: this.documentForm.get('descripcion')?.value || '',
+      linkDescarga: this.documentForm.get('linkDescarga')?.value || '',
+      prioridad: 'normal'
     };
 
     this.documentService.submitDocument(submissionData).subscribe({
@@ -131,9 +134,12 @@ export class SubmitDocumentComponent {
   }
 
   resetForm() {
-    this.senderForm.reset({ tipoDocumento: 'DNI', prioridad: 'normal' });
-    this.documentForm.reset({ prioridad: 'normal' });
-    this.step.set('sender');
+    this.documentForm.reset({
+      tipoPersona: 'natural',
+      aceptoPolitica: false,
+      aceptoDeclaracion: false
+    });
+    this.selectedFiles.set([]);
     this.submitSuccess.set(false);
     this.trackingCode.set('');
     this.errorMessage.set('');

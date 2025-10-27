@@ -4,22 +4,23 @@ import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
 
 export interface Sender {
-  nombreCompleto: string;
-  tipoDocumento: 'DNI' | 'RUC' | 'PASAPORTE' | 'CARNET_EXTRANJERIA';
-  numeroDocumento: string;
-  email?: string;
-  telefono?: string;
+  tipoPersona?: 'natural' | 'juridica';
+  nombreCompleto?: string;
+  tipoDocumento?: 'DNI' | 'RUC' | 'PASAPORTE' | 'CARNET_EXTRANJERIA';
+  numeroDocumento?: string;
+  email: string;
+  telefono: string;
   direccion?: string;
 }
 
 export interface DocumentSubmission {
-  sender: Sender;
-  document: {
-    documentTypeId: number;
-    asunto: string;
-    descripcion?: string;
-    prioridad: 'baja' | 'normal' | 'alta' | 'urgente';
-  };
+  tipoPersona: 'natural' | 'juridica';
+  email: string;
+  telefono: string;
+  asunto: string;
+  descripcion?: string;
+  linkDescarga?: string;
+  prioridad?: 'baja' | 'normal' | 'alta' | 'urgente';
 }
 
 export interface DocumentResponse {
@@ -70,8 +71,12 @@ export interface TrackingResponse {
 export interface DocumentFilters {
   area?: number;
   status?: number;
+  priority?: string;
+  documentType?: number;
   archived?: boolean;
   search?: string;
+  dateFrom?: string;
+  dateTo?: string;
   limit?: number;
   offset?: number;
 }
@@ -148,20 +153,43 @@ export class DocumentService {
   }
 
   /**
-   * Obtiene documentos con filtros (para bandeja por área)
+   * Obtiene documentos con filtros avanzados (para bandeja por área)
    */
   getDocumentsWithFilters(filters: DocumentFilters): Observable<ApiResponse<any[]>> {
     let params: string[] = [];
     
     if (filters.area !== undefined) params.push(`area=${filters.area}`);
     if (filters.status !== undefined) params.push(`status=${filters.status}`);
+    if (filters.priority) params.push(`priority=${filters.priority}`);
+    if (filters.documentType !== undefined) params.push(`documentType=${filters.documentType}`);
     if (filters.archived !== undefined) params.push(`archived=${filters.archived}`);
     if (filters.search) params.push(`search=${encodeURIComponent(filters.search)}`);
+    if (filters.dateFrom) params.push(`dateFrom=${filters.dateFrom}`);
+    if (filters.dateTo) params.push(`dateTo=${filters.dateTo}`);
     if (filters.limit) params.push(`limit=${filters.limit}`);
     if (filters.offset) params.push(`offset=${filters.offset}`);
     
     const queryString = params.length > 0 ? `?${params.join('&')}` : '';
     return this.http.get<ApiResponse<any[]>>(`${this.apiUrl}/documents${queryString}`);
+  }
+
+  /**
+   * Obtiene documentos por área con filtros avanzados
+   */
+  getDocumentsByArea(areaId: number, filters?: DocumentFilters): Observable<ApiResponse<any[]>> {
+    let params: string[] = [];
+    
+    if (filters) {
+      if (filters.status !== undefined) params.push(`status=${filters.status}`);
+      if (filters.priority) params.push(`priority=${filters.priority}`);
+      if (filters.documentType !== undefined) params.push(`documentType=${filters.documentType}`);
+      if (filters.search) params.push(`search=${encodeURIComponent(filters.search)}`);
+      if (filters.dateFrom) params.push(`dateFrom=${filters.dateFrom}`);
+      if (filters.dateTo) params.push(`dateTo=${filters.dateTo}`);
+    }
+    
+    const queryString = params.length > 0 ? `?${params.join('&')}` : '';
+    return this.http.get<ApiResponse<any[]>>(`${this.apiUrl}/documents/area/${areaId}${queryString}`);
   }
 
   /**
@@ -174,14 +202,36 @@ export class DocumentService {
   /**
    * Archiva un documento
    */
-  archiveDocument(documentId: number): Observable<ApiResponse<void>> {
-    return this.http.delete<ApiResponse<void>>(`${this.apiUrl}/documents/${documentId}`);
+  archiveDocument(documentId: number, observacion?: string): Observable<ApiResponse<void>> {
+    return this.http.delete<ApiResponse<void>>(`${this.apiUrl}/documents/${documentId}`, {
+      body: { observacion }
+    });
   }
 
   /**
-   * Obtiene documentos archivados por área
+   * Desarchiva un documento (reactivar)
    */
-  getArchivedByArea(areaId: number): Observable<ApiResponse<any[]>> {
-    return this.http.get<ApiResponse<any[]>>(`${this.apiUrl}/documents/area/${areaId}/archived`);
+  unarchiveDocument(documentId: number, observacion?: string): Observable<ApiResponse<void>> {
+    return this.http.post<ApiResponse<void>>(`${this.apiUrl}/documents/${documentId}/unarchive`, {
+      observacion
+    });
+  }
+
+  /**
+   * Obtiene documentos archivados por área con filtros
+   */
+  getArchivedByArea(areaId: number, filters?: DocumentFilters): Observable<ApiResponse<any[]>> {
+    let params: string[] = [];
+    
+    if (filters) {
+      if (filters.search) params.push(`search=${encodeURIComponent(filters.search)}`);
+      if (filters.priority) params.push(`priority=${filters.priority}`);
+      if (filters.documentType !== undefined) params.push(`documentType=${filters.documentType}`);
+      if (filters.dateFrom) params.push(`dateFrom=${filters.dateFrom}`);
+      if (filters.dateTo) params.push(`dateTo=${filters.dateTo}`);
+    }
+    
+    const queryString = params.length > 0 ? `?${params.join('&')}` : '';
+    return this.http.get<ApiResponse<any[]>>(`${this.apiUrl}/documents/area/${areaId}/archived${queryString}`);
   }
 }

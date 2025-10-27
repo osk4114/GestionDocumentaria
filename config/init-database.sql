@@ -2,6 +2,14 @@
 -- Script de inicialización de la base de datos SGD
 -- Sistema de Gestión Documentaria
 -- Ejecutar este script en phpMyAdmin o MySQL CLI
+-- 
+-- VERSIÓN: 2.0
+-- ÚLTIMA ACTUALIZACIÓN: 27 de Octubre 2025
+-- 
+-- CAMBIOS EN ESTA VERSIÓN:
+-- - Tabla senders: Agregado tipo_persona, email/telefono obligatorios
+-- - Tabla documents: doc_type_id permite NULL, agregado fecha_recepcion
+-- - Tabla document_movements: user_id permite NULL
 -- ============================================================
 
 -- Crear la base de datos
@@ -101,17 +109,20 @@ CREATE TABLE IF NOT EXISTS login_attempts (
 -- ============================================================
 -- Tabla: senders
 -- Descripción: Remitentes de documentos (ciudadanos, empresas)
+-- Actualizado: 2025-10-27 - Nuevo diseño Mesa de Partes gob.pe
 -- ============================================================
 CREATE TABLE IF NOT EXISTS senders (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    nombre_completo VARCHAR(150) NOT NULL,
-    tipo_documento ENUM('DNI', 'RUC', 'PASAPORTE', 'CARNET_EXTRANJERIA') NOT NULL,
-    numero_documento VARCHAR(20) NOT NULL UNIQUE,
-    email VARCHAR(100),
-    telefono VARCHAR(20),
+    tipo_persona ENUM('natural', 'juridica') NOT NULL DEFAULT 'natural' COMMENT 'Tipo de persona (natural o jurídica)',
+    nombre_completo VARCHAR(150) COMMENT 'Nombre completo (opcional para retrocompatibilidad)',
+    tipo_documento ENUM('DNI', 'RUC', 'PASAPORTE', 'CARNET_EXTRANJERIA') COMMENT 'Tipo de documento (opcional)',
+    numero_documento VARCHAR(20) COMMENT 'Número de documento (opcional)',
+    email VARCHAR(100) NOT NULL COMMENT 'Email de contacto (OBLIGATORIO)',
+    telefono VARCHAR(20) NOT NULL COMMENT 'Teléfono de contacto (OBLIGATORIO)',
     direccion TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_email_telefono (email, telefono)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
@@ -147,6 +158,7 @@ CREATE TABLE IF NOT EXISTS document_statuses (
 -- ============================================================
 -- Tabla: documents (Tabla Central)
 -- Descripción: Documentos principales del sistema
+-- Actualizado: 2025-10-27 - Permitir NULL en doc_type_id para Mesa de Partes
 -- ============================================================
 CREATE TABLE IF NOT EXISTS documents (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -154,13 +166,14 @@ CREATE TABLE IF NOT EXISTS documents (
     asunto VARCHAR(200) NOT NULL,
     descripcion TEXT,
     sender_id INT NOT NULL,
-    doc_type_id INT NOT NULL,
+    doc_type_id INT COMMENT 'Tipo de documento - NULL permitido para documentos sin clasificar desde mesa de partes',
     status_id INT NOT NULL,
     current_area_id INT,
     current_user_id INT,
     prioridad ENUM('baja', 'normal', 'alta', 'urgente') DEFAULT 'normal',
     fecha_limite DATE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    fecha_recepcion TIMESTAMP NULL COMMENT 'Fecha en que fue recepcionado el documento',
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (sender_id) REFERENCES senders(id) ON DELETE RESTRICT ON UPDATE CASCADE,
     FOREIGN KEY (doc_type_id) REFERENCES document_types(id) ON DELETE RESTRICT ON UPDATE CASCADE,
@@ -178,7 +191,7 @@ CREATE TABLE IF NOT EXISTS document_movements (
     document_id INT NOT NULL,
     from_area_id INT,
     to_area_id INT,
-    user_id INT NOT NULL,
+    user_id INT COMMENT 'Usuario que realiza el movimiento - NULL para acciones automáticas o públicas',
     accion VARCHAR(50) NOT NULL,
     observacion TEXT,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -277,4 +290,31 @@ CREATE INDEX idx_notifications_user ON notifications(user_id, is_read);
 CREATE INDEX idx_attachments_document ON attachments(document_id);
 
 -- ============================================================
-SELECT 'Base de datos SGD creada exitosamente con 12 tablas' AS mensaje;
+-- RESUMEN DE ESTRUCTURA
+-- ============================================================
+-- Total de tablas: 12
+-- - roles (gestión de permisos)
+-- - areas (departamentos de la institución)
+-- - users (usuarios del sistema)
+-- - user_sessions (sesiones JWT)
+-- - login_attempts (seguridad anti fuerza bruta)
+-- - senders (remitentes externos - Mesa de Partes Virtual)
+-- - document_types (tipos de documentos)
+-- - document_statuses (estados del flujo)
+-- - documents (tabla principal de documentos)
+-- - document_movements (trazabilidad completa)
+-- - attachments (archivos adjuntos)
+-- - notifications (notificaciones a usuarios)
+--
+-- Estados disponibles: Pendiente, En Proceso, Derivado, Atendido, Observado, Archivado
+-- Áreas predefinidas: Mesa de Partes, Dirección General, RRHH, Logística, Asesoría Legal
+-- Roles predefinidos: Administrador, Jefe de Área, Funcionario, Mesa de Partes
+--
+-- IMPORTANTE:
+-- - doc_type_id en documents permite NULL (para documentos sin clasificar)
+-- - user_id en document_movements permite NULL (para acciones públicas/automáticas)
+-- - email y telefono en senders son OBLIGATORIOS (Mesa de Partes Virtual)
+-- - nombreCompleto en senders es OPCIONAL (identificación por email/telefono)
+-- ============================================================
+
+SELECT 'Base de datos SGD v2.0 creada exitosamente - 12 tablas configuradas' AS mensaje;

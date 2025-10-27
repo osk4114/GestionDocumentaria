@@ -1,233 +1,203 @@
 <div class="submit-document-container">
   <div class="content-wrapper">
-    <!-- Header -->
-    <div class="header">
-      <h1 class="title">Mesa de Partes Virtual</h1>
-      <p class="subtitle">Sistema de Gestión Documentaria - Presentación de Documentos</p>
-    </div>
-
-    <!-- Formulario Principal -->
-    <div class="form-card">
-      
-      @if (submitSuccess()) {
-        <!-- Mensaje de Éxito -->
-        <div class="success-message">
-          <div class="success-icon">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+    
+    @if (submitSuccess()) {
+      <!-- Mensaje de Éxito -->
+      <div class="success-message">
+        <div class="success-icon">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+        <div class="success-content">
+          <h3>¡Documento registrado exitosamente!</h3>
+          <div class="tracking-info">
+            <p class="tracking-code">Código de seguimiento: <strong>{{ trackingCode() }}</strong></p>
+            <p class="tracking-note">Guarde este código para consultar el estado de su trámite.</p>
           </div>
-          <div class="success-content">
-            <h3>¡Documento registrado exitosamente!</h3>
-            <div class="tracking-info">
-              <p class="tracking-code">Código de seguimiento: <strong>{{ trackingCode() }}</strong></p>
-              <p class="tracking-note">Guarde este código para consultar el estado de su trámite.</p>
-            </div>
-            <div class="success-actions">
-              <button (click)="resetForm()" class="btn btn-primary">
-                Registrar otro documento
-              </button>
-              <a [href]="'/track?code=' + trackingCode()" class="btn btn-secondary">
-                Consultar estado
-              </a>
-            </div>
+          <div class="success-actions">
+            <button (click)="resetForm()" class="btn btn-primary">
+              Registrar otro documento
+            </button>
+            <a [href]="'/track?code=' + trackingCode()" class="btn btn-secondary">
+              Consultar estado
+            </a>
           </div>
         </div>
-      } @else {
-        <!-- Indicador de Pasos -->
-        <div class="steps-indicator">
-          <div class="step" [class.active]="step() === 'sender'" [class.completed]="step() === 'document'">
-            <div class="step-number">1</div>
-            <div class="step-label">Datos del Remitente</div>
-          </div>
-          <div class="step-divider"></div>
-          <div class="step" [class.active]="step() === 'document'">
-            <div class="step-number">2</div>
-            <div class="step-label">Datos del Documento</div>
-          </div>
+      </div>
+    } @else {
+      <!-- Header -->
+      <div class="header">
+        <h1 class="title">Mesa de partes</h1>
+        <div class="info-box">
+          <p>¡Hola!</p>
+          <p>Puedes enviar tus documentos las 24 horas del día, los 7 días de la semana. Ten en cuenta que el plazo de atención comenzará a ser contado a partir del siguiente día hábil en que lo enviaste, dentro de nuestro horario de atención regular.</p>
+          <p>Para más información, puedes visitar nuestra página web <a href="https://www.gob.pe/drtcp" target="_blank" class="link">www.gob.pe/drtcp</a>.</p>
+          <p class="italic">¡Muy pronto, nuevos servicios digitales!</p>
         </div>
+      </div>
 
-        <!-- Mensaje de Error -->
-        @if (errorMessage()) {
-          <div class="error-message">
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>{{ errorMessage() }}</span>
-          </div>
-        }
-
-        <!-- Paso 1: Datos del Remitente -->
-        @if (step() === 'sender') {
-          <form [formGroup]="senderForm" class="form-section">
-            <h2 class="section-title">Datos del Remitente</h2>
-            
-            <div class="form-row">
-              <div class="form-group full">
-                <label for="nombreCompleto">Nombre Completo *</label>
-                <input 
-                  id="nombreCompleto"
-                  type="text" 
-                  formControlName="nombreCompleto"
-                  placeholder="Ingrese su nombre completo">
-                @if (senderForm.get('nombreCompleto')?.invalid && senderForm.get('nombreCompleto')?.touched) {
-                  <span class="error-text">El nombre es requerido (mínimo 3 caracteres)</span>
-                }
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label for="tipoDocumento">Tipo de Documento *</label>
-                <select id="tipoDocumento" formControlName="tipoDocumento">
-                  @for (tipo of tiposDocumento; track tipo.value) {
-                    <option [value]="tipo.value">{{ tipo.label }}</option>
-                  }
-                </select>
-              </div>
-
-              <div class="form-group">
-                <label for="numeroDocumento">Número de Documento *</label>
-                <input 
-                  id="numeroDocumento"
-                  type="text" 
-                  formControlName="numeroDocumento"
-                  placeholder="Ej: 12345678">
-                @if (senderForm.get('numeroDocumento')?.invalid && senderForm.get('numeroDocumento')?.touched) {
-                  <span class="error-text">Número de documento inválido</span>
-                }
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group">
-                <label for="email">Correo Electrónico</label>
-                <input 
-                  id="email"
-                  type="email" 
-                  formControlName="email"
-                  placeholder="correo@ejemplo.com">
-                @if (senderForm.get('email')?.invalid && senderForm.get('email')?.touched) {
-                  <span class="error-text">Correo electrónico inválido</span>
-                }
-              </div>
-
-              <div class="form-group">
-                <label for="telefono">Teléfono</label>
-                <input 
-                  id="telefono"
-                  type="tel" 
-                  formControlName="telefono"
-                  placeholder="999 999 999">
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group full">
-                <label for="direccion">Dirección</label>
-                <textarea 
-                  id="direccion"
-                  formControlName="direccion"
-                  rows="2"
-                  placeholder="Ingrese su dirección"></textarea>
-              </div>
-            </div>
-
-            <div class="form-actions">
-              <button 
-                type="button" 
-                (click)="nextStep()" 
-                class="btn btn-primary"
-                [disabled]="senderForm.invalid">
-                Siguiente →
-              </button>
-            </div>
-          </form>
-        }
-
-        <!-- Paso 2: Datos del Documento -->
-        @if (step() === 'document') {
-          <form [formGroup]="documentForm" class="form-section">
-            <h2 class="section-title">Datos del Documento</h2>
-            
-            <div class="form-row">
-              <div class="form-group">
-                <label for="documentTypeId">Tipo de Documento *</label>
-                <select id="documentTypeId" formControlName="documentTypeId">
-                  <option value="">Seleccione un tipo</option>
-                  @for (type of documentTypes(); track type.id) {
-                    <option [value]="type.id">{{ type.nombre }}</option>
-                  }
-                </select>
-                @if (documentForm.get('documentTypeId')?.invalid && documentForm.get('documentTypeId')?.touched) {
-                  <span class="error-text">Seleccione un tipo de documento</span>
-                }
-              </div>
-
-              <div class="form-group">
-                <label for="prioridad">Prioridad *</label>
-                <select id="prioridad" formControlName="prioridad">
-                  @for (prioridad of prioridades; track prioridad.value) {
-                    <option [value]="prioridad.value">{{ prioridad.label }}</option>
-                  }
-                </select>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group full">
-                <label for="asunto">Asunto *</label>
-                <input 
-                  id="asunto"
-                  type="text" 
-                  formControlName="asunto"
-                  placeholder="Ej: Solicitud de certificado de estudios">
-                @if (documentForm.get('asunto')?.invalid && documentForm.get('asunto')?.touched) {
-                  <span class="error-text">El asunto es requerido (mínimo 5 caracteres)</span>
-                }
-              </div>
-            </div>
-
-            <div class="form-row">
-              <div class="form-group full">
-                <label for="descripcion">Descripción</label>
-                <textarea 
-                  id="descripcion"
-                  formControlName="descripcion"
-                  rows="4"
-                  placeholder="Detalle su solicitud o trámite..."></textarea>
-              </div>
-            </div>
-
-            <div class="form-actions">
-              <button 
-                type="button" 
-                (click)="previousStep()" 
-                class="btn btn-secondary">
-                ← Anterior
-              </button>
-              <button 
-                type="button" 
-                (click)="submitDocument()" 
-                class="btn btn-primary"
-                [disabled]="documentForm.invalid || loading()">
-                @if (loading()) {
-                  <span class="loading-spinner"></span>
-                  Enviando...
-                } @else {
-                  Registrar Documento
-                }
-              </button>
-            </div>
-          </form>
-        }
+      <!-- Mensaje de Error -->
+      @if (errorMessage()) {
+        <div class="error-message">
+          <svg fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>{{ errorMessage() }}</span>
+        </div>
       }
-    </div>
 
-    <!-- Footer Info -->
-    <div class="footer-info">
-      <p>Los campos marcados con (*) son obligatorios</p>
-      <p>El código de seguimiento le permitirá consultar el estado de su trámite en cualquier momento</p>
-    </div>
+      <!-- Formulario Único -->
+      <form [formGroup]="documentForm" class="form-card">
+        
+        <!-- Información del Solicitante -->
+        <div class="form-section">
+          <h2 class="section-title">Información del solicitante</h2>
+          
+          <div class="form-group">
+            <label class="step-label">1. Persona natural o jurídica</label>
+            <div class="radio-group">
+              <label class="radio-label">
+                <input type="radio" formControlName="tipoPersona" value="natural">
+                <span>Persona natural</span>
+              </label>
+              <label class="radio-label">
+                <input type="radio" formControlName="tipoPersona" value="juridica">
+                <span>Persona jurídica</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="email" class="step-label">2. Correo electrónico de contacto</label>
+            <input 
+              id="email"
+              type="email" 
+              formControlName="email"
+              placeholder="">
+            @if (documentForm.get('email')?.invalid && documentForm.get('email')?.touched) {
+              <span class="error-text">Correo electrónico inválido</span>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="telefono" class="step-label">3. Teléfono o celular de contacto</label>
+            <input 
+              id="telefono"
+              type="tel" 
+              formControlName="telefono"
+              placeholder="">
+          </div>
+        </div>
+
+        <!-- Descripción de la Solicitud -->
+        <div class="form-section">
+          <h2 class="section-title">Descripción de la solicitud o trámite</h2>
+          
+          <div class="form-group">
+            <label for="asunto" class="step-label">4. Asunto de la solicitud o trámite</label>
+            <input 
+              id="asunto"
+              type="text" 
+              formControlName="asunto"
+              placeholder="">
+            @if (documentForm.get('asunto')?.invalid && documentForm.get('asunto')?.touched) {
+              <span class="error-text">El asunto es requerido</span>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="descripcion" class="step-label">5. Descripción de la solicitud o trámite</label>
+            <textarea 
+              id="descripcion"
+              formControlName="descripcion"
+              rows="4"
+              maxlength="500"
+              placeholder=""></textarea>
+            <div class="char-counter">{{ documentForm.get('descripcion')?.value?.length || 0 }}/500</div>
+          </div>
+        </div>
+
+        <!-- Documentos de Sustento -->
+        <div class="form-section">
+          <h2 class="section-title">Documentos de sustento (opcional)</h2>
+          
+          <div class="form-group">
+            <label class="step-label">6. Adjunta los documentos que sustenten tu solicitud <span class="optional">(Opcional)</span></label>
+            <p class="help-text">Solo se aceptan formatos jpg, jpeg, png, tif, bmp, pdf, doc, docx, txt, xls, xlsx, xlsm, csv, rar, zip, mp3, wma, mp4 y wmv.</p>
+            <p class="help-text weight-bold">Peso total máximo: 10 MB.</p>
+            
+            <div class="file-upload-area" (click)="fileInput.click()">
+              <div class="file-upload-icon">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <p><a class="link">Selecciona los archivos</a> o arrástralos aquí</p>
+            </div>
+            <input 
+              #fileInput
+              type="file" 
+              multiple
+              accept=".jpg,.jpeg,.png,.tif,.bmp,.pdf,.doc,.docx,.txt,.xls,.xlsx,.xlsm,.csv,.rar,.zip,.mp3,.wma,.mp4,.wmv"
+              (change)="onFileSelected($event)"
+              style="display: none;">
+            
+            @if (selectedFiles().length > 0) {
+              <div class="file-list">
+                @for (file of selectedFiles(); track file.name) {
+                  <div class="file-item">
+                    <span>{{ file.name }} ({{ formatFileSize(file.size) }})</span>
+                    <button type="button" (click)="removeFile(file)" class="remove-btn">✕</button>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+
+          <div class="form-group">
+            <label for="linkDescarga" class="step-label">7. Si tus archivos pesan más de 10 MB, puedes dejamos un link de descarga <span class="optional">(Opcional)</span></label>
+            <input 
+              id="linkDescarga"
+              type="url" 
+              formControlName="linkDescarga"
+              placeholder="">
+          </div>
+        </div>
+
+        <!-- Checkboxes de Aceptación -->
+        <div class="form-section">
+          <div class="checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" formControlName="aceptoPolitica">
+              <span>Acepto la <a href="#" class="link">política de privacidad</a></span>
+            </label>
+          </div>
+
+          <div class="checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" formControlName="aceptoDeclaracion">
+              <span>Acepto la <a href="#" class="link">declaración jurada de veracidad de la información</a></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Botón de Enviar -->
+        <div class="form-actions">
+          <button 
+            type="button" 
+            (click)="submitDocument()" 
+            class="btn btn-primary btn-large"
+            [disabled]="documentForm.invalid || loading()">
+            @if (loading()) {
+              <span class="loading-spinner"></span>
+              Enviando...
+            } @else {
+              Enviar
+            }
+          </button>
+        </div>
+      </form>
+    }
   </div>
 </div>

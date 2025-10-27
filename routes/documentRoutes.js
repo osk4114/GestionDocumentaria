@@ -102,9 +102,16 @@ router.put('/:id', authMiddleware, documentController.updateDocument);
 /**
  * @route   DELETE /api/documents/:id
  * @desc    Archivar documento
- * @access  Private (Admin only)
+ * @access  Private (Área actual o Admin)
  */
-router.delete('/:id', authMiddleware, isAdmin, documentController.deleteDocument);
+router.delete('/:id', authMiddleware, documentController.deleteDocument);
+
+/**
+ * @route   POST /api/documents/:id/unarchive
+ * @desc    Desarchivar documento (reactivar)
+ * @access  Private (Área actual o Admin)
+ */
+router.post('/:id/unarchive', authMiddleware, documentController.unarchiveDocument);
 
 /**
  * @route   POST /api/documents/:id/derive

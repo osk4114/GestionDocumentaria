@@ -5,7 +5,6 @@ import { Router } from '@angular/router';
 import { DocumentService, DocumentFilters } from '../../core/services/document.service';
 import { AuthService } from '../../core/services/auth.service';
 import { DocumentTypeService } from '../../core/services/document-type.service';
-import { DocumentDeriveComponent } from '../documents/document-derive/document-derive.component';
 import { DocumentDetailsComponent } from '../documents/document-details/document-details.component';
 
 interface Document {
@@ -14,6 +13,7 @@ interface Document {
   asunto: string;
   prioridad: string;
   created_at: string;
+  updated_at: string;
   sender: {
     nombreCompleto?: string;
     email?: string;
@@ -39,18 +39,17 @@ interface DocumentType {
 }
 
 @Component({
-  selector: 'app-bandeja',
+  selector: 'app-archivados',
   standalone: true,
-  imports: [CommonModule, FormsModule, DocumentDeriveComponent, DocumentDetailsComponent],
-  templateUrl: './bandeja.component.html',
-  styleUrl: './bandeja.component.scss'
+  imports: [CommonModule, FormsModule, DocumentDetailsComponent],
+  templateUrl: './archivados.component.html',
+  styleUrl: './archivados.component.scss'
 })
-export class BandejaComponent implements OnInit {
+export class ArchivadosComponent implements OnInit {
   // Signals para estado reactivo
   documents = signal<Document[]>([]);
   documentTypes = signal<DocumentType[]>([]);
   loading = signal<boolean>(true);
-  activeTab = signal<'todos' | 'pendientes' | 'proceso' | 'finalizados' | 'archivados'>('todos');
   
   // Filtros avanzados
   searchTerm = signal<string>('');
@@ -60,11 +59,9 @@ export class BandejaComponent implements OnInit {
   dateTo = signal<string>('');
   showFilters = signal<boolean>(false);
 
-  // Modales
-  showDeriveModal = signal(false);
+  // Modal
   showDetailsModal = signal(false);
   selectedDocumentId = signal<number>(0);
-  selectedDocument = signal<Document | null>(null);
 
   // Computed values
   currentUser = computed(() => this.authService.currentUser());
@@ -72,42 +69,9 @@ export class BandejaComponent implements OnInit {
   
   // Estadísticas
   stats = computed(() => {
-    const docs = this.documents();
     return {
-      total: docs.length,
-      pendientes: docs.filter(d => d.status.id === 1).length,
-      enProceso: docs.filter(d => d.status.id === 2).length,
-      finalizados: docs.filter(d => d.status.id === 3).length,
-      archivados: docs.filter(d => d.status.id === 4).length
+      total: this.documents().length
     };
-  });
-
-  // Documentos filtrados según tab activo
-  filteredDocuments = computed(() => {
-    const docs = this.documents();
-    const tab = this.activeTab();
-
-    // Filtrar por estado según tab
-    let filtered: Document[] = [];
-    switch (tab) {
-      case 'todos':
-        filtered = docs;
-        break;
-      case 'pendientes':
-        filtered = docs.filter(d => d.status.id === 1);
-        break;
-      case 'proceso':
-        filtered = docs.filter(d => d.status.id === 2);
-        break;
-      case 'finalizados':
-        filtered = docs.filter(d => d.status.id === 3);
-        break;
-      case 'archivados':
-        filtered = docs.filter(d => d.status.id === 4);
-        break;
-    }
-
-    return filtered;
   });
 
   constructor(
@@ -168,7 +132,7 @@ export class BandejaComponent implements OnInit {
       filters.dateTo = this.dateTo();
     }
 
-    this.documentService.getDocumentsByArea(user.areaId, filters).subscribe({
+    this.documentService.getArchivedByArea(user.areaId, filters).subscribe({
       next: (response) => {
         if (response.success && response.data) {
           this.documents.set(response.data);
@@ -176,7 +140,7 @@ export class BandejaComponent implements OnInit {
         this.loading.set(false);
       },
       error: (error) => {
-        console.error('Error al cargar documentos:', error);
+        console.error('Error al cargar documentos archivados:', error);
         this.loading.set(false);
       }
     });
@@ -199,56 +163,39 @@ export class BandejaComponent implements OnInit {
     this.showFilters.update(value => !value);
   }
 
-  setActiveTab(tab: 'todos' | 'pendientes' | 'proceso' | 'finalizados' | 'archivados'): void {
-    this.activeTab.set(tab);
-  }
-
   viewDocument(doc: Document): void {
     this.selectedDocumentId.set(doc.id);
     this.showDetailsModal.set(true);
   }
 
-  deriveDocument(doc: Document): void {
-    this.selectedDocument.set(doc);
-    this.selectedDocumentId.set(doc.id);
-    this.showDeriveModal.set(true);
-  }
-
-  archiveDocument(doc: Document): void {
-    const observacion = prompt(`¿Desea agregar una observación al archivar el documento ${doc.trackingCode}?`, '');
+  unarchiveDocument(doc: Document): void {
+    const observacion = prompt(`¿Desea agregar una observación al desarchivar el documento ${doc.trackingCode}?`, '');
     
     if (observacion === null) {
       // Usuario canceló
       return;
     }
 
-    if (!confirm(`¿Está seguro de archivar el documento ${doc.trackingCode}?`)) {
+    if (!confirm(`¿Está seguro de reactivar el documento ${doc.trackingCode}?\n\nEl documento volverá a estar "En proceso" en tu bandeja.`)) {
       return;
     }
 
-    this.documentService.archiveDocument(doc.id, observacion || undefined).subscribe({
+    this.documentService.unarchiveDocument(doc.id, observacion || undefined).subscribe({
       next: (response) => {
         if (response.success) {
-          alert('Documento archivado correctamente');
+          alert('Documento desarchivado correctamente');
           this.loadDocuments();
         }
       },
       error: (error) => {
-        console.error('Error al archivar:', error);
-        alert(error.error?.message || 'Error al archivar el documento');
+        console.error('Error al desarchivar:', error);
+        alert(error.error?.message || 'Error al desarchivar el documento');
       }
     });
   }
 
   closeModals(): void {
-    this.showDeriveModal.set(false);
     this.showDetailsModal.set(false);
-  }
-
-  onDeriveSuccess(): void {
-    this.closeModals();
-    this.loadDocuments();
-    alert('Documento derivado exitosamente');
   }
 
   formatDate(dateString: string): string {
@@ -256,11 +203,13 @@ export class BandejaComponent implements OnInit {
     return date.toLocaleDateString('es-PE', {
       day: '2-digit',
       month: '2-digit',
-      year: 'numeric'
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
   }
 
-  goToDashboard(): void {
-    this.router.navigate(['/dashboard']);
+  goBack(): void {
+    this.router.navigate(['/bandeja']);
   }
 }

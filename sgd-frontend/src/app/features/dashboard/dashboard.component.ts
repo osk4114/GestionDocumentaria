@@ -16,10 +16,20 @@ interface Document {
   asunto: string;
   prioridad: string;
   created_at: string;
-  sender: { nombreCompleto: string };
-  documentType: { nombre: string };
-  status: { nombre: string; color: string };
-  currentArea: { nombre: string };
+  sender: { 
+    nombreCompleto?: string;
+    email?: string;
+  };
+  documentType?: { 
+    nombre: string;
+  } | null;
+  status: { 
+    nombre: string; 
+    color: string;
+  };
+  currentArea?: { 
+    nombre: string;
+  };
 }
 
 interface Stats {
@@ -53,8 +63,8 @@ export class DashboardComponent implements OnInit {
     asunto: '',
     prioridad: '',
     created_at: '',
-    sender: { nombreCompleto: '' },
-    documentType: { nombre: '' },
+    sender: { nombreCompleto: '', email: '' },
+    documentType: null,
     status: { nombre: '', color: '' },
     currentArea: { nombre: '' }
   });
@@ -136,7 +146,8 @@ export class DashboardComponent implements OnInit {
       filtered = filtered.filter(d =>
         d.trackingCode.toLowerCase().includes(term) ||
         d.asunto.toLowerCase().includes(term) ||
-        d.sender.nombreCompleto.toLowerCase().includes(term)
+        (d.sender.nombreCompleto?.toLowerCase().includes(term) || false) ||
+        (d.sender.email?.toLowerCase().includes(term) || false)
       );
     }
 
@@ -285,14 +296,14 @@ export class DashboardComponent implements OnInit {
       let bVal: any = b[column as keyof Document];
 
       // Manejar valores anidados
-      if (column === 'sender') aVal = a.sender.nombreCompleto;
-      if (column === 'sender') bVal = b.sender.nombreCompleto;
-      if (column === 'documentType') aVal = a.documentType.nombre;
-      if (column === 'documentType') bVal = b.documentType.nombre;
+      if (column === 'sender') aVal = a.sender.nombreCompleto || a.sender.email || '';
+      if (column === 'sender') bVal = b.sender.nombreCompleto || b.sender.email || '';
+      if (column === 'documentType') aVal = a.documentType?.nombre || '';
+      if (column === 'documentType') bVal = b.documentType?.nombre || '';
       if (column === 'status') aVal = a.status.nombre;
       if (column === 'status') bVal = b.status.nombre;
-      if (column === 'currentArea') aVal = a.currentArea.nombre;
-      if (column === 'currentArea') bVal = b.currentArea.nombre;
+      if (column === 'currentArea') aVal = a.currentArea?.nombre || '';
+      if (column === 'currentArea') bVal = b.currentArea?.nombre || '';
 
       if (aVal < bVal) return this.sortDirection() === 'asc' ? -1 : 1;
       if (aVal > bVal) return this.sortDirection() === 'asc' ? 1 : -1;

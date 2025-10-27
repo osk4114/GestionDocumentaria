@@ -191,8 +191,8 @@
             <tr *ngFor="let doc of paginatedDocuments()">
               <td class="code">{{ doc.trackingCode }}</td>
               <td class="subject">{{ doc.asunto }}</td>
-              <td>{{ doc.sender.nombreCompleto }}</td>
-              <td>{{ doc.documentType.nombre }}</td>
+              <td>{{ doc.sender.nombreCompleto || doc.sender.email || 'Sin datos' }}</td>
+              <td>{{ doc.documentType?.nombre || 'Sin clasificar' }}</td>
               <td>
                 <span class="status-badge" [style.background-color]="doc.status.color">
                   {{ doc.status.nombre }}
@@ -203,7 +203,7 @@
                   {{ getPriorityLabel(doc.prioridad) }}
                 </span>
               </td>
-              <td>{{ doc.currentArea.nombre }}</td>
+              <td>{{ doc.currentArea?.nombre || 'Sin área' }}</td>
               <td class="date">{{ formatDate(doc.created_at) }}</td>
               <td class="actions-cell">
                 <button class="btn-action btn-view" (click)="openDetailsModal(doc); $event.stopPropagation()" title="Ver detalles">
@@ -271,7 +271,7 @@
     [documentId]="selectedDocument().id"
     [documentCode]="selectedDocument().trackingCode"
     [documentSubject]="selectedDocument().asunto"
-    [currentArea]="selectedDocument().currentArea.nombre"
+    [currentArea]="selectedDocument().currentArea?.nombre || 'Sin área'"
     (onClose)="closeDeriveModal()"
     (onSuccess)="onDeriveSuccess()"
   ></app-document-derive>

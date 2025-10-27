@@ -18,33 +18,29 @@ class DocumentService {
     const transaction = await sequelize.transaction();
     
     try {
-      // 1. Crear o buscar remitente
-      let sender = await Sender.findOne({
-        where: {
-          tipoDocumento: senderData.tipoDocumento,
-          numeroDocumento: senderData.numeroDocumento
-        },
-        transaction
-      });
-
-      if (!sender) {
-        sender = await Sender.create(senderData, { transaction });
-      } else {
-        // Actualizar datos si han cambiado
-        await sender.update(senderData, { transaction });
-      }
+      // 1. Crear remitente (ahora con tipoPersona, email, telefono)
+      // En el nuevo diseño, cada envío crea un nuevo remitente ya que no hay DNI/RUC para identificar
+      const sender = await Sender.create({
+        tipoPersona: senderData.tipoPersona || 'natural',
+        email: senderData.email,
+        telefono: senderData.telefono,
+        nombreCompleto: senderData.nombreCompleto || null,
+        tipoDocumento: senderData.tipoDocumento || null,
+        numeroDocumento: senderData.numeroDocumento || null,
+        direccion: senderData.direccion || null
+      }, { transaction });
 
       // 2. Generar código de seguimiento
       const trackingCode = await this.generateTrackingCode();
 
-      // 3. Obtener estado "Recibido" y área "Mesa de Partes"
-      const statusRecibido = await DocumentStatus.findOne({
-        where: { nombre: 'Recibido' },
+      // 3. Obtener estado "Pendiente" y área "Mesa de Partes"
+      const statusPendiente = await DocumentStatus.findOne({
+        where: { nombre: 'Pendiente' },
         transaction
       });
 
-      if (!statusRecibido) {
-        throw new Error('Estado "Recibido" no encontrado en el sistema');
+      if (!statusPendiente) {
+        throw new Error('Estado "Pendiente" no encontrado en el sistema');
       }
 
       const mesaDePartes = await Area.findOne({
@@ -60,8 +56,8 @@ class DocumentService {
       const document = await Document.create({
         trackingCode,
         senderId: sender.id,
-        documentTypeId: documentData.documentTypeId,
-        statusId: statusRecibido.id,
+        documentTypeId: documentData.documentTypeId || null,
+        statusId: statusPendiente.id,
         currentAreaId: mesaDePartes.id,
         asunto: documentData.asunto,
         descripcion: documentData.descripcion || null,
@@ -69,10 +65,11 @@ class DocumentService {
         fechaRecepcion: new Date()
       }, { transaction });
 
-      // 5. Crear movimiento inicial
+      // 5. Crear movimiento inicial (sin userId para Mesa de Partes Virtual)
       await DocumentMovement.create({
         documentId: document.id,
         toAreaId: mesaDePartes.id,
+        userId: null, // NULL para acciones públicas desde Mesa de Partes Virtual
         accion: 'Recepción',
         observacion: 'Documento presentado a través de la Mesa de Partes Virtual',
         timestamp: new Date()
@@ -402,10 +399,11 @@ class DocumentService {
   /**
    * Archivar documento
    * @param {Number} documentId - ID del documento
-   * @param {Object} user - Usuario administrador
+   * @param {Object} user - Usuario que archiva
+   * @param {String} observacion - Observación opcional
    * @returns {Object} Resultado de la operación
    */
-  async archiveDocument(documentId, user) {
+  async archiveDocument(documentId, user, observacion = null) {
     const transaction = await sequelize.transaction();
     
     try {
@@ -415,12 +413,12 @@ class DocumentService {
         throw new Error('Documento no encontrado');
       }
 
-      // Solo admin puede archivar
-      if (user.role?.nombre !== 'Administrador') {
-        throw new Error('Solo administradores pueden archivar documentos');
+      // Verificar que el documento esté en el área del usuario
+      if (document.currentAreaId !== user.areaId && user.role?.nombre !== 'Administrador') {
+        throw new Error('Solo puedes archivar documentos que están en tu área');
       }
 
-      // Cambiar estado a "Archivado"
+      // Verificar que no esté ya archivado
       const statusArchivado = await DocumentStatus.findOne({ 
         where: { nombre: 'Archivado' },
         transaction
@@ -430,6 +428,11 @@ class DocumentService {
         throw new Error('Estado "Archivado" no encontrado en la base de datos');
       }
 
+      if (document.statusId === statusArchivado.id) {
+        throw new Error('El documento ya está archivado');
+      }
+
+      // Cambiar estado a "Archivado"
       await document.update({ statusId: statusArchivado.id }, { transaction });
 
       // Crear movimiento de archivado
@@ -439,12 +442,76 @@ class DocumentService {
         toAreaId: document.currentAreaId,
         userId: user.id,
         accion: 'Archivado',
-        observacion: 'Documento archivado por administrador'
+        observacion: observacion || `Documento archivado en ${user.area?.nombre || 'el área'}`
       }, { transaction });
 
       await transaction.commit();
 
       return { success: true, message: 'Documento archivado exitosamente' };
+
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+  }
+
+  /**
+   * Desarchivar documento (reactivar)
+   * @param {Number} documentId - ID del documento
+   * @param {Object} user - Usuario que desarchiva
+   * @param {String} observacion - Observación opcional
+   * @returns {Object} Resultado de la operación
+   */
+  async unarchiveDocument(documentId, user, observacion = null) {
+    const transaction = await sequelize.transaction();
+    
+    try {
+      const document = await Document.findByPk(documentId, { transaction });
+
+      if (!document) {
+        throw new Error('Documento no encontrado');
+      }
+
+      // Verificar que el documento esté en el área del usuario
+      if (document.currentAreaId !== user.areaId && user.role?.nombre !== 'Administrador') {
+        throw new Error('Solo puedes desarchivar documentos de tu área');
+      }
+
+      // Verificar que esté archivado
+      const statusArchivado = await DocumentStatus.findOne({ 
+        where: { nombre: 'Archivado' },
+        transaction
+      });
+
+      if (document.statusId !== statusArchivado.id) {
+        throw new Error('El documento no está archivado');
+      }
+
+      // Cambiar estado a "En proceso"
+      const statusEnProceso = await DocumentStatus.findOne({ 
+        where: { nombre: 'En proceso' },
+        transaction
+      });
+
+      if (!statusEnProceso) {
+        throw new Error('Estado "En proceso" no encontrado en la base de datos');
+      }
+
+      await document.update({ statusId: statusEnProceso.id }, { transaction });
+
+      // Crear movimiento de desarchivado
+      await DocumentMovement.create({
+        documentId: document.id,
+        fromAreaId: document.currentAreaId,
+        toAreaId: document.currentAreaId,
+        userId: user.id,
+        accion: 'Desarchivado',
+        observacion: observacion || 'Documento reactivado desde archivo'
+      }, { transaction });
+
+      await transaction.commit();
+
+      return { success: true, message: 'Documento desarchivado exitosamente' };
 
     } catch (error) {
       await transaction.rollback();
@@ -669,24 +736,65 @@ class DocumentService {
   }
 
   /**
-   * Obtener documentos por área
+   * Obtener documentos por área con filtros avanzados
    * @param {Number} areaId - ID del área
    * @param {Object} user - Usuario que consulta
+   * @param {Object} filters - Filtros opcionales (status, priority, search, dateFrom, dateTo, documentType)
    * @returns {Array} Lista de documentos del área
    */
-  async getDocumentsByArea(areaId, user) {
+  async getDocumentsByArea(areaId, user, filters = {}) {
     try {
       // Verificar permisos
       if (parseInt(areaId) !== user.areaId && user.role?.nombre !== 'Administrador') {
         throw new Error('No tienes permisos para ver documentos de esta área');
       }
 
+      // Construir cláusula WHERE
+      const whereClause = { currentAreaId: areaId };
+
+      // Filtro por estado
+      if (filters.status) {
+        whereClause.statusId = filters.status;
+      }
+
+      // Filtro por prioridad
+      if (filters.priority) {
+        whereClause.prioridad = filters.priority;
+      }
+
+      // Filtro por tipo de documento
+      if (filters.documentType) {
+        whereClause.docTypeId = filters.documentType;
+      }
+
+      // Filtro por rango de fechas
+      if (filters.dateFrom || filters.dateTo) {
+        whereClause.created_at = {};
+        if (filters.dateFrom) {
+          whereClause.created_at[Op.gte] = new Date(filters.dateFrom);
+        }
+        if (filters.dateTo) {
+          const endDate = new Date(filters.dateTo);
+          endDate.setHours(23, 59, 59, 999);
+          whereClause.created_at[Op.lte] = endDate;
+        }
+      }
+
+      // Filtro por búsqueda de texto (trackingCode, asunto)
+      if (filters.search) {
+        whereClause[Op.or] = [
+          { trackingCode: { [Op.like]: `%${filters.search}%` } },
+          { asunto: { [Op.like]: `%${filters.search}%` } }
+        ];
+      }
+
       const documents = await Document.findAll({
-        where: { currentAreaId: areaId },
+        where: whereClause,
         include: [
           { model: Sender, as: 'sender', attributes: ['id', 'nombreCompleto'] },
           { model: DocumentType, as: 'documentType', attributes: ['id', 'nombre'] },
           { model: DocumentStatus, as: 'status', attributes: ['id', 'nombre', 'color'] },
+          { model: Area, as: 'currentArea', attributes: ['id', 'nombre', 'sigla'] },
           { model: User, as: 'currentUser', attributes: ['id', 'nombre'] }
         ],
         order: [['created_at', 'DESC']]
@@ -752,26 +860,53 @@ class DocumentService {
   }
 
   /**
-   * Obtener documentos archivados por área
+   * Obtener documentos archivados por área con filtros avanzados
    * @param {Number} areaId - ID del área
-   * @param {Object} filters - Filtros adicionales
+   * @param {Object} filters - Filtros adicionales (dateFrom, dateTo, search, priority, documentType)
    * @returns {Array} Lista de documentos archivados
    */
   async getArchivedDocumentsByArea(areaId, filters = {}) {
     try {
-      const { dateFrom, dateTo, search } = filters;
+      const { dateFrom, dateTo, search, priority, documentType } = filters;
+      
+      // Obtener ID del estado "Archivado"
+      const statusArchivado = await DocumentStatus.findOne({ 
+        where: { nombre: 'Archivado' }
+      });
+
+      if (!statusArchivado) {
+        throw new Error('Estado "Archivado" no encontrado en la base de datos');
+      }
       
       const where = {
         currentAreaId: areaId,
-        statusId: 6 // Estado "Archivado"
+        statusId: statusArchivado.id
       };
       
-      if (dateFrom || dateTo) {
-        where.created_at = {};
-        if (dateFrom) where.created_at[Op.gte] = new Date(dateFrom);
-        if (dateTo) where.created_at[Op.lte] = new Date(dateTo);
+      // Filtro por prioridad
+      if (priority) {
+        where.prioridad = priority;
+      }
+
+      // Filtro por tipo de documento
+      if (documentType) {
+        where.docTypeId = documentType;
       }
       
+      // Filtro por rango de fechas
+      if (dateFrom || dateTo) {
+        where.created_at = {};
+        if (dateFrom) {
+          where.created_at[Op.gte] = new Date(dateFrom);
+        }
+        if (dateTo) {
+          const endDate = new Date(dateTo);
+          endDate.setHours(23, 59, 59, 999);
+          where.created_at[Op.lte] = endDate;
+        }
+      }
+      
+      // Filtro por búsqueda de texto
       if (search) {
         where[Op.or] = [
           { trackingCode: { [Op.like]: `%${search}%` } },
@@ -784,7 +919,8 @@ class DocumentService {
         include: [
           { model: Sender, as: 'sender', attributes: ['id', 'nombreCompleto'] },
           { model: DocumentType, as: 'documentType', attributes: ['id', 'nombre'] },
-          { model: DocumentStatus, as: 'status' },
+          { model: DocumentStatus, as: 'status', attributes: ['id', 'nombre', 'color'] },
+          { model: Area, as: 'currentArea', attributes: ['id', 'nombre', 'sigla'] },
           { model: User, as: 'currentUser', attributes: ['id', 'nombre'], required: false }
         ],
         order: [['updated_at', 'DESC']]

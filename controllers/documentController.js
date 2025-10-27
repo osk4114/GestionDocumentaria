@@ -10,17 +10,32 @@ const documentService = require('../services/documentService');
  */
 exports.submitDocument = async (req, res) => {
   try {
-    const { sender, document } = req.body;
+    // El nuevo formulario envía todo junto, no separado en sender y document
+    const { tipoPersona, email, telefono, asunto, descripcion, linkDescarga } = req.body;
 
     // Validar datos requeridos
-    if (!sender || !document) {
+    if (!email || !telefono || !asunto) {
       return res.status(400).json({
         success: false,
-        message: 'Datos del remitente y documento son requeridos'
+        message: 'Email, teléfono y asunto son requeridos'
       });
     }
 
-    const result = await documentService.submitPublicDocument(sender, document);
+    // Separar datos para el servicio
+    const senderData = {
+      tipoPersona: tipoPersona || 'natural',
+      email,
+      telefono
+    };
+
+    const documentData = {
+      asunto,
+      descripcion: descripcion || null,
+      prioridad: 'normal',
+      documentTypeId: null // El formulario no pide tipo de documento
+    };
+
+    const result = await documentService.submitPublicDocument(senderData, documentData);
 
     res.status(201).json({
       success: true,
@@ -96,12 +111,14 @@ exports.updateDocument = async (req, res) => {
 };
 
 /**
- * Eliminar documento (soft delete / archivar)
+ * Archivar documento
  */
 exports.deleteDocument = async (req, res) => {
   try {
     const { id } = req.params;
-    const result = await documentService.archiveDocument(id, req.user);
+    const { observacion } = req.body;
+    
+    const result = await documentService.archiveDocument(id, req.user, observacion);
 
     res.status(200).json({
       success: true,
@@ -111,10 +128,37 @@ exports.deleteDocument = async (req, res) => {
   } catch (error) {
     console.error('Error en deleteDocument:', error);
     const statusCode = error.message === 'Documento no encontrado' ? 404 :
-                       error.message.includes('administradores') ? 403 : 500;
+                       error.message.includes('área') ? 403 : 500;
     res.status(statusCode).json({
       success: false,
       message: error.message || 'Error al archivar documento',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Desarchivar documento (reactivar)
+ */
+exports.unarchiveDocument = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { observacion } = req.body;
+    
+    const result = await documentService.unarchiveDocument(id, req.user, observacion);
+
+    res.status(200).json({
+      success: true,
+      message: result.message
+    });
+
+  } catch (error) {
+    console.error('Error en unarchiveDocument:', error);
+    const statusCode = error.message === 'Documento no encontrado' ? 404 :
+                       error.message.includes('área') || error.message.includes('archivado') ? 403 : 500;
+    res.status(statusCode).json({
+      success: false,
+      message: error.message || 'Error al desarchivar documento',
       error: error.message
     });
   }
@@ -266,12 +310,23 @@ exports.getDocumentByTrackingCode = async (req, res) => {
 };
 
 /**
- * Obtener documentos por área
+ * Obtener documentos por área con filtros avanzados
  */
 exports.getDocumentsByArea = async (req, res) => {
   try {
     const { areaId } = req.params;
-    const documents = await documentService.getDocumentsByArea(areaId, req.user);
+    const { status, priority, search, dateFrom, dateTo, documentType } = req.query;
+
+    // Construir objeto de filtros
+    const filters = {};
+    if (status) filters.status = status;
+    if (priority) filters.priority = priority;
+    if (search) filters.search = search;
+    if (dateFrom) filters.dateFrom = dateFrom;
+    if (dateTo) filters.dateTo = dateTo;
+    if (documentType) filters.documentType = documentType;
+
+    const documents = await documentService.getDocumentsByArea(areaId, req.user, filters);
 
     res.status(200).json({
       success: true,
@@ -314,18 +369,22 @@ exports.getDocumentStats = async (req, res) => {
 };
 
 /**
- * Obtener documentos archivados por área
+ * Obtener documentos archivados por área con filtros avanzados
  */
 exports.getArchivedDocumentsByArea = async (req, res) => {
   try {
     const { areaId } = req.params;
-    const { dateFrom, dateTo, search } = req.query;
+    const { dateFrom, dateTo, search, priority, documentType } = req.query;
     
-    const documents = await documentService.getArchivedDocumentsByArea(areaId, {
-      dateFrom,
-      dateTo,
-      search
-    });
+    // Construir objeto de filtros
+    const filters = {};
+    if (dateFrom) filters.dateFrom = dateFrom;
+    if (dateTo) filters.dateTo = dateTo;
+    if (search) filters.search = search;
+    if (priority) filters.priority = priority;
+    if (documentType) filters.documentType = documentType;
+    
+    const documents = await documentService.getArchivedDocumentsByArea(areaId, filters);
 
     res.status(200).json({
       success: true,
