@@ -109,20 +109,47 @@ CREATE TABLE IF NOT EXISTS login_attempts (
 -- ============================================================
 -- Tabla: senders
 -- Descripción: Remitentes de documentos (ciudadanos, empresas)
--- Actualizado: 2025-10-27 - Nuevo diseño Mesa de Partes gob.pe
+-- Actualizado: 2025-10-28 - Campos completos para persona natural y jurídica
 -- ============================================================
 CREATE TABLE IF NOT EXISTS senders (
     id INT AUTO_INCREMENT PRIMARY KEY,
     tipo_persona ENUM('natural', 'juridica') NOT NULL DEFAULT 'natural' COMMENT 'Tipo de persona (natural o jurídica)',
     nombre_completo VARCHAR(150) COMMENT 'Nombre completo (opcional para retrocompatibilidad)',
-    tipo_documento ENUM('DNI', 'RUC', 'PASAPORTE', 'CARNET_EXTRANJERIA') COMMENT 'Tipo de documento (opcional)',
-    numero_documento VARCHAR(20) COMMENT 'Número de documento (opcional)',
+    
+    -- Campos para persona natural
+    nombres VARCHAR(100) COMMENT 'Nombres (persona natural)',
+    apellido_paterno VARCHAR(100) COMMENT 'Apellido paterno (persona natural)',
+    apellido_materno VARCHAR(100) COMMENT 'Apellido materno (persona natural)',
+    
+    -- Campos para persona jurídica
+    ruc VARCHAR(11) COMMENT 'RUC (persona jurídica)',
+    nombre_empresa VARCHAR(200) COMMENT 'Nombre de empresa (persona jurídica)',
+    
+    -- Campos para representante legal (persona jurídica)
+    representante_tipo_doc ENUM('DNI', 'CE', 'PASAPORTE') COMMENT 'Tipo doc representante',
+    representante_num_doc VARCHAR(20) COMMENT 'Número doc representante',
+    representante_nombres VARCHAR(100) COMMENT 'Nombres representante',
+    representante_apellido_paterno VARCHAR(100) COMMENT 'Apellido paterno representante',
+    representante_apellido_materno VARCHAR(100) COMMENT 'Apellido materno representante',
+    
+    -- Campos de dirección detallada
+    departamento VARCHAR(50) COMMENT 'Departamento',
+    provincia VARCHAR(50) COMMENT 'Provincia',
+    distrito VARCHAR(50) COMMENT 'Distrito',
+    direccion_completa TEXT COMMENT 'Dirección completa',
+    
+    -- Campos originales
+    tipo_documento ENUM('DNI', 'RUC', 'PASAPORTE', 'CARNET_EXTRANJERIA', 'CE') COMMENT 'Tipo de documento',
+    numero_documento VARCHAR(20) COMMENT 'Número de documento',
     email VARCHAR(100) NOT NULL COMMENT 'Email de contacto (OBLIGATORIO)',
     telefono VARCHAR(20) NOT NULL COMMENT 'Teléfono de contacto (OBLIGATORIO)',
-    direccion TEXT,
+    direccion TEXT COMMENT 'Dirección (campo legacy)',
+    
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    INDEX idx_email_telefono (email, telefono)
+    INDEX idx_email_telefono (email, telefono),
+    INDEX idx_ruc (ruc),
+    INDEX idx_numero_documento (numero_documento)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================

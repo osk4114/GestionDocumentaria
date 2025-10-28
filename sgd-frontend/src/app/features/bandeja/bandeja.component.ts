@@ -12,7 +12,6 @@ interface Document {
   id: number;
   trackingCode: string;
   asunto: string;
-  prioridad: string;
   created_at: string;
   sender: {
     nombreCompleto?: string;
@@ -54,7 +53,6 @@ export class BandejaComponent implements OnInit {
   
   // Filtros avanzados
   searchTerm = signal<string>('');
-  selectedPriority = signal<string>('');
   selectedDocumentType = signal<number | null>(null);
   dateFrom = signal<string>('');
   dateTo = signal<string>('');
@@ -77,8 +75,8 @@ export class BandejaComponent implements OnInit {
       total: docs.length,
       pendientes: docs.filter(d => d.status.id === 1).length,
       enProceso: docs.filter(d => d.status.id === 2).length,
-      finalizados: docs.filter(d => d.status.id === 3).length,
-      archivados: docs.filter(d => d.status.id === 4).length
+      finalizados: docs.filter(d => d.status.id === 4).length, // Atendido
+      archivados: docs.filter(d => d.status.id === 6).length  // Archivado
     };
   });
 
@@ -100,10 +98,10 @@ export class BandejaComponent implements OnInit {
         filtered = docs.filter(d => d.status.id === 2);
         break;
       case 'finalizados':
-        filtered = docs.filter(d => d.status.id === 3);
+        filtered = docs.filter(d => d.status.id === 4); // Atendido
         break;
       case 'archivados':
-        filtered = docs.filter(d => d.status.id === 4);
+        filtered = docs.filter(d => d.status.id === 6); // Archivado
         break;
     }
 
@@ -152,10 +150,6 @@ export class BandejaComponent implements OnInit {
       filters.search = this.searchTerm();
     }
     
-    if (this.selectedPriority()) {
-      filters.priority = this.selectedPriority();
-    }
-    
     if (this.selectedDocumentType()) {
       filters.documentType = this.selectedDocumentType()!;
     }
@@ -188,7 +182,6 @@ export class BandejaComponent implements OnInit {
 
   clearFilters(): void {
     this.searchTerm.set('');
-    this.selectedPriority.set('');
     this.selectedDocumentType.set(null);
     this.dateFrom.set('');
     this.dateTo.set('');

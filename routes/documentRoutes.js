@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { checkRole, isAdmin } = require('../middleware/roleMiddleware');
+const { upload, handleMulterError } = require('../middleware/uploadMiddleware');
 const documentController = require('../controllers/documentController');
 
 // ============================================================
@@ -12,8 +13,13 @@ const documentController = require('../controllers/documentController');
  * @route   POST /api/documents/submit
  * @desc    Presentar documento (Mesa de Partes Virtual - público)
  * @access  Public
+ * @note    Acepta hasta 5 archivos adjuntos
  */
-router.post('/submit', documentController.submitDocument);
+router.post('/submit', 
+  upload.array('archivos', 5), // Máximo 5 archivos
+  handleMulterError,
+  documentController.submitDocument
+);
 
 /**
  * @route   GET /api/documents/tracking/:code
@@ -32,6 +38,13 @@ router.get('/tracking/:code', documentController.getDocumentByTrackingCode);
  * @access  Private
  */
 router.get('/stats', authMiddleware, documentController.getDocumentStats);
+
+/**
+ * @route   GET /api/documents/statuses
+ * @desc    Obtener todos los estados disponibles
+ * @access  Private
+ */
+router.get('/statuses', authMiddleware, documentController.getDocumentStatuses);
 
 /**
  * @route   GET /api/documents/search
@@ -126,5 +139,19 @@ router.post('/:id/derive', authMiddleware, documentController.deriveDocument);
  * @access  Private
  */
 router.post('/:id/finalize', authMiddleware, documentController.finalizeDocument);
+
+/**
+ * @route   PUT /api/documents/:id/status
+ * @desc    Cambiar estado del documento manualmente
+ * @access  Private (Área actual o Admin)
+ */
+router.put('/:id/status', authMiddleware, documentController.changeDocumentStatus);
+
+/**
+ * @route   GET /api/documents/:documentId/attachments/:attachmentId/download
+ * @desc    Descargar archivo adjunto
+ * @access  Public (puede ser consultado por código de seguimiento)
+ */
+router.get('/:documentId/attachments/:attachmentId/download', documentController.downloadAttachment);
 
 module.exports = router;

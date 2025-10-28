@@ -53,14 +53,14 @@
         <div class="stat-value">{{ stats().total }}</div>
       </div>
 
-      <div class="stat-card stat-recibidos">
+      <div class="stat-card stat-pendientes">
         <div class="stat-header">
-          <span>Recibidos</span>
+          <span>Pendientes</span>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
             <path d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
         </div>
-        <div class="stat-value">{{ stats().recibidos }}</div>
+        <div class="stat-value">{{ stats().pendientes }}</div>
       </div>
 
       <div class="stat-card stat-proceso">
@@ -75,22 +75,12 @@
 
       <div class="stat-card stat-finalizados">
         <div class="stat-header">
-          <span>Finalizados</span>
+          <span>Atendidos</span>
           <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
             <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
         </div>
         <div class="stat-value">{{ stats().finalizados }}</div>
-      </div>
-
-      <div class="stat-card stat-urgentes">
-        <div class="stat-header">
-          <span>Urgentes</span>
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-        </div>
-        <div class="stat-value">{{ stats().urgentes }}</div>
       </div>
     </div>
 
@@ -121,24 +111,15 @@
         <div class="filter-group">
           <select [(ngModel)]="statusFilter" (change)="applyFilters()" class="filter-select">
             <option value="">Todos los estados</option>
-            <option value="Recibido">Recibido</option>
-            <option value="En proceso">En proceso</option>
-            <option value="Finalizado">Finalizado</option>
+            <option value="Pendiente">Pendiente</option>
+            <option value="En Proceso">En Proceso</option>
+            <option value="Derivado">Derivado</option>
             <option value="Atendido">Atendido</option>
+            <option value="Observado">Observado</option>
           </select>
         </div>
 
-        <div class="filter-group">
-          <select [(ngModel)]="priorityFilter" (change)="applyFilters()" class="filter-select">
-            <option value="">Todas las prioridades</option>
-            <option value="baja">Baja</option>
-            <option value="normal">Normal</option>
-            <option value="alta">Alta</option>
-            <option value="urgente">Urgente</option>
-          </select>
-        </div>
-
-        <button class="btn-clear" (click)="clearFilters()" *ngIf="searchTerm || statusFilter || priorityFilter">
+        <button class="btn-clear" (click)="clearFilters()" *ngIf="searchTerm || statusFilter">
           Limpiar filtros
         </button>
       </div>
@@ -175,9 +156,6 @@
               <th class="sortable" (click)="sortBy('status')">
                 Estado {{ getSortIcon('status') }}
               </th>
-              <th class="sortable" (click)="sortBy('prioridad')">
-                Prioridad {{ getSortIcon('prioridad') }}
-              </th>
               <th class="sortable" (click)="sortBy('currentArea')">
                 Área Actual {{ getSortIcon('currentArea') }}
               </th>
@@ -196,11 +174,6 @@
               <td>
                 <span class="status-badge" [style.background-color]="doc.status.color">
                   {{ doc.status.nombre }}
-                </span>
-              </td>
-              <td>
-                <span class="priority-badge" [ngClass]="getPriorityClass(doc.prioridad)">
-                  {{ getPriorityLabel(doc.prioridad) }}
                 </span>
               </td>
               <td>{{ doc.currentArea?.nombre || 'Sin área' }}</td>

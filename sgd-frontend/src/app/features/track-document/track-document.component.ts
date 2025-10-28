@@ -8,14 +8,13 @@ interface DocumentTracking {
   id: number;
   trackingCode: string;
   asunto: string;
-  prioridad: string;
   created_at: string;
   sender: {
     nombreCompleto: string;
   };
   documentType: {
     nombre: string;
-  };
+  } | null;
   status: {
     nombre: string;
     color: string;
@@ -75,6 +74,8 @@ export class TrackDocumentComponent implements OnInit {
       return;
     }
 
+    // Deshabilitar input mientras busca
+    this.searchForm.get('trackingCode')?.disable();
     this.loading.set(true);
     this.errorMessage.set('');
     this.document.set(null);
@@ -89,12 +90,14 @@ export class TrackDocumentComponent implements OnInit {
           this.errorMessage.set('Documento no encontrado. Verifique el código e intente nuevamente.');
         }
         this.loading.set(false);
+        this.searchForm.get('trackingCode')?.enable();
       },
       error: (error) => {
         this.errorMessage.set(
           error.error?.message || 'Documento no encontrado. Verifique el código e intente nuevamente.'
         );
         this.loading.set(false);
+        this.searchForm.get('trackingCode')?.enable();
       }
     });
   }
@@ -108,26 +111,6 @@ export class TrackDocumentComponent implements OnInit {
       hour: '2-digit',
       minute: '2-digit'
     });
-  }
-
-  getPriorityClass(prioridad: string): string {
-    const classes: Record<string, string> = {
-      'baja': 'priority-low',
-      'normal': 'priority-normal',
-      'alta': 'priority-high',
-      'urgente': 'priority-urgent'
-    };
-    return classes[prioridad] || 'priority-normal';
-  }
-
-  getPriorityLabel(prioridad: string): string {
-    const labels: Record<string, string> = {
-      'baja': 'Baja',
-      'normal': 'Normal',
-      'alta': 'Alta',
-      'urgente': 'Urgente'
-    };
-    return labels[prioridad] || prioridad;
   }
 
   newSearch() {

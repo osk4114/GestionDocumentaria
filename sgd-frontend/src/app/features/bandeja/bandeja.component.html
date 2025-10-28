@@ -63,11 +63,11 @@
     <div class="stat-card stat-finalizados">
       <div class="stat-icon">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       </div>
       <div class="stat-content">
-        <span class="stat-label">Finalizados</span>
+        <span class="stat-label">Atendidos</span>
         <span class="stat-value">{{ stats().finalizados }}</span>
       </div>
     </div>
@@ -113,12 +113,12 @@
         En Proceso
         <span class="tab-badge badge-blue">{{ stats().enProceso }}</span>
       </button>
-      <button
-        class="tab-button"
+      <button 
+        class="tab"
         [class.active]="activeTab() === 'finalizados'"
         (click)="setActiveTab('finalizados')"
       >
-        Finalizados
+        Atendidos
         <span class="tab-badge badge-green">{{ stats().finalizados }}</span>
       </button>
       <button
@@ -159,22 +159,6 @@
       <!-- Advanced Filters (Collapsible) -->
       <div class="advanced-filters" *ngIf="showFilters()">
         <div class="filter-row">
-          <div class="filter-group">
-            <label for="priority-filter">Prioridad</label>
-            <select 
-              id="priority-filter"
-              class="filter-select"
-              [ngModel]="selectedPriority()"
-              (ngModelChange)="selectedPriority.set($event)"
-            >
-              <option value="">Todas</option>
-              <option value="baja">Baja</option>
-              <option value="normal">Normal</option>
-              <option value="alta">Alta</option>
-              <option value="urgente">Urgente</option>
-            </select>
-          </div>
-
           <div class="filter-group">
             <label for="type-filter">Tipo de Documento</label>
             <select 
@@ -253,7 +237,6 @@
               <th>Asunto</th>
               <th>Tipo</th>
               <th>Remitente</th>
-              <th>Prioridad</th>
               <th>Estado</th>
               <th>Fecha</th>
               <th>Acciones</th>
@@ -265,16 +248,6 @@
               <td class="subject">{{ doc.asunto }}</td>
               <td>{{ doc.documentType?.nombre || 'Sin clasificar' }}</td>
               <td>{{ doc.sender.nombreCompleto || doc.sender.email || 'Sin datos' }}</td>
-              <td>
-                <span class="priority-badge" [ngClass]="{
-                  'priority-urgent': doc.prioridad === 'urgente',
-                  'priority-high': doc.prioridad === 'alta',
-                  'priority-normal': doc.prioridad === 'normal',
-                  'priority-low': doc.prioridad === 'baja'
-                }">
-                  {{ doc.prioridad || 'normal' }}
-                </span>
-              </td>
               <td>
                 <span 
                   class="status-badge"

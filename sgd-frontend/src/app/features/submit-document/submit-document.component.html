@@ -68,6 +68,211 @@
             </div>
           </div>
 
+          <!-- Campos para Persona Natural -->
+          @if (documentForm.get('tipoPersona')?.value === 'natural') {
+            <div class="conditional-section">
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="tipoDocumentoNatural">1.1. Tipo de documento de identidad del solicitante <span class="optional">(Opcional)</span></label>
+                  <select id="tipoDocumentoNatural" formControlName="tipoDocumentoNatural">
+                    <option value="DNI">DNI</option>
+                    <option value="CE">Carné de Extranjería</option>
+                    <option value="Pasaporte">Pasaporte</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="numeroDocumentoNatural">Número de documento de identidad del solicitante</label>
+                <input 
+                  id="numeroDocumentoNatural"
+                  type="text" 
+                  formControlName="numeroDocumentoNatural"
+                  placeholder="">
+              </div>
+
+              <div class="form-group">
+                <label class="subsection-label">1.2. Nombres y apellidos del solicitante</label>
+                <div class="form-row-3">
+                  <div class="form-col">
+                    <label for="nombres">Nombres</label>
+                    <input 
+                      id="nombres"
+                      type="text" 
+                      formControlName="nombres"
+                      placeholder="">
+                  </div>
+                  <div class="form-col">
+                    <label for="apellidoPaterno">Apellido paterno</label>
+                    <input 
+                      id="apellidoPaterno"
+                      type="text" 
+                      formControlName="apellidoPaterno"
+                      placeholder="">
+                  </div>
+                  <div class="form-col">
+                    <label for="apellidoMaterno">Apellido materno</label>
+                    <input 
+                      id="apellidoMaterno"
+                      type="text" 
+                      formControlName="apellidoMaterno"
+                      placeholder="">
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="subsection-label">1.3. Dirección actual</label>
+                <div class="form-row-3">
+                  <div class="form-col">
+                    <label for="departamento">Departamento</label>
+                    <select id="departamento" formControlName="departamento">
+                      <option value="">Selecciona un departamento</option>
+                      <option value="Puno">Puno</option>
+                    </select>
+                  </div>
+                  <div class="form-col">
+                    <label for="provincia">Provincia</label>
+                    <select id="provincia" formControlName="provincia">
+                      <option value="">Selecciona una provincia</option>
+                      <option value="Puno">Puno</option>
+                    </select>
+                  </div>
+                  <div class="form-col">
+                    <label for="distrito">Distrito</label>
+                    <select id="distrito" formControlName="distrito">
+                      <option value="">Selecciona un distrito</option>
+                      <option value="Puno">Puno</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="direccion">1.4. Escribe la dirección</label>
+                <input 
+                  id="direccion"
+                  type="text" 
+                  formControlName="direccion"
+                  placeholder="">
+              </div>
+            </div>
+          }
+
+          <!-- Campos para Persona Jurídica -->
+          @if (documentForm.get('tipoPersona')?.value === 'juridica') {
+            <div class="conditional-section">
+              <h3 class="subsection-title">Información de la entidad, empresa o institución</h3>
+              
+              <div class="form-group">
+                <label for="ruc">1.1. Ingresa el número de RUC</label>
+                <input 
+                  id="ruc"
+                  type="text" 
+                  formControlName="ruc"
+                  placeholder=""
+                  maxlength="11">
+              </div>
+
+              <div class="form-group">
+                <label for="nombreEmpresa">1.2. Nombre de la entidad, empresa o institución</label>
+                <input 
+                  id="nombreEmpresa"
+                  type="text" 
+                  formControlName="nombreEmpresa"
+                  placeholder="">
+              </div>
+
+              <div class="form-group">
+                <label class="subsection-label">1.3. Dirección de la entidad, empresa o institución</label>
+                <div class="form-row-3">
+                  <div class="form-col">
+                    <label for="departamento">Departamento</label>
+                    <select id="departamento" formControlName="departamento">
+                      <option value="">Selecciona un departamento</option>
+                      <option value="Puno">Puno</option>
+                    </select>
+                  </div>
+                  <div class="form-col">
+                    <label for="provincia">Provincia</label>
+                    <select id="provincia" formControlName="provincia">
+                      <option value="">Selecciona una provincia</option>
+                      <option value="Puno">Puno</option>
+                    </select>
+                  </div>
+                  <div class="form-col">
+                    <label for="distrito">Distrito</label>
+                    <select id="distrito" formControlName="distrito">
+                      <option value="">Selecciona un distrito</option>
+                      <option value="Puno">Puno</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="direccion">1.4. Escribe la dirección</label>
+                <input 
+                  id="direccion"
+                  type="text" 
+                  formControlName="direccion"
+                  placeholder="">
+              </div>
+
+              <h3 class="subsection-title">Información del representante legal que realiza el trámite</h3>
+              
+              <div class="form-row">
+                <div class="form-group">
+                  <label for="tipoDocumentoRepresentante">1.5. Tipo de documento de identidad del representante legal que realiza el trámite <span class="optional">(Opcional)</span></label>
+                  <select id="tipoDocumentoRepresentante" formControlName="tipoDocumentoRepresentante">
+                    <option value="DNI">DNI</option>
+                    <option value="CE">Carné de Extranjería</option>
+                    <option value="Pasaporte">Pasaporte</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="numeroDocumentoRepresentante">Número de documento de identidad</label>
+                <input 
+                  id="numeroDocumentoRepresentante"
+                  type="text" 
+                  formControlName="numeroDocumentoRepresentante"
+                  placeholder="">
+              </div>
+
+              <div class="form-group">
+                <label class="subsection-label">1.6. Nombres y apellidos del representante legal que realiza el trámite <span class="optional">(Opcional)</span></label>
+                <div class="form-row-3">
+                  <div class="form-col">
+                    <label for="nombresRepresentante">Nombres</label>
+                    <input 
+                      id="nombresRepresentante"
+                      type="text" 
+                      formControlName="nombresRepresentante"
+                      placeholder="">
+                  </div>
+                  <div class="form-col">
+                    <label for="apellidoPaternoRepresentante">Apellido paterno</label>
+                    <input 
+                      id="apellidoPaternoRepresentante"
+                      type="text" 
+                      formControlName="apellidoPaternoRepresentante"
+                      placeholder="">
+                  </div>
+                  <div class="form-col">
+                    <label for="apellidoMaternoRepresentante">Apellido materno</label>
+                    <input 
+                      id="apellidoMaternoRepresentante"
+                      type="text" 
+                      formControlName="apellidoMaternoRepresentante"
+                      placeholder="">
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+
           <div class="form-group">
             <label for="email" class="step-label">2. Correo electrónico de contacto</label>
             <input 

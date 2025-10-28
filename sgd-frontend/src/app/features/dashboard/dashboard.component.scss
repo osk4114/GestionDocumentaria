@@ -184,12 +184,12 @@
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
   }
 
-  &.stat-recibidos {
-    border-top-color: #0066CC;
+  &.stat-pendientes {
+    border-top-color: #FFA500; // Color naranja para pendientes
   }
 
   &.stat-proceso {
-    border-top-color: #f59e0b;
+    border-top-color: #2196F3; // Color azul para en proceso (igual que el badge)
   }
 
   &.stat-finalizados {

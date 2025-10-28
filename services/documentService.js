@@ -12,23 +12,51 @@ class DocumentService {
    * Presentar documento público (Mesa de Partes Virtual)
    * @param {Object} senderData - Datos del remitente
    * @param {Object} documentData - Datos del documento
+   * @param {Array} files - Archivos adjuntos (opcional)
    * @returns {Object} Documento creado con código de seguimiento
    */
-  async submitPublicDocument(senderData, documentData) {
+  async submitPublicDocument(senderData, documentData, files = []) {
     const transaction = await sequelize.transaction();
     
     try {
-      // 1. Crear remitente (ahora con tipoPersona, email, telefono)
-      // En el nuevo diseño, cada envío crea un nuevo remitente ya que no hay DNI/RUC para identificar
-      const sender = await Sender.create({
+      // 1. Crear remitente con todos los campos del formulario
+      const senderPayload = {
         tipoPersona: senderData.tipoPersona || 'natural',
         email: senderData.email,
         telefono: senderData.telefono,
+        // Campos comunes
         nombreCompleto: senderData.nombreCompleto || null,
         tipoDocumento: senderData.tipoDocumento || null,
         numeroDocumento: senderData.numeroDocumento || null,
-        direccion: senderData.direccion || null
-      }, { transaction });
+        direccion: senderData.direccion || null,
+        // Dirección detallada (común para ambos tipos)
+        departamento: senderData.departamento || null,
+        provincia: senderData.provincia || null,
+        distrito: senderData.distrito || null,
+        direccionCompleta: senderData.direccion || null
+      };
+
+      // Campos específicos según tipo de persona
+      if (senderData.tipoPersona === 'natural') {
+        // Persona natural
+        senderPayload.nombres = senderData.nombres || null;
+        senderPayload.apellidoPaterno = senderData.apellidoPaterno || null;
+        senderPayload.apellidoMaterno = senderData.apellidoMaterno || null;
+        senderPayload.tipoDocumento = senderData.tipoDocumentoNatural || null;
+        senderPayload.numeroDocumento = senderData.numeroDocumentoNatural || null;
+      } else if (senderData.tipoPersona === 'juridica') {
+        // Persona jurídica
+        senderPayload.ruc = senderData.ruc || null;
+        senderPayload.nombreEmpresa = senderData.nombreEmpresa || null;
+        // Representante legal
+        senderPayload.representanteTipoDoc = senderData.tipoDocumentoRepresentante || null;
+        senderPayload.representanteNumDoc = senderData.numeroDocumentoRepresentante || null;
+        senderPayload.representanteNombres = senderData.nombresRepresentante || null;
+        senderPayload.representanteApellidoPaterno = senderData.apellidoPaternoRepresentante || null;
+        senderPayload.representanteApellidoMaterno = senderData.apellidoMaternoRepresentante || null;
+      }
+
+      const sender = await Sender.create(senderPayload, { transaction });
 
       // 2. Generar código de seguimiento
       const trackingCode = await this.generateTrackingCode();
@@ -61,36 +89,52 @@ class DocumentService {
         currentAreaId: mesaDePartes.id,
         asunto: documentData.asunto,
         descripcion: documentData.descripcion || null,
-        prioridad: documentData.prioridad || 'normal',
         fechaRecepcion: new Date()
       }, { transaction });
 
-      // 5. Crear movimiento inicial (sin userId para Mesa de Partes Virtual)
+      // 5. Guardar archivos adjuntos (si existen)
+      if (files && files.length > 0) {
+        for (const file of files) {
+          await Attachment.create({
+            documentId: document.id,
+            fileName: file.filename,
+            originalName: file.originalname,
+            filePath: file.path,
+            fileType: file.mimetype,
+            fileSize: file.size,
+            uploadedBy: null // NULL para uploads públicos
+          }, { transaction });
+        }
+      }
+
+      // 6. Crear movimiento inicial (sin userId para Mesa de Partes Virtual)
       await DocumentMovement.create({
         documentId: document.id,
         toAreaId: mesaDePartes.id,
         userId: null, // NULL para acciones públicas desde Mesa de Partes Virtual
         accion: 'Recepción',
-        observacion: 'Documento presentado a través de la Mesa de Partes Virtual',
+        observacion: `Documento presentado a través de la Mesa de Partes Virtual${files.length > 0 ? ` con ${files.length} archivo(s) adjunto(s)` : ''}`,
         timestamp: new Date()
       }, { transaction });
 
       await transaction.commit();
 
-      // 6. Retornar documento con relaciones
+      // 7. Retornar documento con relaciones y adjuntos
       const createdDocument = await Document.findByPk(document.id, {
         include: [
           { model: Sender, as: 'sender' },
           { model: DocumentType, as: 'documentType' },
           { model: DocumentStatus, as: 'status' },
-          { model: Area, as: 'currentArea' }
+          { model: Area, as: 'currentArea' },
+          { model: Attachment, as: 'attachments' }
         ]
       });
 
       return {
         document: createdDocument,
         sender,
-        trackingCode
+        trackingCode,
+        attachmentsCount: files.length
       };
 
     } catch (error) {
@@ -134,7 +178,6 @@ class DocumentService {
         documentTypeId,
         asunto,
         descripcion,
-        prioridad,
         fechaDocumento,
         numeroDocumento,
         folios
@@ -168,7 +211,6 @@ class DocumentService {
         currentUserId: user.id,
         asunto,
         descripcion,
-        prioridad: prioridad || 'normal',
         fechaDocumento,
         numeroDocumento,
         folios
@@ -235,10 +277,9 @@ class DocumentService {
    * @param {Number} toUserId - ID del usuario destino (opcional)
    * @param {String} observacion - Observaciones de la derivación
    * @param {Object} user - Usuario que deriva
-   * @param {String} prioridad - Nueva prioridad (opcional)
    * @returns {Object} Documento actualizado
    */
-  async deriveDocument(documentId, toAreaId, toUserId, observacion, user, prioridad = null) {
+  async deriveDocument(documentId, toAreaId, toUserId, observacion, user) {
     const transaction = await sequelize.transaction();
     
     try {
@@ -274,8 +315,7 @@ class DocumentService {
       await document.update({
         currentAreaId: toAreaId,
         currentUserId: toUserId || null,
-        statusId: statusEnProceso.id,
-        prioridad: prioridad || document.prioridad
+        statusId: statusEnProceso.id
       }, { transaction });
 
       // Crear movimiento de derivación
@@ -341,19 +381,19 @@ class DocumentService {
         throw new Error('El documento no está en tu área');
       }
 
-      // Cambiar estado a "Finalizado"
-      const statusFinalizado = await DocumentStatus.findOne({ 
-        where: { nombre: 'Finalizado' },
+      // Cambiar estado a "Atendido" (Finalizado)
+      const statusAtendido = await DocumentStatus.findOne({ 
+        where: { nombre: 'Atendido' },
         transaction
       });
 
-      if (!statusFinalizado) {
-        throw new Error('Estado "Finalizado" no encontrado en la base de datos');
+      if (!statusAtendido) {
+        throw new Error('Estado "Atendido" no encontrado en la base de datos');
       }
 
       // Actualizar documento
       await document.update({
-        statusId: statusFinalizado.id
+        statusId: statusAtendido.id
       }, { transaction });
 
       // Crear movimiento de finalización
@@ -520,6 +560,84 @@ class DocumentService {
   }
 
   /**
+   * Cambiar estado de un documento manualmente
+   * @param {Number} documentId - ID del documento
+   * @param {Number} newStatusId - ID del nuevo estado
+   * @param {Object} user - Usuario que realiza el cambio
+   * @param {String} observacion - Observación del cambio (opcional)
+   * @returns {Object} Resultado del cambio de estado
+   */
+  async changeDocumentStatus(documentId, newStatusId, user, observacion = null) {
+    const transaction = await sequelize.transaction();
+
+    try {
+      // Buscar documento
+      const document = await Document.findByPk(documentId, {
+        include: [
+          { model: DocumentStatus, as: 'status' },
+          { model: Area, as: 'currentArea' }
+        ],
+        transaction
+      });
+
+      if (!document) {
+        throw new Error('Documento no encontrado');
+      }
+
+      // Verificar permisos: solo el área asignada o administradores
+      if (document.currentAreaId !== user.areaId && user.role?.nombre !== 'Administrador') {
+        throw new Error('No tienes permisos para cambiar el estado de este documento');
+      }
+
+      // Buscar nuevo estado
+      const newStatus = await DocumentStatus.findByPk(newStatusId, { transaction });
+
+      if (!newStatus) {
+        throw new Error('Estado no encontrado');
+      }
+
+      // Validar que no se cambie a estados que requieren acciones específicas
+      const restrictedStatuses = ['Archivado', 'Atendido'];
+      if (restrictedStatuses.includes(newStatus.nombre)) {
+        throw new Error(`No puedes cambiar manualmente a estado "${newStatus.nombre}". Usa la acción correspondiente.`);
+      }
+
+      // Si es el mismo estado, no hacer nada
+      if (document.statusId === newStatusId) {
+        throw new Error('El documento ya tiene ese estado');
+      }
+
+      const oldStatus = document.status;
+
+      // Actualizar estado del documento
+      await document.update({ statusId: newStatusId }, { transaction });
+
+      // Crear movimiento de cambio de estado
+      await DocumentMovement.create({
+        documentId: document.id,
+        fromAreaId: document.currentAreaId,
+        toAreaId: document.currentAreaId,
+        userId: user.id,
+        accion: 'Cambio de Estado',
+        observacion: observacion || `Estado cambiado de "${oldStatus.nombre}" a "${newStatus.nombre}"`
+      }, { transaction });
+
+      await transaction.commit();
+
+      return { 
+        success: true, 
+        message: `Estado cambiado exitosamente a "${newStatus.nombre}"`,
+        previousStatus: oldStatus.nombre,
+        newStatus: newStatus.nombre
+      };
+
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+  }
+
+  /**
    * Actualizar documento
    * @param {Number} documentId - ID del documento
    * @param {Object} data - Datos a actualizar
@@ -542,7 +660,6 @@ class DocumentService {
       const {
         asunto,
         descripcion,
-        prioridad,
         fechaDocumento,
         numeroDocumento,
         folios
@@ -551,7 +668,6 @@ class DocumentService {
       await document.update({
         asunto: asunto || document.asunto,
         descripcion: descripcion !== undefined ? descripcion : document.descripcion,
-        prioridad: prioridad || document.prioridad,
         fechaDocumento: fechaDocumento || document.fechaDocumento,
         numeroDocumento: numeroDocumento || document.numeroDocumento,
         folios: folios || document.folios
@@ -583,7 +699,6 @@ class DocumentService {
       const { 
         status, 
         area, 
-        priority, 
         search, 
         archived, 
         dateFrom, 
@@ -599,7 +714,6 @@ class DocumentService {
       // Filtros básicos
       if (status) where.statusId = status;
       if (area) where.currentAreaId = area;
-      if (priority) where.prioridad = priority;
       if (type) where.documentTypeId = type;
       
       // Filtro de archivados
@@ -721,7 +835,7 @@ class DocumentService {
             order: [['timestamp', 'ASC']]
           }
         ],
-        attributes: ['id', 'trackingCode', 'asunto', 'prioridad', 'created_at']
+        attributes: ['id', 'trackingCode', 'asunto', 'created_at']
       });
 
       if (!document) {
@@ -755,11 +869,6 @@ class DocumentService {
       // Filtro por estado
       if (filters.status) {
         whereClause.statusId = filters.status;
-      }
-
-      // Filtro por prioridad
-      if (filters.priority) {
-        whereClause.prioridad = filters.priority;
       }
 
       // Filtro por tipo de documento
@@ -838,20 +947,9 @@ class DocumentService {
         raw: false
       });
 
-      const byPriority = await Document.findAll({
-        where,
-        attributes: [
-          'prioridad',
-          [Document.sequelize.fn('COUNT', Document.sequelize.col('Document.id')), 'count']
-        ],
-        group: ['prioridad'],
-        raw: true
-      });
-
       return {
         total,
-        byStatus,
-        byPriority
+        byStatus
       };
 
     } catch (error) {
@@ -883,11 +981,6 @@ class DocumentService {
         statusId: statusArchivado.id
       };
       
-      // Filtro por prioridad
-      if (priority) {
-        where.prioridad = priority;
-      }
-
       // Filtro por tipo de documento
       if (documentType) {
         where.docTypeId = documentType;
@@ -955,7 +1048,6 @@ class DocumentService {
       if (asunto) where.asunto = { [Op.like]: `%${asunto}%` };
       if (area) where.currentAreaId = area;
       if (status) where.statusId = status;
-      if (priority) where.prioridad = priority;
       if (type) where.documentTypeId = type;
       if (remitente) senderWhere.nombreCompleto = { [Op.like]: `%${remitente}%` };
       
@@ -1010,7 +1102,16 @@ class DocumentService {
         include: [
           { model: Sender, as: 'sender' },
           { model: DocumentType, as: 'documentType' },
-          { model: DocumentStatus, as: 'status' }
+          { model: DocumentStatus, as: 'status' },
+          { model: Area, as: 'currentArea', attributes: ['id', 'nombre', 'sigla'] },
+          { 
+            model: Attachment, 
+            as: 'attachments',
+            attributes: ['id', 'fileName', 'originalName', 'fileType', 'fileSize', 'uploadedAt'],
+            include: [
+              { model: User, as: 'uploader', attributes: ['id', 'nombre'] }
+            ]
+          }
         ]
       });
 
@@ -1057,18 +1158,21 @@ class DocumentService {
           id: document.id,
           trackingCode: document.trackingCode,
           asunto: document.asunto,
-          prioridad: document.prioridad,
+          descripcion: document.descripcion,
           status: document.status,
           documentType: document.documentType,
           sender: document.sender,
-          createdAt: document.created_at
+          currentArea: document.currentArea,
+          createdAt: document.created_at,
+          attachments: document.attachments || []
         },
         timeline,
         estadisticas: {
           totalMovimientos: movements.length,
           totalDias,
           areasVisitadas,
-          estadoActual: document.status.nombre
+          estadoActual: document.status.nombre,
+          totalAdjuntos: document.attachments?.length || 0
         }
       };
     } catch (error) {
@@ -1171,6 +1275,32 @@ class DocumentService {
     } catch (error) {
       console.error('Error al crear notificación:', error);
       // No lanzar error para no afectar la transacción principal
+    }
+  }
+
+  /**
+   * Obtener archivo adjunto por ID
+   * @param {Number} documentId - ID del documento
+   * @param {Number} attachmentId - ID del adjunto
+   * @returns {Object} Attachment
+   */
+  async getAttachmentById(documentId, attachmentId) {
+    try {
+      const attachment = await Attachment.findOne({
+        where: {
+          id: attachmentId,
+          documentId: documentId
+        }
+      });
+
+      if (!attachment) {
+        throw new Error('Archivo adjunto no encontrado');
+      }
+
+      return attachment;
+
+    } catch (error) {
+      throw error;
     }
   }
 }

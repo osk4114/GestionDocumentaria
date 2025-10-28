@@ -11,7 +11,6 @@ interface Document {
   id: number;
   trackingCode: string;
   asunto: string;
-  prioridad: string;
   created_at: string;
   updated_at: string;
   sender: {
@@ -53,7 +52,6 @@ export class ArchivadosComponent implements OnInit {
   
   // Filtros avanzados
   searchTerm = signal<string>('');
-  selectedPriority = signal<string>('');
   selectedDocumentType = signal<number | null>(null);
   dateFrom = signal<string>('');
   dateTo = signal<string>('');
@@ -116,10 +114,6 @@ export class ArchivadosComponent implements OnInit {
       filters.search = this.searchTerm();
     }
     
-    if (this.selectedPriority()) {
-      filters.priority = this.selectedPriority();
-    }
-    
     if (this.selectedDocumentType()) {
       filters.documentType = this.selectedDocumentType()!;
     }
@@ -152,7 +146,6 @@ export class ArchivadosComponent implements OnInit {
 
   clearFilters(): void {
     this.searchTerm.set('');
-    this.selectedPriority.set('');
     this.selectedDocumentType.set(null);
     this.dateFrom.set('');
     this.dateTo.set('');

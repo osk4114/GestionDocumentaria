@@ -45,10 +45,10 @@
         @if (activeTab() === 'info') {
           <div class="info-section">
             
-            <!-- Estado y Prioridad -->
+            <!-- Estado con opción de cambio -->
             <div class="info-grid">
               <div class="info-item">
-                <label class="info-label">Estado</label>
+                <label class="info-label">Estado Actual</label>
                 <span 
                   class="status-badge" 
                   [style.background-color]="document()!.status.color"
@@ -56,26 +56,50 @@
                   {{ document()!.status.nombre }}
                 </span>
               </div>
-              
-              <div class="info-item">
-                <label class="info-label">Prioridad</label>
-                <span 
-                  class="priority-badge" 
-                  [ngClass]="getPriorityClass(document()!.prioridad)"
-                >
-                  {{ getPriorityLabel(document()!.prioridad) }}
-                </span>
-              </div>
+
+              <!-- Selector para cambiar estado -->
+              @if (availableStatuses().length > 0) {
+                <div class="info-item status-change-section">
+                  <label class="info-label">Cambiar Estado</label>
+                  <div class="status-change-controls">
+                    <select 
+                      [(ngModel)]="selectedStatusId" 
+                      class="status-select"
+                      [disabled]="changingStatus()"
+                    >
+                      @for (status of availableStatuses(); track status.id) {
+                        <option [value]="status.id">{{ status.nombre }}</option>
+                      }
+                    </select>
+                    <button 
+                      (click)="changeStatus()" 
+                      class="btn-change-status"
+                      [disabled]="changingStatus() || selectedStatusId === document()!.status.id"
+                    >
+                      @if (changingStatus()) {
+                        <span>Cambiando...</span>
+                      } @else {
+                        <span>✓ Cambiar</span>
+                      }
+                    </button>
+                  </div>
+                  <small class="status-help-text">
+                    Solo se pueden cambiar manualmente entre Pendiente y En Proceso
+                  </small>
+                </div>
+              }
             </div>
 
             <!-- Documento -->
             <div class="section">
               <h3 class="section-title">📄 Información del Documento</h3>
               
-              <div class="info-item">
-                <label class="info-label">Tipo de Documento</label>
-                <p class="info-value">{{ document()!.documentType.nombre }}</p>
-              </div>
+              @if (document()!.documentType) {
+                <div class="info-item">
+                  <label class="info-label">Tipo de Documento</label>
+                  <p class="info-value">{{ document()!.documentType.nombre }}</p>
+                </div>
+              }
 
               <div class="info-item">
                 <label class="info-label">Asunto</label>
@@ -107,15 +131,19 @@
               <h3 class="section-title">👤 Información del Remitente</h3>
               
               <div class="info-grid">
-                <div class="info-item">
-                  <label class="info-label">Nombre Completo</label>
-                  <p class="info-value">{{ document()!.sender.nombreCompleto }}</p>
-                </div>
+                @if (document()!.sender.nombreCompleto) {
+                  <div class="info-item">
+                    <label class="info-label">Nombre Completo</label>
+                    <p class="info-value">{{ document()!.sender.nombreCompleto }}</p>
+                  </div>
+                }
 
-                <div class="info-item">
-                  <label class="info-label">{{ document()!.sender.tipoDocumento }}</label>
-                  <p class="info-value">{{ document()!.sender.numeroDocumento }}</p>
-                </div>
+                @if (document()!.sender.tipoDocumento && document()!.sender.numeroDocumento) {
+                  <div class="info-item">
+                    <label class="info-label">{{ document()!.sender.tipoDocumento }}</label>
+                    <p class="info-value">{{ document()!.sender.numeroDocumento }}</p>
+                  </div>
+                }
               </div>
 
               @if (document()!.sender.email || document()!.sender.telefono) {
@@ -136,6 +164,39 @@
                 </div>
               }
             </div>
+
+            <!-- Archivos Adjuntos -->
+            @if (document()!.attachments && document()!.attachments!.length > 0) {
+              <div class="section">
+                <h3 class="section-title">📎 Archivos Adjuntos ({{ document()!.attachments!.length }})</h3>
+                
+                <div class="attachments-list">
+                  @for (attachment of document()!.attachments; track attachment.id) {
+                    <div class="attachment-item">
+                      <div class="attachment-info">
+                        <span class="file-icon">{{ getFileIcon(attachment.fileType) }}</span>
+                        <div class="file-details">
+                          <p class="file-name">{{ attachment.originalName }}</p>
+                          <p class="file-meta">
+                            {{ formatFileSize(attachment.fileSize) }} 
+                            · {{ formatDate(attachment.uploadedAt) }}
+                            @if (attachment.uploader) {
+                              · Por: {{ attachment.uploader.nombre }}
+                            }
+                          </p>
+                        </div>
+                      </div>
+                      <button 
+                        class="btn-download"
+                        (click)="downloadAttachment(document()!.id, attachment.id, attachment.originalName)"
+                        title="Descargar archivo">
+                        ⬇️ Descargar
+                      </button>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
 
           </div>
         }
@@ -167,13 +228,17 @@
                           </p>
                         }
                         
-                        <p class="timeline-to">
-                          <strong>A:</strong> {{ movement.toArea.nombre }} ({{ movement.toArea.sigla }})
-                        </p>
+                        @if (movement.toArea) {
+                          <p class="timeline-to">
+                            <strong>A:</strong> {{ movement.toArea.nombre }} ({{ movement.toArea.sigla }})
+                          </p>
+                        }
 
-                        <p class="timeline-user">
-                          <strong>Usuario:</strong> {{ movement.user.nombre }} - {{ movement.user.role.nombre }}
-                        </p>
+                        @if (movement.user) {
+                          <p class="timeline-user">
+                            <strong>Usuario:</strong> {{ movement.user.nombre }} - {{ movement.user.role.nombre }}
+                          </p>
+                        }
 
                         @if (movement.observacion) {
                           <div class="timeline-observation">
@@ -192,11 +257,45 @@
 
       </div>
 
-      <!-- Footer -->
+      <!-- Footer con Acciones -->
       <div class="modal-footer">
-        <button class="btn-secondary" (click)="close()">
-          Cerrar
-        </button>
+        <div class="footer-actions">
+          <!-- Botones de acción -->
+          <div class="action-buttons">
+            @if (document()!.status.nombre !== 'Archivado' && document()!.status.nombre !== 'Atendido') {
+              <button 
+                class="btn-success" 
+                (click)="finalizeDocument()"
+                [disabled]="finalizingDocument()"
+              >
+                @if (finalizingDocument()) {
+                  <span>⏳ Atendiendo...</span>
+                } @else {
+                  <span>✅ Atender Documento</span>
+                }
+              </button>
+            }
+
+            @if (document()!.status.nombre !== 'Archivado') {
+              <button 
+                class="btn-warning" 
+                (click)="archiveDocument()"
+                [disabled]="archivingDocument()"
+              >
+                @if (archivingDocument()) {
+                  <span>⏳ Archivando...</span>
+                } @else {
+                  <span>📦 Archivar</span>
+                }
+              </button>
+            }
+          </div>
+
+          <!-- Botón cerrar -->
+          <button class="btn-secondary" (click)="close()">
+            Cerrar
+          </button>
+        </div>
       </div>
     }
 

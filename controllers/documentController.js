@@ -10,8 +10,34 @@ const documentService = require('../services/documentService');
  */
 exports.submitDocument = async (req, res) => {
   try {
-    // El nuevo formulario envía todo junto, no separado en sender y document
-    const { tipoPersona, email, telefono, asunto, descripcion, linkDescarga } = req.body;
+    // Extraer todos los campos del formulario
+    const { 
+      tipoPersona, 
+      email, 
+      telefono, 
+      asunto, 
+      descripcion, 
+      linkDescarga,
+      // Campos persona natural
+      tipoDocumentoNatural,
+      numeroDocumentoNatural,
+      nombres,
+      apellidoPaterno,
+      apellidoMaterno,
+      // Campos persona jurídica
+      ruc,
+      nombreEmpresa,
+      tipoDocumentoRepresentante,
+      numeroDocumentoRepresentante,
+      nombresRepresentante,
+      apellidoPaternoRepresentante,
+      apellidoMaternoRepresentante,
+      // Campos de dirección (comunes)
+      departamento,
+      provincia,
+      distrito,
+      direccion
+    } = req.body;
 
     // Validar datos requeridos
     if (!email || !telefono || !asunto) {
@@ -25,17 +51,39 @@ exports.submitDocument = async (req, res) => {
     const senderData = {
       tipoPersona: tipoPersona || 'natural',
       email,
-      telefono
+      telefono,
+      // Persona natural
+      tipoDocumentoNatural,
+      numeroDocumentoNatural,
+      nombres,
+      apellidoPaterno,
+      apellidoMaterno,
+      // Persona jurídica
+      ruc,
+      nombreEmpresa,
+      tipoDocumentoRepresentante,
+      numeroDocumentoRepresentante,
+      nombresRepresentante,
+      apellidoPaternoRepresentante,
+      apellidoMaternoRepresentante,
+      // Dirección
+      departamento,
+      provincia,
+      distrito,
+      direccion
     };
 
     const documentData = {
       asunto,
       descripcion: descripcion || null,
-      prioridad: 'normal',
-      documentTypeId: null // El formulario no pide tipo de documento
+      documentTypeId: null, // El formulario no pide tipo de documento
+      linkDescarga: linkDescarga || null
     };
 
-    const result = await documentService.submitPublicDocument(senderData, documentData);
+    // Archivos adjuntos (puede ser un array si hay múltiples archivos)
+    const files = req.files || [];
+
+    const result = await documentService.submitPublicDocument(senderData, documentData, files);
 
     res.status(201).json({
       success: true,
@@ -170,7 +218,7 @@ exports.unarchiveDocument = async (req, res) => {
 exports.deriveDocument = async (req, res) => {
   try {
     const { id } = req.params;
-    const { toAreaId, userId, observacion, prioridad } = req.body;
+    const { toAreaId, userId, observacion } = req.body;
 
     if (!toAreaId) {
       return res.status(400).json({
@@ -184,8 +232,7 @@ exports.deriveDocument = async (req, res) => {
       toAreaId,
       userId,
       observacion,
-      req.user,
-      prioridad
+      req.user
     );
 
     res.status(200).json({
@@ -233,6 +280,72 @@ exports.finalizeDocument = async (req, res) => {
     res.status(statusCode).json({
       success: false,
       message: error.message || 'Error al finalizar documento',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Cambiar estado de un documento manualmente
+ * PUT /api/documents/:id/status
+ */
+exports.changeDocumentStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { statusId, observacion } = req.body;
+
+    // Validar datos requeridos
+    if (!statusId) {
+      return res.status(400).json({
+        success: false,
+        message: 'El ID del estado es requerido'
+      });
+    }
+
+    const result = await documentService.changeDocumentStatus(
+      parseInt(id),
+      parseInt(statusId),
+      req.user,
+      observacion
+    );
+
+    res.status(200).json(result);
+
+  } catch (error) {
+    console.error('Error en changeDocumentStatus:', error);
+    const statusCode = error.message === 'Documento no encontrado' ? 404 :
+                       error.message.includes('permisos') ? 403 : 
+                       error.message.includes('mismo estado') ? 400 :
+                       error.message.includes('manualmente') ? 400 : 500;
+    res.status(statusCode).json({
+      success: false,
+      message: error.message || 'Error al cambiar estado del documento',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Obtener todos los estados disponibles
+ * GET /api/documents/statuses
+ */
+exports.getDocumentStatuses = async (req, res) => {
+  try {
+    const { DocumentStatus } = require('../models');
+    const statuses = await DocumentStatus.findAll({
+      order: [['id', 'ASC']]
+    });
+
+    res.status(200).json({
+      success: true,
+      data: statuses
+    });
+
+  } catch (error) {
+    console.error('Error en getDocumentStatuses:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener estados de documentos',
       error: error.message
     });
   }
@@ -467,6 +580,44 @@ exports.getDocumentsByStatus = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error al obtener documentos por estado',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Descargar archivo adjunto
+ */
+exports.downloadAttachment = async (req, res) => {
+  try {
+    const { documentId, attachmentId } = req.params;
+    const attachment = await documentService.getAttachmentById(documentId, attachmentId);
+
+    // Verificar que el archivo existe físicamente
+    const fs = require('fs');
+    const path = require('path');
+    const filePath = path.resolve(attachment.filePath);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Archivo no encontrado en el servidor'
+      });
+    }
+
+    // Establecer headers para descarga
+    res.setHeader('Content-Type', attachment.fileType);
+    res.setHeader('Content-Disposition', `attachment; filename="${attachment.originalName}"`);
+    
+    // Enviar archivo
+    res.sendFile(filePath);
+
+  } catch (error) {
+    console.error('Error en downloadAttachment:', error);
+    const statusCode = error.message.includes('no encontrado') ? 404 : 500;
+    res.status(statusCode).json({
+      success: false,
+      message: error.message || 'Error al descargar archivo',
       error: error.message
     });
   }

@@ -27,7 +27,31 @@ export class SubmitDocumentComponent {
   ) {
     this.documentForm = this.fb.group({
       // Información del solicitante
-      tipoPersona: ['natural', Validators.required],
+      tipoPersona: ['', Validators.required], // Sin valor por defecto
+      
+      // Campos para Persona Natural
+      tipoDocumentoNatural: ['DNI'],
+      numeroDocumentoNatural: [''],
+      nombres: [''],
+      apellidoPaterno: [''],
+      apellidoMaterno: [''],
+      
+      // Campos para Persona Jurídica
+      ruc: [''],
+      nombreEmpresa: [''],
+      tipoDocumentoRepresentante: ['DNI'],
+      numeroDocumentoRepresentante: [''],
+      nombresRepresentante: [''],
+      apellidoPaternoRepresentante: [''],
+      apellidoMaternoRepresentante: [''],
+      
+      // Dirección (común para ambos)
+      departamento: [''],
+      provincia: [''],
+      distrito: [''],
+      direccion: [''],
+      
+      // Contacto
       email: ['', [Validators.required, Validators.email]],
       telefono: ['', Validators.required],
       
@@ -44,6 +68,13 @@ export class SubmitDocumentComponent {
     });
 
     this.loadDocumentTypes();
+    
+    // Escuchar cambios en tipoPersona para actualizar validaciones
+    this.documentForm.get('tipoPersona')?.valueChanges.subscribe(tipo => {
+      this.updateValidations(tipo);
+    });
+    
+    // NO inicializar validaciones hasta que el usuario seleccione
   }
 
   loadDocumentTypes() {
@@ -62,6 +93,44 @@ export class SubmitDocumentComponent {
         ]);
       }
     });
+  }
+
+  updateValidations(tipoPersona: string) {
+    // Limpiar todas las validaciones primero
+    const camposNatural = ['nombres', 'apellidoPaterno', 'apellidoMaterno'];
+    const camposJuridica = ['ruc', 'nombreEmpresa'];
+    
+    if (tipoPersona === 'natural') {
+      // Activar validaciones para persona natural
+      camposNatural.forEach(campo => {
+        this.documentForm.get(campo)?.setValidators([Validators.required]);
+        this.documentForm.get(campo)?.updateValueAndValidity();
+      });
+      
+      // Desactivar validaciones para persona jurídica
+      camposJuridica.forEach(campo => {
+        this.documentForm.get(campo)?.clearValidators();
+        this.documentForm.get(campo)?.updateValueAndValidity();
+      });
+      
+      // Limpiar campos de representante
+      ['nombresRepresentante', 'apellidoPaternoRepresentante', 'apellidoMaternoRepresentante'].forEach(campo => {
+        this.documentForm.get(campo)?.clearValidators();
+        this.documentForm.get(campo)?.updateValueAndValidity();
+      });
+    } else {
+      // Activar validaciones para persona jurídica
+      camposJuridica.forEach(campo => {
+        this.documentForm.get(campo)?.setValidators([Validators.required]);
+        this.documentForm.get(campo)?.updateValueAndValidity();
+      });
+      
+      // Desactivar validaciones para persona natural
+      camposNatural.forEach(campo => {
+        this.documentForm.get(campo)?.clearValidators();
+        this.documentForm.get(campo)?.updateValueAndValidity();
+      });
+    }
   }
 
   onFileSelected(event: any) {
@@ -105,19 +174,25 @@ export class SubmitDocumentComponent {
     this.loading.set(true);
     this.errorMessage.set('');
 
-    // Preparar datos para envío según la nueva interfaz DocumentSubmission
-    const submissionData: any = {
-      tipoPersona: this.documentForm.get('tipoPersona')?.value,
-      email: this.documentForm.get('email')?.value,
-      telefono: this.documentForm.get('telefono')?.value,
-      asunto: this.documentForm.get('asunto')?.value,
-      descripcion: this.documentForm.get('descripcion')?.value || '',
-      linkDescarga: this.documentForm.get('linkDescarga')?.value || '',
-      prioridad: 'normal'
-    };
+    // Crear FormData para enviar archivos
+    const formData = new FormData();
+    
+    // Agregar datos del formulario
+    formData.append('tipoPersona', this.documentForm.get('tipoPersona')?.value);
+    formData.append('email', this.documentForm.get('email')?.value);
+    formData.append('telefono', this.documentForm.get('telefono')?.value);
+    formData.append('asunto', this.documentForm.get('asunto')?.value);
+    formData.append('descripcion', this.documentForm.get('descripcion')?.value || '');
+    formData.append('linkDescarga', this.documentForm.get('linkDescarga')?.value || '');
+    
+    // Agregar archivos adjuntos
+    const files = this.selectedFiles();
+    files.forEach((file) => {
+      formData.append('archivos', file);
+    });
 
-    this.documentService.submitDocument(submissionData).subscribe({
-      next: (response) => {
+    this.documentService.submitDocumentWithFiles(formData).subscribe({
+      next: (response: any) => {
         if (response.success) {
           this.trackingCode.set(response.data.trackingCode);
           this.submitSuccess.set(true);
@@ -126,7 +201,7 @@ export class SubmitDocumentComponent {
         }
         this.loading.set(false);
       },
-      error: (error) => {
+      error: (error: any) => {
         this.errorMessage.set(error.error?.message || 'Error al conectar con el servidor');
         this.loading.set(false);
       }
@@ -135,7 +210,7 @@ export class SubmitDocumentComponent {
 
   resetForm() {
     this.documentForm.reset({
-      tipoPersona: 'natural',
+      tipoPersona: '', // Sin valor por defecto
       aceptoPolitica: false,
       aceptoDeclaracion: false
     });

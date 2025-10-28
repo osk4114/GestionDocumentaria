@@ -14,8 +14,7 @@
           <input 
             type="text" 
             formControlName="trackingCode"
-            placeholder="Ej: SGD-2024-123456"
-            [disabled]="loading()">
+            placeholder="Ej: SGD-2024-123456">
           <button 
             type="submit" 
             class="btn-search"
@@ -58,9 +57,6 @@
               <p class="document-code">Código: <strong>{{ document()!.trackingCode }}</strong></p>
             </div>
             <div class="document-badges">
-              <span class="badge" [ngClass]="getPriorityClass(document()!.prioridad)">
-                {{ getPriorityLabel(document()!.prioridad) }}
-              </span>
               <span class="badge badge-status" [style.background-color]="document()!.status.color">
                 {{ document()!.status.nombre }}
               </span>
@@ -74,7 +70,7 @@
             </div>
             <div class="info-item">
               <span class="info-label">Tipo de Documento:</span>
-              <span class="info-value">{{ document()!.documentType.nombre }}</span>
+              <span class="info-value">{{ document()!.documentType?.nombre || 'Sin clasificar' }}</span>
             </div>
             <div class="info-item">
               <span class="info-label">Fecha de Ingreso:</span>

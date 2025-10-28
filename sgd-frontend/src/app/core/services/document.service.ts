@@ -20,7 +20,6 @@ export interface DocumentSubmission {
   asunto: string;
   descripcion?: string;
   linkDescarga?: string;
-  prioridad?: 'baja' | 'normal' | 'alta' | 'urgente';
 }
 
 export interface DocumentResponse {
@@ -39,7 +38,6 @@ export interface TrackingResponse {
     id: number;
     trackingCode: string;
     asunto: string;
-    prioridad: string;
     created_at: string;
     sender: {
       nombreCompleto: string;
@@ -71,7 +69,6 @@ export interface TrackingResponse {
 export interface DocumentFilters {
   area?: number;
   status?: number;
-  priority?: string;
   documentType?: number;
   archived?: boolean;
   search?: string;
@@ -108,6 +105,13 @@ export class DocumentService {
    */
   submitDocument(data: DocumentSubmission): Observable<DocumentResponse> {
     return this.http.post<DocumentResponse>(`${this.apiUrl}/documents/submit`, data);
+  }
+
+  /**
+   * Envía un documento con archivos adjuntos usando FormData
+   */
+  submitDocumentWithFiles(formData: FormData): Observable<DocumentResponse> {
+    return this.http.post<DocumentResponse>(`${this.apiUrl}/documents/submit`, formData);
   }
 
   /**
@@ -160,7 +164,6 @@ export class DocumentService {
     
     if (filters.area !== undefined) params.push(`area=${filters.area}`);
     if (filters.status !== undefined) params.push(`status=${filters.status}`);
-    if (filters.priority) params.push(`priority=${filters.priority}`);
     if (filters.documentType !== undefined) params.push(`documentType=${filters.documentType}`);
     if (filters.archived !== undefined) params.push(`archived=${filters.archived}`);
     if (filters.search) params.push(`search=${encodeURIComponent(filters.search)}`);
@@ -181,7 +184,6 @@ export class DocumentService {
     
     if (filters) {
       if (filters.status !== undefined) params.push(`status=${filters.status}`);
-      if (filters.priority) params.push(`priority=${filters.priority}`);
       if (filters.documentType !== undefined) params.push(`documentType=${filters.documentType}`);
       if (filters.search) params.push(`search=${encodeURIComponent(filters.search)}`);
       if (filters.dateFrom) params.push(`dateFrom=${filters.dateFrom}`);
@@ -225,7 +227,6 @@ export class DocumentService {
     
     if (filters) {
       if (filters.search) params.push(`search=${encodeURIComponent(filters.search)}`);
-      if (filters.priority) params.push(`priority=${filters.priority}`);
       if (filters.documentType !== undefined) params.push(`documentType=${filters.documentType}`);
       if (filters.dateFrom) params.push(`dateFrom=${filters.dateFrom}`);
       if (filters.dateTo) params.push(`dateTo=${filters.dateTo}`);
@@ -233,5 +234,22 @@ export class DocumentService {
     
     const queryString = params.length > 0 ? `?${params.join('&')}` : '';
     return this.http.get<ApiResponse<any[]>>(`${this.apiUrl}/documents/area/${areaId}/archived${queryString}`);
+  }
+
+  /**
+   * Cambia el estado de un documento manualmente
+   */
+  changeDocumentStatus(documentId: number, statusId: number, observacion?: string): Observable<ApiResponse<any>> {
+    return this.http.put<ApiResponse<any>>(`${this.apiUrl}/documents/${documentId}/status`, {
+      statusId,
+      observacion
+    });
+  }
+
+  /**
+   * Obtiene todos los estados de documentos disponibles
+   */
+  getDocumentStatuses(): Observable<ApiResponse<any[]>> {
+    return this.http.get<ApiResponse<any[]>>(`${this.apiUrl}/documents/statuses`);
   }
 }

@@ -18,8 +18,78 @@ const Sender = sequelize.define('Sender', {
     allowNull: true,
     field: 'nombre_completo'
   },
+  // Campos para persona natural
+  nombres: {
+    type: DataTypes.STRING(100),
+    allowNull: true
+  },
+  apellidoPaterno: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+    field: 'apellido_paterno'
+  },
+  apellidoMaterno: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+    field: 'apellido_materno'
+  },
+  // Campos para persona jurídica
+  ruc: {
+    type: DataTypes.STRING(11),
+    allowNull: true
+  },
+  nombreEmpresa: {
+    type: DataTypes.STRING(200),
+    allowNull: true,
+    field: 'nombre_empresa'
+  },
+  // Campos para representante legal (persona jurídica)
+  representanteTipoDoc: {
+    type: DataTypes.ENUM('DNI', 'CE', 'PASAPORTE'),
+    allowNull: true,
+    field: 'representante_tipo_doc'
+  },
+  representanteNumDoc: {
+    type: DataTypes.STRING(20),
+    allowNull: true,
+    field: 'representante_num_doc'
+  },
+  representanteNombres: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+    field: 'representante_nombres'
+  },
+  representanteApellidoPaterno: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+    field: 'representante_apellido_paterno'
+  },
+  representanteApellidoMaterno: {
+    type: DataTypes.STRING(100),
+    allowNull: true,
+    field: 'representante_apellido_materno'
+  },
+  // Campos de dirección detallada
+  departamento: {
+    type: DataTypes.STRING(50),
+    allowNull: true
+  },
+  provincia: {
+    type: DataTypes.STRING(50),
+    allowNull: true
+  },
+  distrito: {
+    type: DataTypes.STRING(50),
+    allowNull: true
+  },
+  direccionCompleta: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    field: 'direccion_completa'
+  },
+  // Campos originales
   tipoDocumento: {
-    type: DataTypes.ENUM('DNI', 'RUC', 'PASAPORTE', 'CARNET_EXTRANJERIA'),
+    type: DataTypes.ENUM('DNI', 'RUC', 'PASAPORTE', 'CARNET_EXTRANJERIA', 'CE'),
     allowNull: true,
     field: 'tipo_documento'
   },

@@ -46,11 +46,6 @@ const Document = sequelize.define('Document', {
     allowNull: true,
     field: 'current_user_id'
   },
-  prioridad: {
-    type: DataTypes.ENUM('baja', 'normal', 'alta', 'urgente'),
-    defaultValue: 'normal',
-    allowNull: false
-  },
   fechaLimite: {
     type: DataTypes.DATEONLY,
     allowNull: true,

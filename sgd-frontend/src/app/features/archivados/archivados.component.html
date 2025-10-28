@@ -68,22 +68,6 @@
       <div class="advanced-filters" *ngIf="showFilters()">
         <div class="filter-row">
           <div class="filter-group">
-            <label for="priority-filter">Prioridad</label>
-            <select 
-              id="priority-filter"
-              class="filter-select"
-              [ngModel]="selectedPriority()"
-              (ngModelChange)="selectedPriority.set($event)"
-            >
-              <option value="">Todas</option>
-              <option value="baja">Baja</option>
-              <option value="normal">Normal</option>
-              <option value="alta">Alta</option>
-              <option value="urgente">Urgente</option>
-            </select>
-          </div>
-
-          <div class="filter-group">
             <label for="type-filter">Tipo de Documento</label>
             <select 
               id="type-filter"
@@ -161,7 +145,6 @@
               <th>Asunto</th>
               <th>Tipo</th>
               <th>Remitente</th>
-              <th>Prioridad</th>
               <th>Fecha Archivado</th>
               <th>Acciones</th>
             </tr>
@@ -176,16 +159,6 @@
               </td>
               <td>{{ doc.documentType?.nombre || 'Sin clasificar' }}</td>
               <td>{{ doc.sender.nombreCompleto || doc.sender.email || 'Sin datos' }}</td>
-              <td>
-                <span class="badge badge-priority" [ngClass]="{
-                  'priority-baja': doc.prioridad === 'baja',
-                  'priority-normal': doc.prioridad === 'normal',
-                  'priority-alta': doc.prioridad === 'alta',
-                  'priority-urgente': doc.prioridad === 'urgente'
-                }">
-                  {{ doc.prioridad | titlecase }}
-                </span>
-              </td>
               <td>{{ formatDate(doc.updated_at) }}</td>
               <td>
                 <div class="action-buttons">

@@ -14,7 +14,6 @@ interface Document {
   id: number;
   trackingCode: string;
   asunto: string;
-  prioridad: string;
   created_at: string;
   sender: { 
     nombreCompleto?: string;
@@ -34,10 +33,9 @@ interface Document {
 
 interface Stats {
   total: number;
-  recibidos: number;
+  pendientes: number;
   enProceso: number;
   finalizados: number;
-  urgentes: number;
 }
 
 @Component({
@@ -51,7 +49,7 @@ export class DashboardComponent implements OnInit {
   user = signal<User | null>(null);
   documents = signal<Document[]>([]);
   filteredDocuments = signal<Document[]>([]);
-  stats = signal<Stats>({ total: 0, recibidos: 0, enProceso: 0, finalizados: 0, urgentes: 0 });
+  stats = signal<Stats>({ total: 0, pendientes: 0, enProceso: 0, finalizados: 0 });
   loading = signal(false);
   
   // Modales
@@ -61,7 +59,6 @@ export class DashboardComponent implements OnInit {
     id: 0,
     trackingCode: '',
     asunto: '',
-    prioridad: '',
     created_at: '',
     sender: { nombreCompleto: '', email: '' },
     documentType: null,
@@ -73,7 +70,6 @@ export class DashboardComponent implements OnInit {
   // Filtros
   searchTerm = '';
   statusFilter = '';
-  priorityFilter = '';
   
   // Paginación
   currentPage = signal(1);
@@ -131,10 +127,9 @@ export class DashboardComponent implements OnInit {
     const docs = this.documents();
     this.stats.set({
       total: docs.length,
-      recibidos: docs.filter(d => d.status.nombre === 'Recibido').length,
-      enProceso: docs.filter(d => d.status.nombre === 'En proceso').length,
-      finalizados: docs.filter(d => d.status.nombre === 'Finalizado' || d.status.nombre === 'Atendido').length,
-      urgentes: docs.filter(d => d.prioridad === 'urgente').length
+      pendientes: docs.filter(d => d.status.nombre === 'Pendiente').length,
+      enProceso: docs.filter(d => d.status.nombre === 'En Proceso').length,
+      finalizados: docs.filter(d => d.status.nombre === 'Atendido').length
     });
   }
 
@@ -155,17 +150,12 @@ export class DashboardComponent implements OnInit {
       filtered = filtered.filter(d => d.status.nombre === this.statusFilter);
     }
 
-    if (this.priorityFilter) {
-      filtered = filtered.filter(d => d.prioridad === this.priorityFilter);
-    }
-
     this.filteredDocuments.set(filtered);
   }
 
   clearFilters(): void {
     this.searchTerm = '';
     this.statusFilter = '';
-    this.priorityFilter = '';
     this.filteredDocuments.set(this.documents());
   }
 
@@ -180,26 +170,6 @@ export class DashboardComponent implements OnInit {
       month: 'short',
       year: 'numeric'
     });
-  }
-
-  getPriorityLabel(priority: string): string {
-    const labels: Record<string, string> = {
-      baja: 'Baja',
-      normal: 'Normal',
-      alta: 'Alta',
-      urgente: 'Urgente'
-    };
-    return labels[priority] || priority;
-  }
-
-  getPriorityClass(priority: string): string {
-    const classes: Record<string, string> = {
-      baja: 'priority-low',
-      normal: 'priority-normal',
-      alta: 'priority-high',
-      urgente: 'priority-urgent'
-    };
-    return classes[priority] || '';
   }
 
   onLogout(): void {
