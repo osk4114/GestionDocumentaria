@@ -6,11 +6,33 @@ import { environment } from '../../environments/environment';
 export interface Sender {
   tipoPersona?: 'natural' | 'juridica';
   nombreCompleto?: string;
-  tipoDocumento?: 'DNI' | 'RUC' | 'PASAPORTE' | 'CARNET_EXTRANJERIA';
+  tipoDocumento?: 'DNI' | 'RUC' | 'PASAPORTE' | 'CARNET_EXTRANJERIA' | 'CE';
   numeroDocumento?: string;
   email: string;
   telefono: string;
   direccion?: string;
+  
+  // Campos persona natural
+  nombres?: string;
+  apellidoPaterno?: string;
+  apellidoMaterno?: string;
+  
+  // Campos persona jurídica
+  ruc?: string;
+  nombreEmpresa?: string;
+  
+  // Representante legal (persona jurídica)
+  representanteTipoDoc?: 'DNI' | 'CE' | 'PASAPORTE';
+  representanteNumDoc?: string;
+  representanteNombres?: string;
+  representanteApellidoPaterno?: string;
+  representanteApellidoMaterno?: string;
+  
+  // Dirección detallada
+  departamento?: string;
+  provincia?: string;
+  distrito?: string;
+  direccionCompleta?: string;
 }
 
 export interface DocumentSubmission {

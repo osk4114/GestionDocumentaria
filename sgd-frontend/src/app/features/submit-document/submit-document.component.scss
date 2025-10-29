@@ -609,3 +609,154 @@ select {
     }
   }
 }
+
+/* ============================================
+   ESTILOS DE VALIDACIÓN Y FEEDBACK VISUAL
+   ============================================ */
+
+// Campos requeridos
+.required {
+  color: #dc3545;
+  font-weight: 600;
+  margin-left: 2px;
+}
+
+// Input wrapper para contener input + icono
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  
+  input,
+  select,
+  textarea {
+    flex: 1;
+    transition: all 0.3s ease;
+  }
+}
+
+// Icono de validación (✓)
+.icon-valid {
+  position: absolute;
+  right: 12px;
+  color: #28a745;
+  font-weight: bold;
+  font-size: 1.2rem;
+  animation: fadeIn 0.3s ease;
+  pointer-events: none;
+}
+
+// Estado: campo válido
+.form-group.is-valid {
+  input,
+  select,
+  textarea {
+    border-color: #28a745;
+    background-color: #f8fff9;
+    
+    &:focus {
+      border-color: #28a745;
+      box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
+    }
+  }
+  
+  label {
+    color: #1e1e1e;
+  }
+}
+
+// Estado: campo con error
+.form-group.has-error {
+  input,
+  select,
+  textarea {
+    border-color: #dc3545;
+    background-color: #fff8f8;
+    
+    &:focus {
+      border-color: #dc3545;
+      box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+    }
+  }
+  
+  label {
+    color: #dc3545;
+  }
+}
+
+// Mensaje de error
+.error-text {
+  display: block;
+  color: #dc3545;
+  font-size: 0.875rem;
+  margin-top: 0.5rem;
+  animation: slideDown 0.3s ease;
+  line-height: 1.4;
+}
+
+// Animaciones
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// Mejora en form-col para validaciones en filas
+.form-row-3,
+.form-row-2 {
+  .form-col {
+    &.has-error {
+      input,
+      select,
+      textarea {
+        border-color: #dc3545;
+        background-color: #fff8f8;
+      }
+    }
+    
+    &.is-valid {
+      input,
+      select,
+      textarea {
+        border-color: #28a745;
+        background-color: #f8fff9;
+      }
+    }
+  }
+}
+
+// Tooltips de ayuda (opcional para futuras mejoras)
+.help-tooltip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #6b7280;
+  color: white;
+  font-size: 0.75rem;
+  margin-left: 6px;
+  cursor: help;
+  transition: background 0.2s;
+  
+  &:hover {
+    background: #4b5563;
+  }
+}

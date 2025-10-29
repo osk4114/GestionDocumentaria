@@ -2,6 +2,7 @@ import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { DocumentService } from '../../core/services/document.service';
+import { CustomValidators } from '../../shared/validators/custom-validators';
 
 @Component({
   selector: 'app-submit-document',
@@ -27,37 +28,37 @@ export class SubmitDocumentComponent {
   ) {
     this.documentForm = this.fb.group({
       // Información del solicitante
-      tipoPersona: ['', Validators.required], // Sin valor por defecto
+      tipoPersona: ['', Validators.required],
       
       // Campos para Persona Natural
       tipoDocumentoNatural: ['DNI'],
       numeroDocumentoNatural: [''],
-      nombres: [''],
-      apellidoPaterno: [''],
-      apellidoMaterno: [''],
+      nombres: ['', CustomValidators.soloLetras()],
+      apellidoPaterno: ['', CustomValidators.soloLetras()],
+      apellidoMaterno: ['', CustomValidators.soloLetras()],
       
       // Campos para Persona Jurídica
-      ruc: [''],
+      ruc: ['', CustomValidators.ruc()],
       nombreEmpresa: [''],
       tipoDocumentoRepresentante: ['DNI'],
       numeroDocumentoRepresentante: [''],
-      nombresRepresentante: [''],
-      apellidoPaternoRepresentante: [''],
-      apellidoMaternoRepresentante: [''],
+      nombresRepresentante: ['', CustomValidators.soloLetras()],
+      apellidoPaternoRepresentante: ['', CustomValidators.soloLetras()],
+      apellidoMaternoRepresentante: ['', CustomValidators.soloLetras()],
       
       // Dirección (común para ambos)
-      departamento: [''],
-      provincia: [''],
-      distrito: [''],
+      departamento: ['', CustomValidators.soloLetras()],
+      provincia: ['', CustomValidators.soloLetras()],
+      distrito: ['', CustomValidators.soloLetras()],
       direccion: [''],
       
       // Contacto
-      email: ['', [Validators.required, Validators.email]],
-      telefono: ['', Validators.required],
+      email: ['', [Validators.required, CustomValidators.email()]],
+      telefono: ['', [Validators.required, CustomValidators.telefono()]],
       
       // Descripción de la solicitud
-      asunto: ['', [Validators.required, Validators.minLength(5)]],
-      descripcion: ['', Validators.maxLength(500)],
+      asunto: ['', [Validators.required, CustomValidators.minLength(10), CustomValidators.maxLength(200)]],
+      descripcion: ['', CustomValidators.maxLength(500)],
       
       // Documentos
       linkDescarga: [''],
@@ -96,41 +97,41 @@ export class SubmitDocumentComponent {
   }
 
   updateValidations(tipoPersona: string) {
-    // Limpiar todas las validaciones primero
-    const camposNatural = ['nombres', 'apellidoPaterno', 'apellidoMaterno'];
-    const camposJuridica = ['ruc', 'nombreEmpresa'];
-    
     if (tipoPersona === 'natural') {
       // Activar validaciones para persona natural
-      camposNatural.forEach(campo => {
-        this.documentForm.get(campo)?.setValidators([Validators.required]);
-        this.documentForm.get(campo)?.updateValueAndValidity();
-      });
+      this.documentForm.get('nombres')?.setValidators([Validators.required, CustomValidators.soloLetras()]);
+      this.documentForm.get('apellidoPaterno')?.setValidators([Validators.required, CustomValidators.soloLetras()]);
+      this.documentForm.get('apellidoMaterno')?.setValidators([Validators.required, CustomValidators.soloLetras()]);
+      this.documentForm.get('numeroDocumentoNatural')?.setValidators([Validators.required, CustomValidators.dni()]);
       
       // Desactivar validaciones para persona jurídica
-      camposJuridica.forEach(campo => {
-        this.documentForm.get(campo)?.clearValidators();
-        this.documentForm.get(campo)?.updateValueAndValidity();
-      });
+      this.documentForm.get('ruc')?.clearValidators();
+      this.documentForm.get('nombreEmpresa')?.clearValidators();
+      this.documentForm.get('numeroDocumentoRepresentante')?.clearValidators();
+      this.documentForm.get('nombresRepresentante')?.clearValidators();
+      this.documentForm.get('apellidoPaternoRepresentante')?.clearValidators();
+      this.documentForm.get('apellidoMaternoRepresentante')?.clearValidators();
       
-      // Limpiar campos de representante
-      ['nombresRepresentante', 'apellidoPaternoRepresentante', 'apellidoMaternoRepresentante'].forEach(campo => {
-        this.documentForm.get(campo)?.clearValidators();
-        this.documentForm.get(campo)?.updateValueAndValidity();
-      });
-    } else {
+    } else if (tipoPersona === 'juridica') {
       // Activar validaciones para persona jurídica
-      camposJuridica.forEach(campo => {
-        this.documentForm.get(campo)?.setValidators([Validators.required]);
-        this.documentForm.get(campo)?.updateValueAndValidity();
-      });
+      this.documentForm.get('ruc')?.setValidators([Validators.required, CustomValidators.ruc()]);
+      this.documentForm.get('nombreEmpresa')?.setValidators([Validators.required]);
+      this.documentForm.get('numeroDocumentoRepresentante')?.setValidators([Validators.required, CustomValidators.dni()]);
+      this.documentForm.get('nombresRepresentante')?.setValidators([Validators.required, CustomValidators.soloLetras()]);
+      this.documentForm.get('apellidoPaternoRepresentante')?.setValidators([Validators.required, CustomValidators.soloLetras()]);
+      this.documentForm.get('apellidoMaternoRepresentante')?.setValidators([Validators.required, CustomValidators.soloLetras()]);
       
       // Desactivar validaciones para persona natural
-      camposNatural.forEach(campo => {
-        this.documentForm.get(campo)?.clearValidators();
-        this.documentForm.get(campo)?.updateValueAndValidity();
-      });
+      this.documentForm.get('nombres')?.clearValidators();
+      this.documentForm.get('apellidoPaterno')?.clearValidators();
+      this.documentForm.get('apellidoMaterno')?.clearValidators();
+      this.documentForm.get('numeroDocumentoNatural')?.clearValidators();
     }
+    
+    // Actualizar validez de todos los campos
+    Object.keys(this.documentForm.controls).forEach(key => {
+      this.documentForm.get(key)?.updateValueAndValidity();
+    });
   }
 
   onFileSelected(event: any) {
@@ -177,10 +178,36 @@ export class SubmitDocumentComponent {
     // Crear FormData para enviar archivos
     const formData = new FormData();
     
-    // Agregar datos del formulario
+    // Tipo de persona
     formData.append('tipoPersona', this.documentForm.get('tipoPersona')?.value);
+    
+    // Campos persona natural
+    formData.append('tipoDocumentoNatural', this.documentForm.get('tipoDocumentoNatural')?.value || '');
+    formData.append('numeroDocumentoNatural', this.documentForm.get('numeroDocumentoNatural')?.value || '');
+    formData.append('nombres', this.documentForm.get('nombres')?.value || '');
+    formData.append('apellidoPaterno', this.documentForm.get('apellidoPaterno')?.value || '');
+    formData.append('apellidoMaterno', this.documentForm.get('apellidoMaterno')?.value || '');
+    
+    // Campos persona jurídica
+    formData.append('ruc', this.documentForm.get('ruc')?.value || '');
+    formData.append('nombreEmpresa', this.documentForm.get('nombreEmpresa')?.value || '');
+    formData.append('tipoDocumentoRepresentante', this.documentForm.get('tipoDocumentoRepresentante')?.value || '');
+    formData.append('numeroDocumentoRepresentante', this.documentForm.get('numeroDocumentoRepresentante')?.value || '');
+    formData.append('nombresRepresentante', this.documentForm.get('nombresRepresentante')?.value || '');
+    formData.append('apellidoPaternoRepresentante', this.documentForm.get('apellidoPaternoRepresentante')?.value || '');
+    formData.append('apellidoMaternoRepresentante', this.documentForm.get('apellidoMaternoRepresentante')?.value || '');
+    
+    // Dirección
+    formData.append('departamento', this.documentForm.get('departamento')?.value || '');
+    formData.append('provincia', this.documentForm.get('provincia')?.value || '');
+    formData.append('distrito', this.documentForm.get('distrito')?.value || '');
+    formData.append('direccion', this.documentForm.get('direccion')?.value || '');
+    
+    // Contacto
     formData.append('email', this.documentForm.get('email')?.value);
     formData.append('telefono', this.documentForm.get('telefono')?.value);
+    
+    // Documento
     formData.append('asunto', this.documentForm.get('asunto')?.value);
     formData.append('descripcion', this.documentForm.get('descripcion')?.value || '');
     formData.append('linkDescarga', this.documentForm.get('linkDescarga')?.value || '');
@@ -210,7 +237,7 @@ export class SubmitDocumentComponent {
 
   resetForm() {
     this.documentForm.reset({
-      tipoPersona: '', // Sin valor por defecto
+      tipoPersona: '',
       aceptoPolitica: false,
       aceptoDeclaracion: false
     });
@@ -218,6 +245,50 @@ export class SubmitDocumentComponent {
     this.submitSuccess.set(false);
     this.trackingCode.set('');
     this.errorMessage.set('');
+  }
+
+  /**
+   * Obtiene el mensaje de error para un campo específico
+   */
+  getErrorMessage(fieldName: string): string {
+    const control = this.documentForm.get(fieldName);
+    
+    if (!control || !control.errors || !control.touched) {
+      return '';
+    }
+
+    const errors = control.errors;
+    
+    // Errores personalizados con mensaje incluido
+    if (errors['dni']) return errors['dni'].message;
+    if (errors['ruc']) return errors['ruc'].message;
+    if (errors['telefono']) return errors['telefono'].message;
+    if (errors['email']) return errors['email'].message;
+    if (errors['soloLetras']) return errors['soloLetras'].message;
+    if (errors['minLength']) return errors['minLength'].message;
+    if (errors['maxLength']) return errors['maxLength'].message;
+    
+    // Errores estándar
+    if (errors['required']) return 'Este campo es obligatorio';
+    if (errors['requiredTrue']) return 'Debe aceptar esta condición';
+    
+    return 'Campo inválido';
+  }
+
+  /**
+   * Verifica si un campo tiene errores y ha sido tocado
+   */
+  hasError(fieldName: string): boolean {
+    const control = this.documentForm.get(fieldName);
+    return !!(control && control.invalid && control.touched);
+  }
+
+  /**
+   * Verifica si un campo es válido y ha sido tocado
+   */
+  isValid(fieldName: string): boolean {
+    const control = this.documentForm.get(fieldName);
+    return !!(control && control.valid && control.touched && control.value);
   }
 
 }

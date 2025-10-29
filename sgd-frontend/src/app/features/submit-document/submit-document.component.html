@@ -73,7 +73,10 @@
             <div class="conditional-section">
               <div class="form-row">
                 <div class="form-group">
-                  <label for="tipoDocumentoNatural">1.1. Tipo de documento de identidad del solicitante <span class="optional">(Opcional)</span></label>
+                  <label for="tipoDocumentoNatural">
+                    1.1. Tipo de documento de identidad del solicitante 
+                    <span class="optional">(Opcional)</span>
+                  </label>
                   <select id="tipoDocumentoNatural" formControlName="tipoDocumentoNatural">
                     <option value="DNI">DNI</option>
                     <option value="CE">Carné de Extranjería</option>
@@ -82,41 +85,85 @@
                 </div>
               </div>
 
-              <div class="form-group">
-                <label for="numeroDocumentoNatural">Número de documento de identidad del solicitante</label>
-                <input 
-                  id="numeroDocumentoNatural"
-                  type="text" 
-                  formControlName="numeroDocumentoNatural"
-                  placeholder="">
+              <div class="form-group" [class.has-error]="hasError('numeroDocumentoNatural')" [class.is-valid]="isValid('numeroDocumentoNatural')">
+                <label for="numeroDocumentoNatural">
+                  Número de documento de identidad del solicitante 
+                  <span class="required">*</span>
+                </label>
+                <div class="input-wrapper">
+                  <input 
+                    id="numeroDocumentoNatural"
+                    type="text" 
+                    formControlName="numeroDocumentoNatural"
+                    placeholder="Ej: 12345678"
+                    maxlength="9">
+                  @if (isValid('numeroDocumentoNatural')) {
+                    <span class="icon-valid">✓</span>
+                  }
+                </div>
+                @if (hasError('numeroDocumentoNatural')) {
+                  <span class="error-text">{{ getErrorMessage('numeroDocumentoNatural') }}</span>
+                }
               </div>
 
               <div class="form-group">
                 <label class="subsection-label">1.2. Nombres y apellidos del solicitante</label>
                 <div class="form-row-3">
-                  <div class="form-col">
-                    <label for="nombres">Nombres</label>
-                    <input 
-                      id="nombres"
-                      type="text" 
-                      formControlName="nombres"
-                      placeholder="">
+                  <div class="form-col" [class.has-error]="hasError('nombres')" [class.is-valid]="isValid('nombres')">
+                    <label for="nombres">
+                      Nombres <span class="required">*</span>
+                    </label>
+                    <div class="input-wrapper">
+                      <input 
+                        id="nombres"
+                        type="text" 
+                        formControlName="nombres"
+                        placeholder="Ej: Juan Carlos">
+                      @if (isValid('nombres')) {
+                        <span class="icon-valid">✓</span>
+                      }
+                    </div>
+                    @if (hasError('nombres')) {
+                      <span class="error-text">{{ getErrorMessage('nombres') }}</span>
+                    }
                   </div>
-                  <div class="form-col">
-                    <label for="apellidoPaterno">Apellido paterno</label>
-                    <input 
-                      id="apellidoPaterno"
-                      type="text" 
-                      formControlName="apellidoPaterno"
-                      placeholder="">
+                  
+                  <div class="form-col" [class.has-error]="hasError('apellidoPaterno')" [class.is-valid]="isValid('apellidoPaterno')">
+                    <label for="apellidoPaterno">
+                      Apellido paterno <span class="required">*</span>
+                    </label>
+                    <div class="input-wrapper">
+                      <input 
+                        id="apellidoPaterno"
+                        type="text" 
+                        formControlName="apellidoPaterno"
+                        placeholder="Ej: García">
+                      @if (isValid('apellidoPaterno')) {
+                        <span class="icon-valid">✓</span>
+                      }
+                    </div>
+                    @if (hasError('apellidoPaterno')) {
+                      <span class="error-text">{{ getErrorMessage('apellidoPaterno') }}</span>
+                    }
                   </div>
-                  <div class="form-col">
-                    <label for="apellidoMaterno">Apellido materno</label>
-                    <input 
-                      id="apellidoMaterno"
-                      type="text" 
-                      formControlName="apellidoMaterno"
-                      placeholder="">
+                  
+                  <div class="form-col" [class.has-error]="hasError('apellidoMaterno')" [class.is-valid]="isValid('apellidoMaterno')">
+                    <label for="apellidoMaterno">
+                      Apellido materno <span class="required">*</span>
+                    </label>
+                    <div class="input-wrapper">
+                      <input 
+                        id="apellidoMaterno"
+                        type="text" 
+                        formControlName="apellidoMaterno"
+                        placeholder="Ej: López">
+                      @if (isValid('apellidoMaterno')) {
+                        <span class="icon-valid">✓</span>
+                      }
+                    </div>
+                    @if (hasError('apellidoMaterno')) {
+                      <span class="error-text">{{ getErrorMessage('apellidoMaterno') }}</span>
+                    }
                   </div>
                 </div>
               </div>
@@ -164,23 +211,43 @@
             <div class="conditional-section">
               <h3 class="subsection-title">Información de la entidad, empresa o institución</h3>
               
-              <div class="form-group">
-                <label for="ruc">1.1. Ingresa el número de RUC</label>
-                <input 
-                  id="ruc"
-                  type="text" 
-                  formControlName="ruc"
-                  placeholder=""
-                  maxlength="11">
+              <div class="form-group" [class.has-error]="hasError('ruc')" [class.is-valid]="isValid('ruc')">
+                <label for="ruc">
+                  1.1. Ingresa el número de RUC <span class="required">*</span>
+                </label>
+                <div class="input-wrapper">
+                  <input 
+                    id="ruc"
+                    type="text" 
+                    formControlName="ruc"
+                    placeholder="Ej: 20123456789"
+                    maxlength="11">
+                  @if (isValid('ruc')) {
+                    <span class="icon-valid">✓</span>
+                  }
+                </div>
+                @if (hasError('ruc')) {
+                  <span class="error-text">{{ getErrorMessage('ruc') }}</span>
+                }
               </div>
 
-              <div class="form-group">
-                <label for="nombreEmpresa">1.2. Nombre de la entidad, empresa o institución</label>
-                <input 
-                  id="nombreEmpresa"
-                  type="text" 
-                  formControlName="nombreEmpresa"
-                  placeholder="">
+              <div class="form-group" [class.has-error]="hasError('nombreEmpresa')" [class.is-valid]="isValid('nombreEmpresa')">
+                <label for="nombreEmpresa">
+                  1.2. Nombre de la entidad, empresa o institución <span class="required">*</span>
+                </label>
+                <div class="input-wrapper">
+                  <input 
+                    id="nombreEmpresa"
+                    type="text" 
+                    formControlName="nombreEmpresa"
+                    placeholder="Ej: Corporación ABC S.A.C.">
+                  @if (isValid('nombreEmpresa')) {
+                    <span class="icon-valid">✓</span>
+                  }
+                </div>
+                @if (hasError('nombreEmpresa')) {
+                  <span class="error-text">{{ getErrorMessage('nombreEmpresa') }}</span>
+                }
               </div>
 
               <div class="form-group">
@@ -223,7 +290,10 @@
               
               <div class="form-row">
                 <div class="form-group">
-                  <label for="tipoDocumentoRepresentante">1.5. Tipo de documento de identidad del representante legal que realiza el trámite <span class="optional">(Opcional)</span></label>
+                  <label for="tipoDocumentoRepresentante">
+                    1.5. Tipo de documento de identidad del representante legal que realiza el trámite 
+                    <span class="optional">(Opcional)</span>
+                  </label>
                   <select id="tipoDocumentoRepresentante" formControlName="tipoDocumentoRepresentante">
                     <option value="DNI">DNI</option>
                     <option value="CE">Carné de Extranjería</option>
@@ -232,66 +302,129 @@
                 </div>
               </div>
 
-              <div class="form-group">
-                <label for="numeroDocumentoRepresentante">Número de documento de identidad</label>
-                <input 
-                  id="numeroDocumentoRepresentante"
-                  type="text" 
-                  formControlName="numeroDocumentoRepresentante"
-                  placeholder="">
+              <div class="form-group" [class.has-error]="hasError('numeroDocumentoRepresentante')" [class.is-valid]="isValid('numeroDocumentoRepresentante')">
+                <label for="numeroDocumentoRepresentante">
+                  Número de documento de identidad <span class="required">*</span>
+                </label>
+                <div class="input-wrapper">
+                  <input 
+                    id="numeroDocumentoRepresentante"
+                    type="text" 
+                    formControlName="numeroDocumentoRepresentante"
+                    placeholder="Ej: 12345678"
+                    maxlength="9">
+                  @if (isValid('numeroDocumentoRepresentante')) {
+                    <span class="icon-valid">✓</span>
+                  }
+                </div>
+                @if (hasError('numeroDocumentoRepresentante')) {
+                  <span class="error-text">{{ getErrorMessage('numeroDocumentoRepresentante') }}</span>
+                }
               </div>
 
               <div class="form-group">
-                <label class="subsection-label">1.6. Nombres y apellidos del representante legal que realiza el trámite <span class="optional">(Opcional)</span></label>
+                <label class="subsection-label">
+                  1.6. Nombres y apellidos del representante legal que realiza el trámite
+                </label>
                 <div class="form-row-3">
-                  <div class="form-col">
-                    <label for="nombresRepresentante">Nombres</label>
-                    <input 
-                      id="nombresRepresentante"
-                      type="text" 
-                      formControlName="nombresRepresentante"
-                      placeholder="">
+                  <div class="form-col" [class.has-error]="hasError('nombresRepresentante')" [class.is-valid]="isValid('nombresRepresentante')">
+                    <label for="nombresRepresentante">
+                      Nombres <span class="required">*</span>
+                    </label>
+                    <div class="input-wrapper">
+                      <input 
+                        id="nombresRepresentante"
+                        type="text" 
+                        formControlName="nombresRepresentante"
+                        placeholder="Ej: María Elena">
+                      @if (isValid('nombresRepresentante')) {
+                        <span class="icon-valid">✓</span>
+                      }
+                    </div>
+                    @if (hasError('nombresRepresentante')) {
+                      <span class="error-text">{{ getErrorMessage('nombresRepresentante') }}</span>
+                    }
                   </div>
-                  <div class="form-col">
-                    <label for="apellidoPaternoRepresentante">Apellido paterno</label>
-                    <input 
-                      id="apellidoPaternoRepresentante"
-                      type="text" 
-                      formControlName="apellidoPaternoRepresentante"
-                      placeholder="">
+                  
+                  <div class="form-col" [class.has-error]="hasError('apellidoPaternoRepresentante')" [class.is-valid]="isValid('apellidoPaternoRepresentante')">
+                    <label for="apellidoPaternoRepresentante">
+                      Apellido paterno <span class="required">*</span>
+                    </label>
+                    <div class="input-wrapper">
+                      <input 
+                        id="apellidoPaternoRepresentante"
+                        type="text" 
+                        formControlName="apellidoPaternoRepresentante"
+                        placeholder="Ej: Rodríguez">
+                      @if (isValid('apellidoPaternoRepresentante')) {
+                        <span class="icon-valid">✓</span>
+                      }
+                    </div>
+                    @if (hasError('apellidoPaternoRepresentante')) {
+                      <span class="error-text">{{ getErrorMessage('apellidoPaternoRepresentante') }}</span>
+                    }
                   </div>
-                  <div class="form-col">
-                    <label for="apellidoMaternoRepresentante">Apellido materno</label>
-                    <input 
-                      id="apellidoMaternoRepresentante"
-                      type="text" 
-                      formControlName="apellidoMaternoRepresentante"
-                      placeholder="">
+                  
+                  <div class="form-col" [class.has-error]="hasError('apellidoMaternoRepresentante')" [class.is-valid]="isValid('apellidoMaternoRepresentante')">
+                    <label for="apellidoMaternoRepresentante">
+                      Apellido materno <span class="required">*</span>
+                    </label>
+                    <div class="input-wrapper">
+                      <input 
+                        id="apellidoMaternoRepresentante"
+                        type="text" 
+                        formControlName="apellidoMaternoRepresentante"
+                        placeholder="Ej: Fernández">
+                      @if (isValid('apellidoMaternoRepresentante')) {
+                        <span class="icon-valid">✓</span>
+                      }
+                    </div>
+                    @if (hasError('apellidoMaternoRepresentante')) {
+                      <span class="error-text">{{ getErrorMessage('apellidoMaternoRepresentante') }}</span>
+                    }
                   </div>
                 </div>
               </div>
             </div>
           }
 
-          <div class="form-group">
-            <label for="email" class="step-label">2. Correo electrónico de contacto</label>
-            <input 
-              id="email"
-              type="email" 
-              formControlName="email"
-              placeholder="">
-            @if (documentForm.get('email')?.invalid && documentForm.get('email')?.touched) {
-              <span class="error-text">Correo electrónico inválido</span>
+          <div class="form-group" [class.has-error]="hasError('email')" [class.is-valid]="isValid('email')">
+            <label for="email" class="step-label">
+              2. Correo electrónico de contacto <span class="required">*</span>
+            </label>
+            <div class="input-wrapper">
+              <input 
+                id="email"
+                type="email" 
+                formControlName="email"
+                placeholder="Ej: correo@ejemplo.com">
+              @if (isValid('email')) {
+                <span class="icon-valid">✓</span>
+              }
+            </div>
+            @if (hasError('email')) {
+              <span class="error-text">{{ getErrorMessage('email') }}</span>
             }
           </div>
 
-          <div class="form-group">
-            <label for="telefono" class="step-label">3. Teléfono o celular de contacto</label>
-            <input 
-              id="telefono"
-              type="tel" 
-              formControlName="telefono"
-              placeholder="">
+          <div class="form-group" [class.has-error]="hasError('telefono')" [class.is-valid]="isValid('telefono')">
+            <label for="telefono" class="step-label">
+              3. Teléfono o celular de contacto <span class="required">*</span>
+            </label>
+            <div class="input-wrapper">
+              <input 
+                id="telefono"
+                type="tel" 
+                formControlName="telefono"
+                placeholder="Ej: 987654321"
+                maxlength="9">
+              @if (isValid('telefono')) {
+                <span class="icon-valid">✓</span>
+              }
+            </div>
+            @if (hasError('telefono')) {
+              <span class="error-text">{{ getErrorMessage('telefono') }}</span>
+            }
           </div>
         </div>
 
@@ -299,15 +432,23 @@
         <div class="form-section">
           <h2 class="section-title">Descripción de la solicitud o trámite</h2>
           
-          <div class="form-group">
-            <label for="asunto" class="step-label">4. Asunto de la solicitud o trámite</label>
-            <input 
-              id="asunto"
-              type="text" 
-              formControlName="asunto"
-              placeholder="">
-            @if (documentForm.get('asunto')?.invalid && documentForm.get('asunto')?.touched) {
-              <span class="error-text">El asunto es requerido</span>
+          <div class="form-group" [class.has-error]="hasError('asunto')" [class.is-valid]="isValid('asunto')">
+            <label for="asunto" class="step-label">
+              4. Asunto de la solicitud o trámite <span class="required">*</span>
+            </label>
+            <div class="input-wrapper">
+              <input 
+                id="asunto"
+                type="text" 
+                formControlName="asunto"
+                placeholder="Ej: Solicitud de certificado de estudios"
+                maxlength="200">
+              @if (isValid('asunto')) {
+                <span class="icon-valid">✓</span>
+              }
+            </div>
+            @if (hasError('asunto')) {
+              <span class="error-text">{{ getErrorMessage('asunto') }}</span>
             }
           </div>
 

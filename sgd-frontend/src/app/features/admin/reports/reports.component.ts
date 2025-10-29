@@ -1,9 +1,44 @@
 import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { BaseChartDirective } from 'ng2-charts';
-import { ChartConfiguration, ChartData, ChartType } from 'chart.js';
+import { 
+  Chart,
+  ChartConfiguration, 
+  ChartData, 
+  ChartType,
+  PieController,
+  BarController,
+  LineController,
+  ArcElement,
+  BarElement,
+  LineElement,
+  PointElement,
+  CategoryScale,
+  LinearScale,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+} from 'chart.js';
 import { ReportsService, ReportStats } from '../../../core/services/reports.service';
 import { DocumentService } from '../../../core/services/document.service';
+
+// Registrar los controladores y elementos de Chart.js
+Chart.register(
+  PieController,   // Controlador para pie charts
+  BarController,   // Controlador para bar charts
+  LineController,  // Controlador para line charts
+  ArcElement,      // Para pie charts
+  BarElement,      // Para bar charts
+  LineElement,     // Para line charts
+  PointElement,    // Para puntos en line charts
+  CategoryScale,   // Escala de categorías
+  LinearScale,     // Escala lineal
+  Title,
+  Tooltip,
+  Legend,
+  Filler          // Para áreas rellenas
+);
 
 @Component({
   selector: 'app-reports',
@@ -131,11 +166,11 @@ export class ReportsComponent implements OnInit {
   loadReports(): void {
     this.loading.set(true);
     
-    // Simular datos (en producción vendría del backend)
-    this.documentService.getAllDocuments().subscribe({
+    // Obtener estadísticas del backend
+    this.reportsService.getStats().subscribe({
       next: (response) => {
         if (response.success && response.data) {
-          this.processDocuments(response.data);
+          this.processStats(response.data);
         }
         this.loading.set(false);
       },
@@ -146,26 +181,18 @@ export class ReportsComponent implements OnInit {
     });
   }
 
-  private processDocuments(documents: any[]): void {
-    // Procesar por estado
-    const statusMap = new Map<string, { count: number; color: string }>();
-    documents.forEach(doc => {
-      const status = doc.status.nombre;
-      const color = doc.status.color;
-      if (!statusMap.has(status)) {
-        statusMap.set(status, { count: 0, color });
-      }
-      statusMap.get(status)!.count++;
-    });
-
+  private processStats(data: any): void {
+    console.log('📊 Datos recibidos del backend:', data);
+    
+    // Procesar datos por estado
     const statusLabels: string[] = [];
     const statusData: number[] = [];
     const statusColors: string[] = [];
     
-    statusMap.forEach((value, key) => {
-      statusLabels.push(key);
-      statusData.push(value.count);
-      statusColors.push(value.color);
+    data.byStatus.forEach((item: any) => {
+      statusLabels.push(item.status);
+      statusData.push(item.count);
+      statusColors.push(item.color || '#6b7280');
     });
 
     this.statusChartData.set({
@@ -176,37 +203,40 @@ export class ReportsComponent implements OnInit {
       }]
     });
 
-    // Procesar por área
-    const areaMap = new Map<string, number>();
-    documents.forEach(doc => {
-      const area = doc.currentArea.nombre;
-      areaMap.set(area, (areaMap.get(area) || 0) + 1);
+    // Procesar datos por área
+    const areaLabels: string[] = [];
+    const areaData: number[] = [];
+    
+    data.byArea.forEach((item: any) => {
+      areaLabels.push(item.area);
+      areaData.push(item.count);
     });
 
     this.areaChartData.set({
-      labels: Array.from(areaMap.keys()),
+      labels: areaLabels,
       datasets: [{
         label: 'Documentos por Área',
-        data: Array.from(areaMap.values()),
+        data: areaData,
         backgroundColor: 'rgba(0, 56, 118, 0.8)',
         borderColor: 'rgba(0, 56, 118, 1)',
         borderWidth: 1
       }]
     });
 
-    // Procesar por mes
-    const monthMap = new Map<string, number>();
-    documents.forEach(doc => {
-      const date = new Date(doc.created_at);
-      const monthKey = date.toLocaleDateString('es-PE', { month: 'short', year: 'numeric' });
-      monthMap.set(monthKey, (monthMap.get(monthKey) || 0) + 1);
+    // Procesar datos por mes
+    const monthLabels: string[] = [];
+    const monthData: number[] = [];
+    
+    data.byMonth.forEach((item: any) => {
+      monthLabels.push(item.month);
+      monthData.push(item.count);
     });
 
     this.monthChartData.set({
-      labels: Array.from(monthMap.keys()),
+      labels: monthLabels,
       datasets: [{
         label: 'Documentos por Mes',
-        data: Array.from(monthMap.values()),
+        data: monthData,
         borderColor: '#C1272D',
         backgroundColor: 'rgba(193, 39, 45, 0.1)',
         tension: 0.4,
@@ -214,58 +244,54 @@ export class ReportsComponent implements OnInit {
       }]
     });
 
-    // Procesar por prioridad
-    const priorityMap = new Map<string, number>();
-    const priorityOrder = ['baja', 'normal', 'alta', 'urgente'];
-    documents.forEach(doc => {
-      const priority = doc.prioridad;
-      priorityMap.set(priority, (priorityMap.get(priority) || 0) + 1);
-    });
-
+    // Procesar datos por prioridad
     const priorityLabels: string[] = [];
     const priorityData: number[] = [];
     
-    priorityOrder.forEach(p => {
-      if (priorityMap.has(p)) {
-        priorityLabels.push(p.charAt(0).toUpperCase() + p.slice(1));
-        priorityData.push(priorityMap.get(p)!);
-      }
-    });
+    if (data.byPriority && data.byPriority.length > 0) {
+      data.byPriority.forEach((item: any) => {
+        priorityLabels.push(item.priority.charAt(0).toUpperCase() + item.priority.slice(1));
+        priorityData.push(item.count);
+      });
 
-    this.priorityChartData.set({
-      labels: priorityLabels,
-      datasets: [{
-        data: priorityData,
-        backgroundColor: [
-          'rgba(107, 114, 128, 0.8)',
-          'rgba(59, 130, 246, 0.8)',
-          'rgba(245, 158, 11, 0.8)',
-          'rgba(239, 68, 68, 0.8)'
-        ]
-      }]
-    });
+      this.priorityChartData.set({
+        labels: priorityLabels,
+        datasets: [{
+          data: priorityData,
+          backgroundColor: [
+            'rgba(107, 114, 128, 0.8)',  // Baja
+            'rgba(59, 130, 246, 0.8)',   // Normal
+            'rgba(245, 158, 11, 0.8)',   // Alta
+            'rgba(239, 68, 68, 0.8)'     // Urgente
+          ]
+        }]
+      });
+    }
 
     // Estadísticas generales
     this.stats.set({
-      totalDocuments: documents.length,
-      byStatus: Array.from(statusMap.entries()).map(([status, { count, color }]) => ({
-        status,
-        count,
-        color
+      totalDocuments: data.totalDocuments,
+      byStatus: data.byStatus.map((item: any) => ({
+        status: item.status,
+        count: item.count,
+        color: item.color
       })),
-      byArea: Array.from(areaMap.entries()).map(([area, count]) => ({
-        area,
-        count
+      byArea: data.byArea.map((item: any) => ({
+        area: item.area,
+        count: item.count
       })),
-      byPriority: Array.from(priorityMap.entries()).map(([priority, count]) => ({
-        priority,
-        count
+      byPriority: data.byPriority?.map((item: any) => ({
+        priority: item.priority,
+        count: item.count
+      })) || [],
+      byMonth: data.byMonth.map((item: any) => ({
+        month: item.month,
+        count: item.count
       })),
-      byMonth: Array.from(monthMap.entries()).map(([month, count]) => ({
-        month,
-        count
-      })),
-      byType: []
+      byType: data.byType?.map((item: any) => ({
+        type: item.type,
+        count: item.count
+      })) || []
     });
   }
 
@@ -273,13 +299,19 @@ export class ReportsComponent implements OnInit {
     this.loadReports();
   }
 
-  exportToPDF(): void {
-    // TODO: Implementar exportación a PDF
-    alert('Exportar a PDF - Próximamente');
+  exportToCSV(): void {
+    // Exportar reporte general a CSV
+    this.reportsService.exportToCsv('general');
   }
 
-  exportToExcel(): void {
-    // TODO: Implementar exportación a Excel
-    alert('Exportar a Excel - Próximamente');
+  /**
+   * Exportar reporte específico por tipo
+   */
+  exportByStatus(): void {
+    this.reportsService.exportToCsv('by-status');
+  }
+
+  exportByArea(): void {
+    this.reportsService.exportToCsv('by-area');
   }
 }

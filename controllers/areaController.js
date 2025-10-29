@@ -350,6 +350,58 @@ exports.activateArea = async (req, res) => {
 };
 
 /**
+ * Desactivar área
+ * @route PATCH /api/areas/:id/deactivate
+ * @access Private (Solo Admin)
+ */
+exports.deactivateArea = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const area = await Area.findByPk(id);
+
+    if (!area) {
+      return res.status(404).json({
+        success: false,
+        message: 'Área no encontrada'
+      });
+    }
+
+    // Verificar si hay documentos activos en esta área
+    const { Document } = require('../models');
+    const activeDocuments = await Document.count({
+      where: {
+        current_area_id: id,
+        status_id: { [require('sequelize').Op.ne]: 4 } // 4 = Archivado
+      }
+    });
+
+    if (activeDocuments > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `No se puede desactivar el área porque tiene ${activeDocuments} documento(s) activo(s)`
+      });
+    }
+
+    await area.update({ isActive: false });
+
+    res.status(200).json({
+      success: true,
+      message: 'Área desactivada exitosamente',
+      data: area
+    });
+
+  } catch (error) {
+    console.error('Error en deactivateArea:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al desactivar área',
+      error: error.message
+    });
+  }
+};
+
+/**
  * Obtener estadísticas del área
  * @route GET /api/areas/:id/stats
  * @access Private

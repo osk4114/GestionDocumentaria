@@ -60,4 +60,11 @@ router.delete('/:id', authMiddleware, isAdmin, areaController.deleteArea);
  */
 router.patch('/:id/activate', authMiddleware, isAdmin, areaController.activateArea);
 
+/**
+ * @route   PATCH /api/areas/:id/deactivate
+ * @desc    Desactivar área
+ * @access  Private (Solo Admin)
+ */
+router.patch('/:id/deactivate', authMiddleware, isAdmin, areaController.deactivateArea);
+
 module.exports = router;

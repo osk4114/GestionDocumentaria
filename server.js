@@ -15,6 +15,7 @@ const documentRoutes = require('./routes/documentRoutes');
 const documentTypeRoutes = require('./routes/documentTypeRoutes');
 const movementRoutes = require('./routes/movementRoutes');
 const attachmentRoutes = require('./routes/attachmentRoutes');
+const reportRoutes = require('./routes/reportRoutes');
 // Rutas administrativas
 const areaRoutes = require('./routes/areaRoutes');
 const roleRoutes = require('./routes/roleRoutes');
@@ -60,6 +61,7 @@ app.use('/api/documents', documentRoutes);
 app.use('/api/document-types', documentTypeRoutes);
 app.use('/api/movements', movementRoutes);
 app.use('/api/attachments', attachmentRoutes);
+app.use('/api/reports', reportRoutes);
 // Rutas administrativas
 app.use('/api/areas', areaRoutes);
 app.use('/api/roles', roleRoutes);

@@ -18,11 +18,35 @@ interface DocumentDetails {
   descripcion: string;
   created_at: string;
   sender: {
+    tipoPersona?: 'natural' | 'juridica';
     nombreCompleto: string;
     tipoDocumento: string;
     numeroDocumento: string;
     email?: string;
     telefono?: string;
+    
+    // Campos persona natural
+    nombres?: string;
+    apellidoPaterno?: string;
+    apellidoMaterno?: string;
+    
+    // Campos persona jurídica
+    ruc?: string;
+    nombreEmpresa?: string;
+    
+    // Representante legal
+    representanteTipoDoc?: string;
+    representanteNumDoc?: string;
+    representanteNombres?: string;
+    representanteApellidoPaterno?: string;
+    representanteApellidoMaterno?: string;
+    
+    // Dirección detallada
+    departamento?: string;
+    provincia?: string;
+    distrito?: string;
+    direccion?: string;
+    direccionCompleta?: string;
   };
   documentType: {
     nombre: string;

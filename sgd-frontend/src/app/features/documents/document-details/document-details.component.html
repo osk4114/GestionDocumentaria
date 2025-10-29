@@ -128,37 +128,156 @@
 
             <!-- Remitente -->
             <div class="section">
-              <h3 class="section-title">👤 Información del Remitente</h3>
+              <h3 class="section-title">
+                @if (document()!.sender.tipoPersona === 'juridica') {
+                  🏢 Información de la Entidad
+                } @else {
+                  👤 Información del Remitente
+                }
+              </h3>
               
-              <div class="info-grid">
-                @if (document()!.sender.nombreCompleto) {
-                  <div class="info-item">
-                    <label class="info-label">Nombre Completo</label>
-                    <p class="info-value">{{ document()!.sender.nombreCompleto }}</p>
-                  </div>
-                }
-
-                @if (document()!.sender.tipoDocumento && document()!.sender.numeroDocumento) {
-                  <div class="info-item">
-                    <label class="info-label">{{ document()!.sender.tipoDocumento }}</label>
-                    <p class="info-value">{{ document()!.sender.numeroDocumento }}</p>
-                  </div>
-                }
+              <!-- Indicador de tipo de persona -->
+              <div class="info-item tipo-persona-badge">
+                <span class="badge badge-info">
+                  @if (document()!.sender.tipoPersona === 'juridica') {
+                    Persona Jurídica
+                  } @else {
+                    Persona Natural
+                  }
+                </span>
               </div>
 
-              @if (document()!.sender.email || document()!.sender.telefono) {
+              <!-- PERSONA NATURAL -->
+              @if (document()!.sender.tipoPersona === 'natural' || !document()!.sender.tipoPersona) {
+                <div class="info-grid">
+                  <!-- Nombres completos -->
+                  @if (document()!.sender.nombres && document()!.sender.apellidoPaterno) {
+                    <div class="info-item full-width">
+                      <label class="info-label">Nombre Completo</label>
+                      <p class="info-value">
+                        {{ document()!.sender.nombres }} 
+                        {{ document()!.sender.apellidoPaterno }} 
+                        {{ document()!.sender.apellidoMaterno || '' }}
+                      </p>
+                    </div>
+                  } @else if (document()!.sender.nombreCompleto) {
+                    <div class="info-item full-width">
+                      <label class="info-label">Nombre Completo</label>
+                      <p class="info-value">{{ document()!.sender.nombreCompleto }}</p>
+                    </div>
+                  }
+
+                  <!-- Documento de identidad -->
+                  @if (document()!.sender.tipoDocumento && document()!.sender.numeroDocumento) {
+                    <div class="info-item">
+                      <label class="info-label">{{ document()!.sender.tipoDocumento }}</label>
+                      <p class="info-value">{{ document()!.sender.numeroDocumento }}</p>
+                    </div>
+                  }
+                </div>
+              }
+
+              <!-- PERSONA JURÍDICA -->
+              @if (document()!.sender.tipoPersona === 'juridica') {
+                <!-- Datos de la empresa -->
+                <div class="subsection empresa-section">
+                  <h4 class="subsection-title">Datos de la Empresa</h4>
+                  <div class="info-grid">
+                    @if (document()!.sender.ruc) {
+                      <div class="info-item">
+                        <label class="info-label">RUC</label>
+                        <p class="info-value">{{ document()!.sender.ruc }}</p>
+                      </div>
+                    }
+
+                    @if (document()!.sender.nombreEmpresa) {
+                      <div class="info-item">
+                        <label class="info-label">Razón Social</label>
+                        <p class="info-value">{{ document()!.sender.nombreEmpresa }}</p>
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <!-- Representante Legal -->
+                @if (document()!.sender.representanteNombres || document()!.sender.representanteNumDoc) {
+                  <div class="subsection representante-section">
+                    <h4 class="subsection-title">Representante Legal</h4>
+                    <div class="info-grid">
+                      @if (document()!.sender.representanteNombres) {
+                        <div class="info-item full-width">
+                          <label class="info-label">Nombre Completo</label>
+                          <p class="info-value">
+                            {{ document()!.sender.representanteNombres }} 
+                            {{ document()!.sender.representanteApellidoPaterno || '' }} 
+                            {{ document()!.sender.representanteApellidoMaterno || '' }}
+                          </p>
+                        </div>
+                      }
+
+                      @if (document()!.sender.representanteTipoDoc && document()!.sender.representanteNumDoc) {
+                        <div class="info-item">
+                          <label class="info-label">{{ document()!.sender.representanteTipoDoc }}</label>
+                          <p class="info-value">{{ document()!.sender.representanteNumDoc }}</p>
+                        </div>
+                      }
+                    </div>
+                  </div>
+                }
+              }
+
+              <!-- Datos de contacto (común para ambos) -->
+              <div class="subsection contacto-section">
+                <h4 class="subsection-title">Datos de Contacto</h4>
                 <div class="info-grid">
                   @if (document()!.sender.email) {
                     <div class="info-item">
-                      <label class="info-label">Email</label>
+                      <label class="info-label">📧 Email</label>
                       <p class="info-value">{{ document()!.sender.email }}</p>
                     </div>
                   }
 
                   @if (document()!.sender.telefono) {
                     <div class="info-item">
-                      <label class="info-label">Teléfono</label>
+                      <label class="info-label">📱 Teléfono</label>
                       <p class="info-value">{{ document()!.sender.telefono }}</p>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- Dirección (común para ambos) -->
+              @if (document()!.sender.departamento || document()!.sender.direccionCompleta || document()!.sender.direccion) {
+                <div class="subsection direccion-section">
+                  <h4 class="subsection-title">Dirección</h4>
+                  
+                  @if (document()!.sender.departamento) {
+                    <div class="info-grid">
+                      <div class="info-item">
+                        <label class="info-label">Departamento</label>
+                        <p class="info-value">{{ document()!.sender.departamento }}</p>
+                      </div>
+
+                      @if (document()!.sender.provincia) {
+                        <div class="info-item">
+                          <label class="info-label">Provincia</label>
+                          <p class="info-value">{{ document()!.sender.provincia }}</p>
+                        </div>
+                      }
+
+                      @if (document()!.sender.distrito) {
+                        <div class="info-item">
+                          <label class="info-label">Distrito</label>
+                          <p class="info-value">{{ document()!.sender.distrito }}</p>
+                        </div>
+                      }
+                    </div>
+                  }
+
+                  @if (document()!.sender.direccionCompleta || document()!.sender.direccion) {
+                    <div class="info-item full-width">
+                      <label class="info-label">📍 Dirección Completa</label>
+                      <p class="info-value">{{ document()!.sender.direccionCompleta || document()!.sender.direccion }}</p>
                     </div>
                   }
                 </div>
