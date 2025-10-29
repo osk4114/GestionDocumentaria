@@ -428,7 +428,7 @@ exports.getDocumentByTrackingCode = async (req, res) => {
 exports.getDocumentsByArea = async (req, res) => {
   try {
     const { areaId } = req.params;
-    const { status, priority, search, dateFrom, dateTo, documentType } = req.query;
+    const { status, priority, search, dateFrom, dateTo, documentType, category } = req.query;
 
     // Construir objeto de filtros
     const filters = {};
@@ -438,6 +438,7 @@ exports.getDocumentsByArea = async (req, res) => {
     if (dateFrom) filters.dateFrom = dateFrom;
     if (dateTo) filters.dateTo = dateTo;
     if (documentType) filters.documentType = documentType;
+    if (category) filters.category = category;
 
     const documents = await documentService.getDocumentsByArea(areaId, req.user, filters);
 

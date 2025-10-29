@@ -3,13 +3,16 @@
 -- Sistema de Gestión Documentaria
 -- Ejecutar este script en phpMyAdmin o MySQL CLI
 -- 
--- VERSIÓN: 2.0
--- ÚLTIMA ACTUALIZACIÓN: 27 de Octubre 2025
+-- VERSIÓN: 2.2
+-- ÚLTIMA ACTUALIZACIÓN: 29 de Octubre 2025
 -- 
 -- CAMBIOS EN ESTA VERSIÓN:
 -- - Tabla senders: Agregado tipo_persona, email/telefono obligatorios
 -- - Tabla documents: doc_type_id permite NULL, agregado fecha_recepcion
+-- - Tabla documents: Agregado categoria_id para categorías personalizables
 -- - Tabla document_movements: user_id permite NULL
+-- - Tabla area_document_categories: Nueva tabla para categorías por área
+-- - Tabla document_versions: Nueva tabla para historial de versiones
 -- ============================================================
 
 -- Crear la base de datos
@@ -183,9 +186,37 @@ CREATE TABLE IF NOT EXISTS document_statuses (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
+-- Tabla: area_document_categories
+-- Descripción: Categorías de documentos personalizables por área
+-- Agregado: 2025-10-29 - Permite que cada área cree sus categorías
+-- ============================================================
+CREATE TABLE IF NOT EXISTS area_document_categories (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    area_id INT NOT NULL COMMENT 'Área a la que pertenece esta categoría',
+    nombre VARCHAR(100) NOT NULL COMMENT 'Nombre de la categoría (ej: Oficio, Solicitud, Memo)',
+    codigo VARCHAR(20) NOT NULL COMMENT 'Código corto para la categoría (ej: OFI, SOL, MEM)',
+    descripcion TEXT COMMENT 'Descripción de la categoría',
+    color VARCHAR(20) DEFAULT '#0066CC' COMMENT 'Color para identificación visual (hex)',
+    icono VARCHAR(50) DEFAULT 'file' COMMENT 'Icono Font Awesome',
+    orden INT DEFAULT 0 COMMENT 'Orden de visualización',
+    requiere_adjunto BOOLEAN DEFAULT FALSE COMMENT 'Si esta categoría requiere archivos adjuntos',
+    is_active BOOLEAN DEFAULT TRUE COMMENT 'Si la categoría está activa',
+    created_by INT COMMENT 'Usuario que creó la categoría',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+    INDEX idx_area_id (area_id),
+    INDEX idx_is_active (is_active),
+    INDEX idx_orden (orden),
+    UNIQUE KEY unique_area_codigo (area_id, codigo)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
 -- Tabla: documents (Tabla Central)
 -- Descripción: Documentos principales del sistema
 -- Actualizado: 2025-10-27 - Permitir NULL en doc_type_id para Mesa de Partes
+-- Actualizado: 2025-10-29 - Agregado categoria_id para categorías por área
 -- ============================================================
 CREATE TABLE IF NOT EXISTS documents (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -194,6 +225,7 @@ CREATE TABLE IF NOT EXISTS documents (
     descripcion TEXT,
     sender_id INT NOT NULL,
     doc_type_id INT COMMENT 'Tipo de documento - NULL permitido para documentos sin clasificar desde mesa de partes',
+    categoria_id INT COMMENT 'Categoría personalizada del área',
     status_id INT NOT NULL,
     current_area_id INT,
     current_user_id INT,
@@ -204,9 +236,11 @@ CREATE TABLE IF NOT EXISTS documents (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (sender_id) REFERENCES senders(id) ON DELETE RESTRICT ON UPDATE CASCADE,
     FOREIGN KEY (doc_type_id) REFERENCES document_types(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    FOREIGN KEY (categoria_id) REFERENCES area_document_categories(id) ON DELETE SET NULL ON UPDATE CASCADE,
     FOREIGN KEY (status_id) REFERENCES document_statuses(id) ON DELETE RESTRICT ON UPDATE CASCADE,
     FOREIGN KEY (current_area_id) REFERENCES areas(id) ON DELETE SET NULL ON UPDATE CASCADE,
-    FOREIGN KEY (current_user_id) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+    FOREIGN KEY (current_user_id) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
+    INDEX idx_categoria_id (categoria_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
@@ -244,6 +278,35 @@ CREATE TABLE IF NOT EXISTS attachments (
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
+-- Tabla: document_versions
+-- Descripción: Historial de versiones de documentos
+-- Agregado: 2025-10-29 - Permite subir documentos con sellos y firmas
+-- ============================================================
+CREATE TABLE IF NOT EXISTS document_versions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    document_id INT NOT NULL COMMENT 'Documento al que pertenece esta versión',
+    version_number INT NOT NULL COMMENT 'Número de versión (1, 2, 3...)',
+    file_name VARCHAR(255) NOT NULL COMMENT 'Nombre del archivo en el servidor',
+    original_name VARCHAR(255) NOT NULL COMMENT 'Nombre original del archivo',
+    file_path VARCHAR(500) NOT NULL COMMENT 'Ruta completa del archivo',
+    file_type VARCHAR(100) COMMENT 'Tipo MIME del archivo',
+    file_size INT COMMENT 'Tamaño del archivo en bytes',
+    descripcion TEXT COMMENT 'Descripción de esta versión (ej: "Con sello y firma del jefe")',
+    tiene_sello BOOLEAN DEFAULT FALSE COMMENT 'Indica si tiene sello',
+    tiene_firma BOOLEAN DEFAULT FALSE COMMENT 'Indica si tiene firma',
+    uploaded_by INT NOT NULL COMMENT 'Usuario que subió esta versión',
+    area_id INT COMMENT 'Área que subió esta versión',
+    uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE SET NULL ON UPDATE CASCADE,
+    INDEX idx_document_id (document_id),
+    INDEX idx_version_number (version_number),
+    INDEX idx_uploaded_at (uploaded_at),
+    UNIQUE KEY unique_document_version (document_id, version_number)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
@@ -303,6 +366,22 @@ INSERT INTO document_types (nombre, codigo, descripcion, requiere_adjunto, dias_
 ('Oficio', 'OFI', 'Oficio institucional', FALSE, 7)
 ON DUPLICATE KEY UPDATE nombre=nombre;
 
+-- Insertar categorías de ejemplo para áreas
+INSERT INTO area_document_categories (area_id, nombre, codigo, descripcion, color, icono, orden, requiere_adjunto) VALUES
+-- Categorías para Mesa de Partes (área 1)
+(1, 'Oficio', 'OFI', 'Oficios recibidos', '#0066CC', 'file-text', 1, TRUE),
+(1, 'Memorándum', 'MEM', 'Memorándums internos', '#28a745', 'file-alt', 2, FALSE),
+(1, 'Solicitud', 'SOL', 'Solicitudes diversas', '#ffc107', 'file-invoice', 3, TRUE),
+(1, 'Informe', 'INF', 'Informes técnicos', '#dc3545', 'file-contract', 4, TRUE),
+(1, 'Carta', 'CAR', 'Cartas formales', '#6c757d', 'envelope', 5, FALSE),
+-- Categorías para Recursos Humanos (área 3)
+(3, 'Renuncia', 'REN', 'Cartas de renuncia', '#dc3545', 'user-times', 1, TRUE),
+(3, 'Permiso', 'PER', 'Solicitudes de permiso', '#ffc107', 'calendar-check', 2, TRUE),
+(3, 'Vacaciones', 'VAC', 'Solicitudes de vacaciones', '#28a745', 'umbrella-beach', 3, TRUE),
+(3, 'Licencia', 'LIC', 'Solicitudes de licencia', '#17a2b8', 'hospital', 4, TRUE),
+(3, 'Contrato', 'CON', 'Contratos laborales', '#6610f2', 'file-signature', 5, TRUE)
+ON DUPLICATE KEY UPDATE nombre=nombre;
+
 -- ============================================================
 -- Índices para optimización de consultas
 -- ============================================================
@@ -319,17 +398,19 @@ CREATE INDEX idx_attachments_document ON attachments(document_id);
 -- ============================================================
 -- RESUMEN DE ESTRUCTURA
 -- ============================================================
--- Total de tablas: 12
+-- Total de tablas: 14
 -- - roles (gestión de permisos)
 -- - areas (departamentos de la institución)
 -- - users (usuarios del sistema)
 -- - user_sessions (sesiones JWT)
 -- - login_attempts (seguridad anti fuerza bruta)
 -- - senders (remitentes externos - Mesa de Partes Virtual)
--- - document_types (tipos de documentos)
+-- - document_types (tipos de documentos globales)
 -- - document_statuses (estados del flujo)
+-- - area_document_categories (categorías personalizables por área) ⭐ NUEVO
 -- - documents (tabla principal de documentos)
 -- - document_movements (trazabilidad completa)
+-- - document_versions (historial de versiones con sello/firma) ⭐ NUEVO
 -- - attachments (archivos adjuntos)
 -- - notifications (notificaciones a usuarios)
 --
@@ -339,9 +420,12 @@ CREATE INDEX idx_attachments_document ON attachments(document_id);
 --
 -- IMPORTANTE:
 -- - doc_type_id en documents permite NULL (para documentos sin clasificar)
+-- - categoria_id en documents permite NULL (categoría personalizada del área) ⭐ NUEVO
 -- - user_id en document_movements permite NULL (para acciones públicas/automáticas)
 -- - email y telefono en senders son OBLIGATORIOS (Mesa de Partes Virtual)
 -- - nombreCompleto en senders es OPCIONAL (identificación por email/telefono)
+-- - Cada área puede crear sus propias categorías sin límite
+-- - Las versiones de documentos mantienen historial completo con sello/firma
 -- ============================================================
 
-SELECT 'Base de datos SGD v2.0 creada exitosamente - 12 tablas configuradas' AS mensaje;
+SELECT 'Base de datos SGD v2.2 creada exitosamente - 14 tablas configuradas' AS mensaje;

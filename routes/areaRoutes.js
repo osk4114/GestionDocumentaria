@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const areaController = require('../controllers/areaController');
+const areaCategoryController = require('../controllers/areaCategoryController');
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { isAdmin } = require('../middleware/roleMiddleware');
 
@@ -66,5 +67,58 @@ router.patch('/:id/activate', authMiddleware, isAdmin, areaController.activateAr
  * @access  Private (Solo Admin)
  */
 router.patch('/:id/deactivate', authMiddleware, isAdmin, areaController.deactivateArea);
+
+// ============================================================
+// Rutas de Categorías Personalizadas por Área
+// ============================================================
+
+/**
+ * @route   GET /api/areas/:areaId/categories
+ * @desc    Obtener todas las categorías de un área
+ * @access  Private
+ */
+router.get('/:areaId/categories', authMiddleware, areaCategoryController.getCategoriesByArea);
+
+/**
+ * @route   POST /api/areas/:areaId/categories
+ * @desc    Crear nueva categoría para un área
+ * @access  Private
+ */
+router.post('/:areaId/categories', authMiddleware, areaCategoryController.createCategory);
+
+/**
+ * @route   PUT /api/areas/:areaId/categories/reorder
+ * @desc    Reordenar categorías de un área
+ * @access  Private
+ */
+router.put('/:areaId/categories/reorder', authMiddleware, areaCategoryController.reorderCategories);
+
+/**
+ * @route   GET /api/areas/categories/:id
+ * @desc    Obtener categoría por ID
+ * @access  Private
+ */
+router.get('/categories/:id', authMiddleware, areaCategoryController.getCategoryById);
+
+/**
+ * @route   PUT /api/areas/categories/:id
+ * @desc    Actualizar categoría
+ * @access  Private
+ */
+router.put('/categories/:id', authMiddleware, areaCategoryController.updateCategory);
+
+/**
+ * @route   DELETE /api/areas/categories/:id
+ * @desc    Eliminar categoría
+ * @access  Private (Solo Admin)
+ */
+router.delete('/categories/:id', authMiddleware, isAdmin, areaCategoryController.deleteCategory);
+
+/**
+ * @route   PATCH /api/areas/categories/:id/toggle
+ * @desc    Activar/Desactivar categoría
+ * @access  Private
+ */
+router.patch('/categories/:id/toggle', authMiddleware, areaCategoryController.toggleCategory);
 
 module.exports = router;

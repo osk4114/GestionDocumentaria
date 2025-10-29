@@ -1,4 +1,4 @@
-const { Document, Sender, DocumentType, DocumentStatus, Area, User, DocumentMovement, Attachment, Notification } = require('../models');
+const { Document, Sender, DocumentType, DocumentStatus, Area, User, DocumentMovement, Attachment, Notification, AreaDocumentCategory } = require('../models');
 const { Op } = require('sequelize');
 const { sequelize } = require('../config/sequelize');
 
@@ -662,7 +662,8 @@ class DocumentService {
         descripcion,
         fechaDocumento,
         numeroDocumento,
-        folios
+        folios,
+        categoriaId
       } = data;
 
       await document.update({
@@ -670,7 +671,8 @@ class DocumentService {
         descripcion: descripcion !== undefined ? descripcion : document.descripcion,
         fechaDocumento: fechaDocumento || document.fechaDocumento,
         numeroDocumento: numeroDocumento || document.numeroDocumento,
-        folios: folios || document.folios
+        folios: folios || document.folios,
+        categoriaId: categoriaId !== undefined ? categoriaId : document.categoriaId
       });
 
       const updatedDocument = await Document.findByPk(documentId, {
@@ -678,7 +680,8 @@ class DocumentService {
           { model: Sender, as: 'sender' },
           { model: DocumentType, as: 'documentType' },
           { model: DocumentStatus, as: 'status' },
-          { model: Area, as: 'currentArea' }
+          { model: Area, as: 'currentArea' },
+          { model: AreaDocumentCategory, as: 'categoria', required: false }
         ]
       });
 
@@ -876,6 +879,11 @@ class DocumentService {
         whereClause.docTypeId = filters.documentType;
       }
 
+      // Filtro por categoría personalizada
+      if (filters.category) {
+        whereClause.categoriaId = filters.category;
+      }
+
       // Filtro por rango de fechas
       if (filters.dateFrom || filters.dateTo) {
         whereClause.created_at = {};
@@ -904,7 +912,13 @@ class DocumentService {
           { model: DocumentType, as: 'documentType', attributes: ['id', 'nombre'] },
           { model: DocumentStatus, as: 'status', attributes: ['id', 'nombre', 'color'] },
           { model: Area, as: 'currentArea', attributes: ['id', 'nombre', 'sigla'] },
-          { model: User, as: 'currentUser', attributes: ['id', 'nombre'] }
+          { model: User, as: 'currentUser', attributes: ['id', 'nombre'] },
+          { 
+            model: AreaDocumentCategory, 
+            as: 'categoria', 
+            attributes: ['id', 'nombre', 'codigo', 'color', 'icono'],
+            required: false // LEFT JOIN para incluir documentos sin categoría
+          }
         ],
         order: [['created_at', 'DESC']]
       });

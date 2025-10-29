@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { DocumentService, DocumentFilters } from '../../core/services/document.service';
 import { AuthService } from '../../core/services/auth.service';
 import { DocumentTypeService } from '../../core/services/document-type.service';
+import { AreaCategoryService, AreaCategory } from '../../core/services/area-category.service';
 import { DocumentDeriveComponent } from '../documents/document-derive/document-derive.component';
 import { DocumentDetailsComponent } from '../documents/document-details/document-details.component';
 
@@ -30,6 +31,13 @@ interface Document {
     nombre: string;
     sigla: string;
   };
+  categoriaId?: number | null;
+  categoria?: {
+    id: number;
+    nombre: string;
+    codigo: string;
+    color: string;
+  } | null;
 }
 
 interface DocumentType {
@@ -48,12 +56,14 @@ export class BandejaComponent implements OnInit {
   // Signals para estado reactivo
   documents = signal<Document[]>([]);
   documentTypes = signal<DocumentType[]>([]);
+  areaCategories = signal<AreaCategory[]>([]);
   loading = signal<boolean>(true);
   activeTab = signal<'todos' | 'pendientes' | 'proceso' | 'finalizados' | 'archivados'>('todos');
   
   // Filtros avanzados
   searchTerm = signal<string>('');
   selectedDocumentType = signal<number | null>(null);
+  selectedCategory = signal<number | null>(null);
   dateFrom = signal<string>('');
   dateTo = signal<string>('');
   showFilters = signal<boolean>(false);
@@ -111,12 +121,14 @@ export class BandejaComponent implements OnInit {
   constructor(
     private documentService: DocumentService,
     private documentTypeService: DocumentTypeService,
+    private areaCategoryService: AreaCategoryService,
     private authService: AuthService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
     this.loadDocumentTypes();
+    this.loadAreaCategories();
     this.loadDocuments();
   }
 
@@ -129,6 +141,22 @@ export class BandejaComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error al cargar tipos de documento:', error);
+      }
+    });
+  }
+
+  loadAreaCategories(): void {
+    const user = this.currentUser();
+    if (!user || !user.areaId) return;
+
+    this.areaCategoryService.getCategoriesByArea(user.areaId).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.areaCategories.set(response.data);
+        }
+      },
+      error: (error) => {
+        console.error('Error al cargar categorías del área:', error);
       }
     });
   }
@@ -152,6 +180,10 @@ export class BandejaComponent implements OnInit {
     
     if (this.selectedDocumentType()) {
       filters.documentType = this.selectedDocumentType()!;
+    }
+
+    if (this.selectedCategory()) {
+      filters.category = this.selectedCategory()!;
     }
     
     if (this.dateFrom()) {
@@ -183,6 +215,7 @@ export class BandejaComponent implements OnInit {
   clearFilters(): void {
     this.searchTerm.set('');
     this.selectedDocumentType.set(null);
+    this.selectedCategory.set(null);
     this.dateFrom.set('');
     this.dateTo.set('');
     this.loadDocuments();

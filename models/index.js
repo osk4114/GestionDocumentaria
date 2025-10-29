@@ -11,6 +11,8 @@ const Document = require('./Document');
 const DocumentMovement = require('./DocumentMovement');
 const Attachment = require('./Attachment');
 const Notification = require('./Notification');
+const AreaDocumentCategory = require('./AreaDocumentCategory');
+const DocumentVersion = require('./DocumentVersion');
 
 // Inicializar modelos que son funciones
 const UserSession = require('./UserSession')(sequelize);
@@ -175,6 +177,68 @@ Document.hasMany(Notification, {
   as: 'notifications'
 });
 
+// -------- RELACIONES DE AREA_DOCUMENT_CATEGORY --------
+// AreaDocumentCategory pertenece a un Area
+AreaDocumentCategory.belongsTo(Area, {
+  foreignKey: 'areaId',
+  as: 'area'
+});
+Area.hasMany(AreaDocumentCategory, {
+  foreignKey: 'areaId',
+  as: 'categories'
+});
+
+// AreaDocumentCategory creada por un User
+AreaDocumentCategory.belongsTo(User, {
+  foreignKey: 'createdBy',
+  as: 'creator'
+});
+User.hasMany(AreaDocumentCategory, {
+  foreignKey: 'createdBy',
+  as: 'createdCategories'
+});
+
+// Document pertenece a una AreaDocumentCategory
+Document.belongsTo(AreaDocumentCategory, {
+  foreignKey: 'categoriaId',
+  as: 'categoria'
+});
+AreaDocumentCategory.hasMany(Document, {
+  foreignKey: 'categoriaId',
+  as: 'documents'
+});
+
+// -------- RELACIONES DE DOCUMENT_VERSION --------
+// DocumentVersion pertenece a un Document
+DocumentVersion.belongsTo(Document, {
+  foreignKey: 'documentId',
+  as: 'document'
+});
+Document.hasMany(DocumentVersion, {
+  foreignKey: 'documentId',
+  as: 'versions'
+});
+
+// DocumentVersion subida por un User
+DocumentVersion.belongsTo(User, {
+  foreignKey: 'uploadedBy',
+  as: 'uploader'
+});
+User.hasMany(DocumentVersion, {
+  foreignKey: 'uploadedBy',
+  as: 'uploadedVersions'
+});
+
+// DocumentVersion pertenece a un Area
+DocumentVersion.belongsTo(Area, {
+  foreignKey: 'areaId',
+  as: 'area'
+});
+Area.hasMany(DocumentVersion, {
+  foreignKey: 'areaId',
+  as: 'documentVersions'
+});
+
 // ============================================================
 // Función para sincronizar modelos con la base de datos
 // ============================================================
@@ -207,5 +271,7 @@ module.exports = {
   Notification,
   UserSession,
   LoginAttempt,
+  AreaDocumentCategory,
+  DocumentVersion,
   syncDatabase
 };

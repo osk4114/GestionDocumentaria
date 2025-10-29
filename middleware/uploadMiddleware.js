@@ -78,7 +78,13 @@ const handleMulterError = (err, req, res, next) => {
   next();
 };
 
+// ============================================================
+// Middleware específico para subir versiones de documentos
+// ============================================================
+const uploadDocumentVersion = upload.single('file');
+
 module.exports = {
   upload,
-  handleMulterError
+  handleMulterError,
+  uploadDocumentVersion
 };

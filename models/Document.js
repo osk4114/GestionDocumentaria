@@ -31,6 +31,11 @@ const Document = sequelize.define('Document', {
     allowNull: true, // Permitir NULL para documentos sin clasificar desde mesa de partes
     field: 'doc_type_id'
   },
+  categoriaId: {
+    type: DataTypes.INTEGER,
+    allowNull: true, // Categoría personalizada del área
+    field: 'categoria_id'
+  },
   statusId: {
     type: DataTypes.INTEGER,
     allowNull: false,

@@ -2,8 +2,9 @@ const express = require('express');
 const router = express.Router();
 const { authMiddleware } = require('../middleware/authMiddleware');
 const { checkRole, isAdmin } = require('../middleware/roleMiddleware');
-const { upload, handleMulterError } = require('../middleware/uploadMiddleware');
+const { upload, handleMulterError, uploadDocumentVersion } = require('../middleware/uploadMiddleware');
 const documentController = require('../controllers/documentController');
+const documentVersionController = require('../controllers/documentVersionController');
 
 // ============================================================
 // RUTAS PÚBLICAS (sin autenticación)
@@ -153,5 +154,51 @@ router.put('/:id/status', authMiddleware, documentController.changeDocumentStatu
  * @access  Public (puede ser consultado por código de seguimiento)
  */
 router.get('/:documentId/attachments/:attachmentId/download', documentController.downloadAttachment);
+
+// ============================================================
+// RUTAS DE VERSIONES DE DOCUMENTOS
+// ============================================================
+
+/**
+ * @route   GET /api/documents/:documentId/versions
+ * @desc    Obtener todas las versiones de un documento
+ * @access  Private
+ */
+router.get('/:documentId/versions', authMiddleware, documentVersionController.getVersionsByDocument);
+
+/**
+ * @route   GET /api/documents/:documentId/versions/latest
+ * @desc    Obtener última versión de un documento
+ * @access  Private
+ */
+router.get('/:documentId/versions/latest', authMiddleware, documentVersionController.getLatestVersion);
+
+/**
+ * @route   POST /api/documents/:documentId/versions
+ * @desc    Subir nueva versión de documento (con sello y firma)
+ * @access  Private
+ */
+router.post('/:documentId/versions', authMiddleware, uploadDocumentVersion, handleMulterError, documentVersionController.uploadVersion);
+
+/**
+ * @route   GET /api/documents/versions/:id
+ * @desc    Obtener versión específica por ID
+ * @access  Private
+ */
+router.get('/versions/:id', authMiddleware, documentVersionController.getVersionById);
+
+/**
+ * @route   GET /api/documents/versions/:id/download
+ * @desc    Descargar versión específica
+ * @access  Private
+ */
+router.get('/versions/:id/download', authMiddleware, documentVersionController.downloadVersion);
+
+/**
+ * @route   DELETE /api/documents/versions/:id
+ * @desc    Eliminar versión
+ * @access  Private (Solo Admin o creador)
+ */
+router.delete('/versions/:id', authMiddleware, documentVersionController.deleteVersion);
 
 module.exports = router;

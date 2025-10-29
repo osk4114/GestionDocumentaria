@@ -92,6 +92,7 @@ export interface DocumentFilters {
   area?: number;
   status?: number;
   documentType?: number;
+  category?: number;
   archived?: boolean;
   search?: string;
   dateFrom?: string;
@@ -187,6 +188,7 @@ export class DocumentService {
     if (filters.area !== undefined) params.push(`area=${filters.area}`);
     if (filters.status !== undefined) params.push(`status=${filters.status}`);
     if (filters.documentType !== undefined) params.push(`documentType=${filters.documentType}`);
+    if (filters.category !== undefined) params.push(`category=${filters.category}`);
     if (filters.archived !== undefined) params.push(`archived=${filters.archived}`);
     if (filters.search) params.push(`search=${encodeURIComponent(filters.search)}`);
     if (filters.dateFrom) params.push(`dateFrom=${filters.dateFrom}`);
@@ -207,6 +209,7 @@ export class DocumentService {
     if (filters) {
       if (filters.status !== undefined) params.push(`status=${filters.status}`);
       if (filters.documentType !== undefined) params.push(`documentType=${filters.documentType}`);
+      if (filters.category !== undefined) params.push(`category=${filters.category}`);
       if (filters.search) params.push(`search=${encodeURIComponent(filters.search)}`);
       if (filters.dateFrom) params.push(`dateFrom=${filters.dateFrom}`);
       if (filters.dateTo) params.push(`dateTo=${filters.dateTo}`);
