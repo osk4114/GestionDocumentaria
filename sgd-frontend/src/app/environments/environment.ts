@@ -1,15 +1,19 @@
-// Detectar automáticamente la IP/hostname desde donde se accede
-const getApiUrl = (): string => {
-  // Obtener el hostname actual (puede ser localhost, IP local, o dominio)
-  const hostname = typeof window !== 'undefined' ? window.location.hostname : 'localhost';
-  
-  // Siempre usar puerto 3000 para el backend
-  return `http://${hostname}:3000/api`;
-};
+/**
+ * Configuración de ambiente para desarrollo
+ * 
+ * IMPORTANTE: Esta configuración funciona automáticamente en:
+ * - localhost (http://localhost:4200)
+ * - Red LAN con IP dinámica (http://192.168.x.x:4200)
+ * - DevTunnels (https://xxx.devtunnels.ms)
+ * - Cualquier otra red
+ * 
+ * NO requiere modificar URLs ni IPs manualmente.
+ * El proxy de Angular redirige automáticamente /api → localhost:3000
+ */
 
 export const environment = {
   production: false,
-  apiUrl: getApiUrl(), // Detecta automáticamente: localhost o IP de red
+  apiUrl: '/api', // Ruta relativa - el proxy redirige a localhost:3000
   appName: 'Sistema de Gestión Documentaria',
   appVersion: '1.0.0'
 };

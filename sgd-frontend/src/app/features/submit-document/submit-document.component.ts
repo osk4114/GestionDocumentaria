@@ -22,6 +22,56 @@ export class SubmitDocumentComponent {
 
   documentTypes = signal<any[]>([]);
 
+  // Datos de ubicación de Perú
+  departamentos = signal<string[]>([
+    'Amazonas', 'Áncash', 'Apurímac', 'Arequipa', 'Ayacucho', 'Cajamarca', 
+    'Callao', 'Cusco', 'Huancavelica', 'Huánuco', 'Ica', 'Junín', 'La Libertad', 
+    'Lambayeque', 'Lima', 'Loreto', 'Madre de Dios', 'Moquegua', 'Pasco', 
+    'Piura', 'Puno', 'San Martín', 'Tacna', 'Tumbes', 'Ucayali'
+  ]);
+  
+  provincias = signal<string[]>([]);
+  distritos = signal<string[]>([]);
+
+  // Mapa de provincias por departamento (principales)
+  private provinciasPorDepartamento: { [key: string]: string[] } = {
+    'Puno': ['Puno', 'Azángaro', 'Carabaya', 'Chucuito', 'El Collao', 'Huancané', 'Lampa', 'Melgar', 'Moho', 'San Antonio de Putina', 'San Román', 'Sandia', 'Yunguyo'],
+    'Lima': ['Lima', 'Barranca', 'Cajatambo', 'Canta', 'Cañete', 'Huaral', 'Huarochirí', 'Huaura', 'Oyón', 'Yauyos'],
+    'Cusco': ['Cusco', 'Acomayo', 'Anta', 'Calca', 'Canas', 'Canchis', 'Chumbivilcas', 'Espinar', 'La Convención', 'Paruro', 'Paucartambo', 'Quispicanchi', 'Urubamba'],
+    'Arequipa': ['Arequipa', 'Camaná', 'Caravelí', 'Castilla', 'Caylloma', 'Condesuyos', 'Islay', 'La Unión'],
+    'La Libertad': ['Trujillo', 'Ascope', 'Bolívar', 'Chepén', 'Julcán', 'Otuzco', 'Pacasmayo', 'Pataz', 'Sánchez Carrión', 'Santiago de Chuco', 'Gran Chimú', 'Virú'],
+    'Piura': ['Piura', 'Ayabaca', 'Huancabamba', 'Morropón', 'Paita', 'Sechura', 'Sullana', 'Talara'],
+    'Lambayeque': ['Chiclayo', 'Ferreñafe', 'Lambayeque'],
+    'Cajamarca': ['Cajamarca', 'Cajabamba', 'Celendín', 'Chota', 'Contumazá', 'Cutervo', 'Hualgayoc', 'Jaén', 'San Ignacio', 'San Marcos', 'San Miguel', 'San Pablo', 'Santa Cruz'],
+    'Junín': ['Huancayo', 'Concepción', 'Chanchamayo', 'Jauja', 'Junín', 'Satipo', 'Tarma', 'Yauli', 'Chupaca'],
+    'Ica': ['Ica', 'Chincha', 'Nasca', 'Palpa', 'Pisco'],
+    'Áncash': ['Huaraz', 'Aija', 'Antonio Raymondi', 'Asunción', 'Bolognesi', 'Carhuaz', 'Carlos Fermín Fitzcarrald', 'Casma', 'Corongo', 'Huari', 'Huarmey', 'Huaylas', 'Mariscal Luzuriaga', 'Ocros', 'Pallasca', 'Pomabamba', 'Recuay', 'Santa', 'Sihuas', 'Yungay'],
+    'Ayacucho': ['Huamanga', 'Cangallo', 'Huanca Sancos', 'Huanta', 'La Mar', 'Lucanas', 'Parinacochas', 'Páucar del Sara Sara', 'Sucre', 'Víctor Fajardo', 'Vilcas Huamán'],
+    'Huancavelica': ['Huancavelica', 'Acobamba', 'Angaraes', 'Castrovirreyna', 'Churcampa', 'Huaytará', 'Tayacaja'],
+    'Huánuco': ['Huánuco', 'Ambo', 'Dos de Mayo', 'Huacaybamba', 'Huamalíes', 'Leoncio Prado', 'Marañón', 'Pachitea', 'Puerto Inca', 'Lauricocha', 'Yarowilca'],
+    'San Martín': ['Moyobamba', 'Bellavista', 'El Dorado', 'Huallaga', 'Lamas', 'Mariscal Cáceres', 'Picota', 'Rioja', 'San Martín', 'Tocache'],
+    'Loreto': ['Maynas', 'Alto Amazonas', 'Loreto', 'Mariscal Ramón Castilla', 'Requena', 'Ucayali', 'Datem del Marañón', 'Putumayo'],
+    'Amazonas': ['Chachapoyas', 'Bagua', 'Bongará', 'Condorcanqui', 'Luya', 'Rodríguez de Mendoza', 'Utcubamba'],
+    'Apurímac': ['Abancay', 'Andahuaylas', 'Antabamba', 'Aymaraes', 'Cotabambas', 'Chincheros', 'Grau'],
+    'Madre de Dios': ['Tambopata', 'Manu', 'Tahuamanu'],
+    'Moquegua': ['Mariscal Nieto', 'General Sánchez Cerro', 'Ilo'],
+    'Pasco': ['Pasco', 'Daniel Alcides Carrión', 'Oxapampa'],
+    'Tacna': ['Tacna', 'Candarave', 'Jorge Basadre', 'Tarata'],
+    'Tumbes': ['Tumbes', 'Contralmirante Villar', 'Zarumilla'],
+    'Ucayali': ['Coronel Portillo', 'Atalaya', 'Padre Abad', 'Purús'],
+    'Callao': ['Callao']
+  };
+
+  // Mapa de distritos por provincia (ejemplos principales)
+  private distritosPorProvincia: { [key: string]: string[] } = {
+    'Puno': ['Puno', 'Acora', 'Amantaní', 'Atuncolla', 'Capachica', 'Chucuito', 'Coata', 'Huata', 'Mañazo', 'Paucarcolla', 'Pichacani', 'Platería', 'San Antonio', 'Tiquillaca', 'Vilque'],
+    'Lima': ['Lima', 'Ancón', 'Ate', 'Barranco', 'Breña', 'Carabayllo', 'Chaclacayo', 'Chorrillos', 'Cieneguilla', 'Comas', 'El Agustino', 'Independencia', 'Jesús María', 'La Molina', 'La Victoria', 'Lince', 'Los Olivos', 'Lurigancho', 'Lurín', 'Magdalena del Mar', 'Miraflores', 'Pachacamac', 'Pucusana', 'Pueblo Libre', 'Puente Piedra', 'Punta Hermosa', 'Punta Negra', 'Rímac', 'San Bartolo', 'San Borja', 'San Isidro', 'San Juan de Lurigancho', 'San Juan de Miraflores', 'San Luis', 'San Martín de Porres', 'San Miguel', 'Santa Anita', 'Santa María del Mar', 'Santa Rosa', 'Santiago de Surco', 'Surquillo', 'Villa El Salvador', 'Villa María del Triunfo'],
+    'Cusco': ['Cusco', 'Ccorca', 'Poroy', 'San Jerónimo', 'San Sebastián', 'Santiago', 'Saylla', 'Wanchaq'],
+    'Arequipa': ['Arequipa', 'Alto Selva Alegre', 'Cayma', 'Cerro Colorado', 'Characato', 'Chiguata', 'Jacobo Hunter', 'José Luis Bustamante y Rivero', 'La Joya', 'Mariano Melgar', 'Miraflores', 'Mollebaya', 'Paucarpata', 'Pocsi', 'Polobaya', 'Quequeña', 'Sabandia', 'Sachaca', 'San Juan de Siguas', 'San Juan de Tarucani', 'Santa Isabel de Siguas', 'Santa Rita de Siguas', 'Socabaya', 'Tiabaya', 'Uchumayo', 'Vitor', 'Yanahuara', 'Yarabamba', 'Yura'],
+    'Trujillo': ['Trujillo', 'El Porvenir', 'Florencia de Mora', 'Huanchaco', 'La Esperanza', 'Laredo', 'Moche', 'Poroto', 'Salaverry', 'Simbal', 'Víctor Larco Herrera'],
+    'Chiclayo': ['Chiclayo', 'Chongoyape', 'Eten', 'Eten Puerto', 'José Leonardo Ortiz', 'La Victoria', 'Lagunas', 'Monsefú', 'Nueva Arica', 'Oyotún', 'Pátapo', 'Picsi', 'Pimentel', 'Pomalca', 'Pucalá', 'Reque', 'Santa Rosa', 'Saña', 'Cayaltí', 'Tumán']
+  };
+
   constructor(
     private fb: FormBuilder,
     private documentService: DocumentService
@@ -74,8 +124,50 @@ export class SubmitDocumentComponent {
     this.documentForm.get('tipoPersona')?.valueChanges.subscribe(tipo => {
       this.updateValidations(tipo);
     });
+
+    // Escuchar cambios en departamento
+    this.documentForm.get('departamento')?.valueChanges.subscribe(depto => {
+      this.onDepartamentoChange(depto);
+    });
+
+    // Escuchar cambios en provincia
+    this.documentForm.get('provincia')?.valueChanges.subscribe(prov => {
+      this.onProvinciaChange(prov);
+    });
     
     // NO inicializar validaciones hasta que el usuario seleccione
+  }
+
+  onDepartamentoChange(departamento: string) {
+    // Limpiar provincia y distrito sin disparar eventos
+    this.documentForm.patchValue({
+      provincia: '',
+      distrito: ''
+    }, { emitEvent: false });
+    
+    // Cargar provincias del departamento seleccionado
+    if (departamento && this.provinciasPorDepartamento[departamento]) {
+      this.provincias.set(this.provinciasPorDepartamento[departamento]);
+    } else {
+      this.provincias.set([]);
+    }
+    
+    this.distritos.set([]);
+  }
+
+  onProvinciaChange(provincia: string) {
+    // Limpiar distrito sin disparar eventos
+    this.documentForm.patchValue({
+      distrito: ''
+    }, { emitEvent: false });
+    
+    // Cargar distritos de la provincia seleccionada
+    if (provincia && this.distritosPorProvincia[provincia]) {
+      this.distritos.set(this.distritosPorProvincia[provincia]);
+    } else {
+      // Si no hay distritos específicos, mostrar la provincia como único distrito
+      this.distritos.set(provincia ? [provincia] : []);
+    }
   }
 
   loadDocumentTypes() {
@@ -128,9 +220,9 @@ export class SubmitDocumentComponent {
       this.documentForm.get('numeroDocumentoNatural')?.clearValidators();
     }
     
-    // Actualizar validez de todos los campos
+    // Actualizar validez de todos los campos sin emitir eventos
     Object.keys(this.documentForm.controls).forEach(key => {
-      this.documentForm.get(key)?.updateValueAndValidity();
+      this.documentForm.get(key)?.updateValueAndValidity({ emitEvent: false });
     });
   }
 

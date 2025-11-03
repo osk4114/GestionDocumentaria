@@ -4,10 +4,11 @@
     <!-- Logo y Título -->
     <div class="sidebar-header">
       <div class="logo">
-        <span class="logo-icon">⚙️</span>
-        @if (sidebarOpen()) {
-          <span class="logo-text">Administración</span>
-        }
+        <img 
+          [src]="sidebarOpen() ? 'images/gb1.svg' : 'images/gb3.svg'" 
+          [alt]="sidebarOpen() ? 'Logo gob.pe' : 'Escudo gob.pe'"
+          class="logo-image"
+        >
       </div>
     </div>
 

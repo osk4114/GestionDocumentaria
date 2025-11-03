@@ -7,15 +7,15 @@
 /* ==================== SIDEBAR ==================== */
 .sidebar {
   width: 260px;
-  background: var(--color-secondary); /* Azul oscuro gob.pe */
-  border-right: none;
+  background: linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%); /* Fondo blanco suave */
+  border-right: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
   transition: width 0.3s ease;
   position: fixed;
   height: 100vh;
   z-index: 100;
-  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 3px 0 15px rgba(193, 39, 45, 0.08); /* Sombra roja muy sutil */
 
   &.sidebar-collapsed {
     width: 80px;
@@ -32,20 +32,31 @@
 }
 
 .sidebar-header {
-  padding: 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 1.5rem 1rem;
+  border-bottom: 2px solid rgba(193, 39, 45, 0.15); /* Línea roja muy sutil */
+  background: #ffffff; /* Fondo blanco */
 
   .logo {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: #FFFFFF; /* Blanco sobre azul oscuro */
+    justify-content: center;
+    
+    .logo-image {
+      width: 100%;
+      height: auto;
+      max-height: 60px;
+      object-fit: contain;
+      transition: all 0.3s ease;
+    }
+  }
+}
 
-    .logo-icon {
-      font-size: 1.5rem;
-      color: var(--color-primary); /* Rojo institucional */
+.sidebar-collapsed {
+  .sidebar-header {
+    padding: 1rem 0.5rem;
+    
+    .logo-image {
+      max-height: 50px;
     }
   }
 }
@@ -60,14 +71,18 @@
     align-items: center;
     gap: 0.75rem;
     padding: 0.875rem 1.5rem;
-    color: rgba(255, 255, 255, 0.8); /* Blanco semitransparente */
+    margin: 0.25rem 0.5rem;
+    color: #4b5563; /* Gris oscuro */
     text-decoration: none;
     transition: all 0.2s;
     cursor: pointer;
+    border-radius: 0.375rem;
+    position: relative;
 
     .menu-icon {
       font-size: 1.25rem;
       min-width: 1.25rem;
+      color: #6b7280;
     }
 
     .menu-label {
@@ -76,31 +91,52 @@
     }
 
     &:hover {
-      background-color: rgba(255, 255, 255, 0.1);
-      color: #FFFFFF;
+      background-color: rgba(193, 39, 45, 0.05); /* Fondo rojo muy sutil */
+      color: #C1272D;
+      
+      .menu-icon {
+        color: #C1272D;
+      }
     }
 
     &.active {
-      background-color: var(--color-primary); /* Rojo institucional */
-      color: #FFFFFF;
-      border-left: 4px solid #FFFFFF;
+      background: linear-gradient(90deg, rgba(193, 39, 45, 0.1) 0%, rgba(193, 39, 45, 0.05) 100%); /* Fondo rojo muy sutil */
+      color: #C1272D; /* Texto rojo */
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(193, 39, 45, 0.15); /* Sombra roja sutil */
+      
+      .menu-icon {
+        color: #C1272D;
+      }
+      
+      &::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 4px;
+        height: 60%;
+        background: #C1272D;
+        border-radius: 0 4px 4px 0;
+      }
     }
   }
 }
 
 .toggle-btn {
   padding: 1rem;
-  background: rgba(0, 0, 0, 0.2);
+  background: #ffffff;
   border: none;
-  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  border-top: 1px solid #e5e7eb;
   cursor: pointer;
-  color: rgba(255, 255, 255, 0.8);
+  color: #6b7280;
   font-size: 1rem;
   transition: all 0.2s;
 
   &:hover {
-    background-color: rgba(255, 255, 255, 0.1);
-    color: #FFFFFF;
+    background: rgba(193, 39, 45, 0.05);
+    color: #C1272D;
   }
 }
 
@@ -118,8 +154,8 @@
 }
 
 .content-header {
-  background: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
+  background: #FFFFFF; /* Fondo blanco puro */
+  border-bottom: 3px solid #C1272D; /* Línea roja sutil pero visible */
   padding: 1rem 2rem;
   display: flex;
   justify-content: space-between;
@@ -127,22 +163,25 @@
   position: sticky;
   top: 0;
   z-index: 50;
+  box-shadow: 0 2px 8px rgba(193, 39, 45, 0.08); /* Sombra roja muy sutil */
 
   .header-left {
     .back-btn {
-      background: transparent;
+      background: #FFFFFF;
       border: 1px solid #d1d5db;
-      padding: 0.5rem 1rem;
+      padding: 0.5rem 1.25rem;
       border-radius: 0.375rem;
       color: #4b5563;
       cursor: pointer;
       font-size: 0.875rem;
+      font-weight: 500;
       transition: all 0.2s;
 
       &:hover {
-        background: #f9fafb;
+        background: #FFFFFF;
         border-color: #C1272D;
         color: #C1272D;
+        box-shadow: 0 2px 8px rgba(193, 39, 45, 0.15);
       }
     }
   }
@@ -173,15 +212,18 @@
       background: #C1272D;
       color: white;
       border: none;
-      padding: 0.5rem 1rem;
+      padding: 0.6rem 1.5rem;
       border-radius: 0.375rem;
       cursor: pointer;
       font-size: 0.875rem;
-      font-weight: 500;
-      transition: background-color 0.2s;
+      font-weight: 600;
+      transition: all 0.2s;
+      box-shadow: 0 2px 6px rgba(193, 39, 45, 0.25);
 
       &:hover {
         background: #9a1f24;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 10px rgba(193, 39, 45, 0.3);
       }
     }
   }
@@ -191,6 +233,7 @@
   flex: 1;
   padding: 2rem;
   overflow-y: auto;
+  background: #f9fafb; /* Fondo gris muy claro */
 }
 
 /* ==================== RESPONSIVE ==================== */
@@ -221,5 +264,142 @@
 
   .content-body {
     padding: 1rem;
+  }
+}
+
+/* ==================== ESTILOS GLOBALES - BLANCO CON TOQUES ROJOS ==================== */
+::ng-deep {
+  /* Botones primarios - ROJO como acento */
+  .btn-primary,
+  button[type="submit"]:not(.btn-secondary):not(.btn-danger):not(.btn-warning) {
+    background: #C1272D !important;
+    border: none !important;
+    color: white !important;
+    font-weight: 600 !important;
+    box-shadow: 0 2px 6px rgba(193, 39, 45, 0.25) !important;
+    transition: all 0.2s !important;
+
+    &:hover:not(:disabled) {
+      background: #9a1f24 !important;
+      transform: translateY(-1px) !important;
+      box-shadow: 0 4px 10px rgba(193, 39, 45, 0.3) !important;
+    }
+  }
+
+  /* Badges/Estado activo */
+  .badge.bg-success,
+  .status-active {
+    background: #28a745 !important;
+  }
+
+  /* Encabezados de sección - Gris oscuro con acento rojo */
+  h1, h2, h3 {
+    color: #1f2937 !important;
+    font-weight: 700 !important;
+    border-bottom: 2px solid rgba(193, 39, 45, 0.1) !important;
+    padding-bottom: 0.5rem !important;
+  }
+
+  /* Tablas - BLANCO con toques rojos */
+  table {
+    background: white !important;
+    border: 1px solid #e5e7eb !important;
+    
+    thead {
+      background: linear-gradient(to bottom, #ffffff 0%, #f9fafb 100%) !important;
+      border-bottom: 3px solid #C1272D !important; /* Línea roja */
+      
+      th {
+        color: #1f2937 !important;
+        font-weight: 700 !important;
+        padding: 1rem !important;
+      }
+    }
+
+    tbody {
+      tr {
+        transition: all 0.2s;
+        background: white !important;
+
+        &:hover {
+          background-color: rgba(193, 39, 45, 0.03) !important; /* Hover rojo muy sutil */
+          box-shadow: 0 1px 4px rgba(193, 39, 45, 0.1) !important;
+        }
+
+        &:nth-child(even) {
+          background-color: #fafafa !important;
+        }
+      }
+    }
+  }
+
+  /* Cards - BLANCO CON acento rojo sutil */
+  .card {
+    background: white !important;
+    border: 1px solid #e5e7eb !important;
+    border-top: 3px solid #C1272D !important; /* Borde superior rojo */
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+    transition: all 0.2s !important;
+
+    &:hover {
+      box-shadow: 0 4px 12px rgba(193, 39, 45, 0.12) !important; /* Sombra roja sutil */
+    }
+
+    .card-header {
+      background: #fafafa !important;
+      border-bottom: 2px solid rgba(193, 39, 45, 0.15) !important;
+      color: #1f2937 !important;
+      font-weight: 700 !important;
+    }
+  }
+
+  /* Enlaces - Gris con hover rojo */
+  a:not(.menu-item):not(.btn) {
+    color: #4b5563 !important;
+    transition: all 0.2s !important;
+
+    &:hover {
+      color: #C1272D !important;
+      text-decoration: none !important;
+    }
+  }
+
+  /* Inputs y selects - Borde gris, focus con acento rojo */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  textarea,
+  select {
+    background: white !important;
+    border: 1px solid #d1d5db !important;
+    transition: all 0.2s !important;
+
+    &:focus {
+      border-color: #C1272D !important;
+      box-shadow: 0 0 0 0.15rem rgba(193, 39, 45, 0.1) !important;
+      outline: none !important;
+    }
+  }
+
+  /* Modales - BLANCO limpio */
+  .modal-content {
+    background: white !important;
+    border: 1px solid #e5e7eb !important;
+  }
+
+  .modal-header {
+    background: white !important;
+    color: #1f2937 !important;
+    border-bottom: 3px solid #C1272D !important; /* Línea roja */
+  }
+
+  .modal-body {
+    background: white !important;
+  }
+
+  .modal-footer {
+    background: #fafafa !important;
+    border-top: 1px solid #e5e7eb !important;
   }
 }

@@ -28,8 +28,23 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
-    origin: '*', // Permitir todas las conexiones en red local (cambiar en producción)
-    methods: ['GET', 'POST']
+    origin: function (origin, callback) {
+      // Permitir sin origin
+      if (!origin) return callback(null, true);
+      
+      // Permitir localhost, IPs locales y DevTunnels
+      const isLocalhost = /^https?:\/\/(localhost|127\.0\.0\.1)/.test(origin);
+      const isLocalIP = /^https?:\/\/(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3})/.test(origin);
+      const isDevTunnel = /^https?:\/\/.*\.devtunnels\.ms/.test(origin);
+      
+      if (isLocalhost || isLocalIP || isDevTunnel) {
+        callback(null, true);
+      } else {
+        callback(null, true); // En desarrollo, permitir de todos modos
+      }
+    },
+    methods: ['GET', 'POST'],
+    credentials: true
   }
 });
 
@@ -38,8 +53,41 @@ const PORT = process.env.PORT || 3000;
 // Hacer io accesible globalmente para otros módulos
 global.io = io;
 
+// Configuración CORS mejorada para desarrollo y DevTunnels
+const corsOptions = {
+  origin: function (origin, callback) {
+    // Permitir peticiones sin origin (como Postman, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    // Lista de orígenes permitidos
+    const allowedOrigins = [
+      'http://localhost:4200',
+      'http://localhost:3000',
+      'http://127.0.0.1:4200',
+      'http://127.0.0.1:3000',
+    ];
+    
+    // Permitir cualquier IP local (192.168.x.x, 10.x.x.x)
+    const isLocalIP = /^https?:\/\/(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2[0-9]|3[0-1])\.\d{1,3}\.\d{1,3})/.test(origin);
+    
+    // Permitir DevTunnels (*.devtunnels.ms)
+    const isDevTunnel = /^https?:\/\/.*\.devtunnels\.ms(:\d+)?$/.test(origin);
+    
+    if (allowedOrigins.includes(origin) || isLocalIP || isDevTunnel) {
+      callback(null, true);
+    } else {
+      console.log('⚠️  Origen no permitido por CORS:', origin);
+      callback(null, true); // En desarrollo, permitir de todos modos
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  exposedHeaders: ['Content-Range', 'X-Content-Range']
+};
+
 // Middlewares
-app.use(cors());
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

@@ -1,4 +1,17 @@
 <div class="submit-document-container">
+  <!-- Header / Navbar -->
+  <header class="page-header">
+    <div class="header-content">
+      <div class="logo-section">
+        <img src="images/gb1.svg" alt="Logo Gobierno del Perú" class="logo-image">
+        <div class="separator"></div>
+        <div class="entity-info">
+          <span class="entity-name">Dirección Regional de Transportes y Comunicaciones - Puno</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
   <div class="content-wrapper">
     
     @if (submitSuccess()) {
@@ -175,21 +188,27 @@
                     <label for="departamento">Departamento</label>
                     <select id="departamento" formControlName="departamento">
                       <option value="">Selecciona un departamento</option>
-                      <option value="Puno">Puno</option>
+                      @for (depto of departamentos(); track depto) {
+                        <option [value]="depto">{{ depto }}</option>
+                      }
                     </select>
                   </div>
                   <div class="form-col">
                     <label for="provincia">Provincia</label>
                     <select id="provincia" formControlName="provincia">
                       <option value="">Selecciona una provincia</option>
-                      <option value="Puno">Puno</option>
+                      @for (prov of provincias(); track prov) {
+                        <option [value]="prov">{{ prov }}</option>
+                      }
                     </select>
                   </div>
                   <div class="form-col">
                     <label for="distrito">Distrito</label>
                     <select id="distrito" formControlName="distrito">
                       <option value="">Selecciona un distrito</option>
-                      <option value="Puno">Puno</option>
+                      @for (dist of distritos(); track dist) {
+                        <option [value]="dist">{{ dist }}</option>
+                      }
                     </select>
                   </div>
                 </div>
@@ -257,21 +276,27 @@
                     <label for="departamento">Departamento</label>
                     <select id="departamento" formControlName="departamento">
                       <option value="">Selecciona un departamento</option>
-                      <option value="Puno">Puno</option>
+                      @for (depto of departamentos(); track depto) {
+                        <option [value]="depto">{{ depto }}</option>
+                      }
                     </select>
                   </div>
                   <div class="form-col">
                     <label for="provincia">Provincia</label>
                     <select id="provincia" formControlName="provincia">
                       <option value="">Selecciona una provincia</option>
-                      <option value="Puno">Puno</option>
+                      @for (prov of provincias(); track prov) {
+                        <option [value]="prov">{{ prov }}</option>
+                      }
                     </select>
                   </div>
                   <div class="form-col">
                     <label for="distrito">Distrito</label>
                     <select id="distrito" formControlName="distrito">
                       <option value="">Selecciona un distrito</option>
-                      <option value="Puno">Puno</option>
+                      @for (dist of distritos(); track dist) {
+                        <option [value]="dist">{{ dist }}</option>
+                      }
                     </select>
                   </div>
                 </div>
