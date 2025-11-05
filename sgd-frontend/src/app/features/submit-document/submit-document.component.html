@@ -3,7 +3,7 @@
   <header class="page-header">
     <div class="header-content">
       <div class="logo-section">
-        <img src="images/gb1.svg" alt="Logo Gobierno del Perú" class="logo-image">
+        <img src="images/gb1.svg" alt="Logo Gobierno del Perú" class="logo-image" (click)="navigateToLanding()" style="cursor: pointer;">
         <div class="separator"></div>
         <div class="entity-info">
           <span class="entity-name">Dirección Regional de Transportes y Comunicaciones - Puno</span>
@@ -491,11 +491,11 @@
 
         <!-- Documentos de Sustento -->
         <div class="form-section">
-          <h2 class="section-title">Documentos de sustento (opcional)</h2>
+          <h2 class="section-title">Documentos de sustento</h2>
           
           <div class="form-group">
-            <label class="step-label">6. Adjunta los documentos que sustenten tu solicitud <span class="optional">(Opcional)</span></label>
-            <p class="help-text">Solo se aceptan formatos jpg, jpeg, png, tif, bmp, pdf, doc, docx, txt, xls, xlsx, xlsm, csv, rar, zip, mp3, wma, mp4 y wmv.</p>
+            <label class="step-label">6. Adjunta los documentos que sustenten tu solicitud <span class="required">*</span></label>
+            <p class="help-text">Solo se aceptan archivos PDF e imágenes escaneadas (jpg, jpeg, png).</p>
             <p class="help-text weight-bold">Peso total máximo: 10 MB.</p>
             
             <div class="file-upload-area" (click)="fileInput.click()">
@@ -510,7 +510,7 @@
               #fileInput
               type="file" 
               multiple
-              accept=".jpg,.jpeg,.png,.tif,.bmp,.pdf,.doc,.docx,.txt,.xls,.xlsx,.xlsm,.csv,.rar,.zip,.mp3,.wma,.mp4,.wmv"
+              accept=".pdf,.jpg,.jpeg,.png"
               (change)="onFileSelected($event)"
               style="display: none;">
             
@@ -523,6 +523,8 @@
                   </div>
                 }
               </div>
+            } @else {
+              <p class="help-text" style="color: #C1272D; margin-top: 0.5rem;">⚠️ Debes adjuntar al menos un archivo para enviar tu solicitud.</p>
             }
           </div>
 
@@ -559,7 +561,7 @@
             type="button" 
             (click)="submitDocument()" 
             class="btn btn-primary btn-large"
-            [disabled]="documentForm.invalid || loading()">
+            [disabled]="documentForm.invalid || selectedFiles().length === 0 || loading()">
             @if (loading()) {
               <span class="loading-spinner"></span>
               Enviando...

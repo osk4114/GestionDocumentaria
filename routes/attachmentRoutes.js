@@ -18,8 +18,15 @@ router.post(
 );
 
 /**
+ * @route   GET /api/attachments/view/:id
+ * @desc    Visualizar archivo adjunto (inline, sin forzar descarga)
+ * @access  Private
+ */
+router.get('/view/:id', authMiddleware, attachmentController.viewAttachment);
+
+/**
  * @route   GET /api/attachments/download/:id
- * @desc    Descargar archivo adjunto
+ * @desc    Descargar archivo adjunto (fuerza descarga)
  * @access  Private
  */
 router.get('/download/:id', authMiddleware, attachmentController.downloadAttachment);

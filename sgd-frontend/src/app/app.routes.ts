@@ -12,7 +12,7 @@ import { AdminLayoutComponent } from './features/admin/admin-layout/admin-layout
 import { AreasListComponent } from './features/admin/areas/areas-list.component';
 import { RolesListComponent } from './features/admin/roles/roles-list.component';
 import { UsersListComponent } from './features/admin/users/users-list.component';
-import { DocumentTypesListComponent } from './features/admin/document-types/document-types-list.component';
+import { CategoriesListComponent } from './features/admin/categories/categories-list.component';
 import { ReportsComponent } from './features/admin/reports/reports.component';
 
 export const routes: Routes = [
@@ -83,8 +83,8 @@ export const routes: Routes = [
         component: UsersListComponent
       },
       {
-        path: 'document-types',
-        component: DocumentTypesListComponent
+        path: 'categories',
+        component: CategoriesListComponent
       },
       {
         path: 'reports',

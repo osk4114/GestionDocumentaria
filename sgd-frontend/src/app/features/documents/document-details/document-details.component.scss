@@ -18,8 +18,8 @@
   background: white;
   border-radius: 0.75rem;
   width: 100%;
-  max-width: 900px;
-  max-height: 90vh;
+  max-width: 95vw; /* Casi toda la pantalla */
+  max-height: 95vh; /* Más alto */
   display: flex;
   flex-direction: column;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
@@ -563,13 +563,14 @@
 
 .footer-actions {
   display: flex;
-  justify-content: space-between;
+  justify-content: center; /* Centrado en lugar de space-between */
   align-items: center;
   gap: 1rem;
 }
 
 .action-buttons {
   display: flex;
+  justify-content: center;
   gap: 0.75rem;
 }
 
@@ -724,6 +725,154 @@
   }
 }
 
+/* Preview Section */
+.preview-section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.file-selector {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.125rem 1.25rem;
+  background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+  border-radius: 0.75rem;
+  border: 2px solid #e5e7eb;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+  margin-bottom: 1rem;
+
+  label {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--color-text-primary);
+    margin: 0;
+    white-space: nowrap;
+  }
+
+  select {
+    flex: 1;
+    min-height: 48px;
+    padding: 0.75rem 1.125rem;
+    border: 2px solid #d1d5db;
+    border-radius: 0.75rem;
+    font-size: 1rem;
+    color: var(--color-text-primary);
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 500;
+
+    &:hover {
+      border-color: var(--color-secondary);
+      box-shadow: 0 2px 8px rgba(0, 56, 118, 0.1);
+    }
+
+    &:focus {
+      outline: none;
+      border-color: var(--color-secondary);
+      box-shadow: 0 0 0 4px rgba(0, 56, 118, 0.15);
+    }
+  }
+}
+
+.pdf-viewer-container {
+  background: #f3f4f6;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  min-height: 75vh; /* Altura mínima grande */
+  display: flex;
+  flex-direction: column;
+  
+  // Contenedor para el visor
+  ::ng-deep {
+    pdf-viewer,
+    ngx-extended-pdf-viewer {
+      display: block;
+      width: 100%;
+      height: 100%;
+      flex: 1;
+    }
+
+    // Ajustar el toolbar del PDF viewer
+    #toolbarContainer {
+      background: var(--color-secondary) !important;
+    }
+
+    .toolbar {
+      background: var(--color-secondary) !important;
+    }
+
+    // Asegurar que el canvas del PDF use todo el espacio
+    #viewer {
+      width: 100% !important;
+    }
+
+    .page {
+      margin: 1rem auto !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15) !important;
+    }
+  }
+}
+
+.image-preview {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f9fafb;
+  border-radius: 0.5rem;
+  padding: 2rem;
+  border: 2px dashed #e5e7eb;
+
+  img {
+    max-width: 100%;
+    max-height: 600px;
+    height: auto;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.no-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  background: #fef3c7;
+  border: 2px dashed #fbbf24;
+  border-radius: 0.5rem;
+  text-align: center;
+
+  p {
+    margin: 0.5rem 0;
+    color: #92400e;
+
+    &:first-child {
+      font-size: 1.125rem;
+      font-weight: 600;
+    }
+
+    &:last-of-type {
+      font-size: 0.875rem;
+      font-weight: 500;
+      font-family: monospace;
+      margin-bottom: 1.5rem;
+    }
+  }
+
+  .btn-download {
+    margin-top: 1rem;
+    background: #f59e0b;
+
+    &:hover {
+      background: #d97706;
+    }
+  }
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -736,20 +885,55 @@
     margin: 0;
     border-radius: 0;
     max-height: 100vh;
+    height: 100vh;
   }
 
-  .modal-header,
-  .modal-body,
+  .modal-header {
+    padding: 0.75rem 1rem;
+    
+    .modal-title {
+      font-size: 1.125rem;
+    }
+    
+    .tracking-code {
+      font-size: 0.75rem;
+    }
+  }
+
+  .modal-body {
+    padding: 0.75rem;
+    overflow-y: auto;
+  }
+
   .modal-footer {
-    padding: 1rem;
+    padding: 0.75rem 1rem;
   }
 
   .tabs {
-    padding: 0 1rem;
+    padding: 0 0.75rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    
+    &::-webkit-scrollbar {
+      height: 2px;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+      background: var(--color-secondary);
+      border-radius: 2px;
+    }
+  }
+
+  .tab {
+    padding: 0.75rem 1rem;
+    font-size: 0.8125rem;
+    white-space: nowrap;
+    min-width: fit-content;
   }
 
   .info-grid {
     grid-template-columns: 1fr;
+    gap: 0.75rem;
   }
 
   .timeline {
@@ -772,5 +956,243 @@
   .btn-download {
     width: 100%;
     justify-content: center;
+  }
+
+  // PREVIEW SECTION - MOBILE OPTIMIZADO
+  .preview-section {
+    margin: -0.75rem;
+    height: calc(100vh - 250px);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .file-selector {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    margin: 0.75rem;
+    flex-shrink: 0;
+
+    label {
+      text-align: left;
+      font-size: 0.8125rem;
+      white-space: nowrap;
+    }
+
+    select {
+      width: 100%;
+      font-size: 0.8125rem;
+      padding: 0.5rem;
+    }
+  }
+
+  .pdf-viewer-container {
+    flex: 1;
+    background: #1e293b;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    min-height: 70vh; /* Más alto en móvil */
+    
+    ::ng-deep {
+      ngx-extended-pdf-viewer {
+        height: 100% !important;
+        
+        // Ajustar toolbar para móvil
+        #toolbarContainer {
+          min-height: 48px !important;
+        }
+        
+        .toolbar {
+          padding: 6px 10px !important;
+        }
+        
+        // Ocultar botones menos importantes en móvil
+        #secondaryToolbarToggle,
+        #spreadModeButtons,
+        #scaleSelectContainer {
+          display: none !important;
+        }
+        
+        // Hacer botones más grandes para touch
+        button {
+          min-width: 48px !important;
+          min-height: 48px !important;
+          padding: 10px !important;
+          font-size: 1.125rem !important;
+        }
+        
+        // Ajustar el visor principal
+        #viewerContainer {
+          overflow: auto !important;
+          -webkit-overflow-scrolling: touch;
+          
+          &::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+          }
+          
+          &::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+          }
+        }
+        
+        // Canvas del PDF más responsivo
+        .page {
+          margin: 8px auto !important;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+        }
+        
+        // Ajustar input de número de página
+        #pageNumber {
+          min-width: 44px !important;
+          font-size: 14px !important;
+        }
+      }
+    }
+  }
+
+  .image-preview {
+    flex: 1;
+    padding: 0.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+
+    img {
+      max-height: none;
+      max-width: 100%;
+      height: auto;
+      width: auto;
+      object-fit: contain;
+    }
+  }
+
+  .no-preview {
+    padding: 2rem 1rem;
+    margin: 0.75rem;
+    
+    p {
+      font-size: 0.875rem;
+      
+      &:first-child {
+        font-size: 1rem;
+      }
+      
+      &:last-of-type {
+        font-size: 0.75rem;
+      }
+    }
+    
+    .btn-download {
+      padding: 0.75rem 1.5rem;
+      font-size: 0.9375rem;
+    }
+  }
+
+  // Footer buttons en móvil
+  .footer-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .action-buttons {
+    width: 100%;
+    flex-direction: column;
+    gap: 0.5rem;
+    
+    button {
+      width: 100%;
+      justify-content: center;
+      min-height: 44px;
+    }
+  }
+}
+
+// Tablets (portrait)
+@media (min-width: 769px) and (max-width: 1024px) {
+  .modal-content {
+    max-width: 92vw; /* Más ancho */
+    max-height: 92vh; /* Más alto */
+  }
+
+  .pdf-viewer-container {
+    min-height: 70vh;
+    
+    ::ng-deep {
+      ngx-extended-pdf-viewer {
+        height: 100% !important;
+      }
+    }
+  }
+
+  .image-preview img {
+    max-height: 70vh;
+  }
+}
+
+// Desktop grande (1025px+)
+@media (min-width: 1025px) {
+  .modal-content {
+    max-width: 95vw; /* Casi toda la pantalla */
+    max-height: 95vh; /* Casi toda la altura */
+  }
+
+  .pdf-viewer-container {
+    min-height: 75vh; /* Muy alto en desktop */
+    
+    ::ng-deep {
+      ngx-extended-pdf-viewer {
+        height: 100% !important;
+      }
+
+      // Mostrar más controles en desktop
+      #secondaryToolbarToggle,
+      #spreadModeButtons,
+      #scaleSelectContainer {
+        display: inline-block !important;
+      }
+
+      // Páginas del PDF más grandes
+      .page {
+        max-width: 100% !important;
+      }
+
+      #viewerContainer {
+        overflow: auto !important;
+      }
+    }
+  }
+
+  .image-preview {
+    min-height: 75vh;
+    
+    img {
+      max-height: 80vh;
+      max-width: 90vw;
+      object-fit: contain;
+    }
+  }
+
+  // Botones centrados en desktop
+  .footer-actions {
+    justify-content: center; /* Centrado */
+  }
+
+  .action-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    
+    button {
+      min-height: 48px;
+      min-width: 180px;
+    }
   }
 }

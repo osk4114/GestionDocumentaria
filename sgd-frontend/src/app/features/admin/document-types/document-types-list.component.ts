@@ -65,46 +65,110 @@ import { DocumentTypeService, DocumentType } from '../../../core/services/docume
             <h3>No se encontraron tipos de documento</h3>
           </div>
         } @else {
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Nombre</th>
-                <th>Descripción</th>
-                <th>Estado</th>
-                <th>Fecha Creación</th>
-                <th class="actions-col">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (type of filteredTypes(); track type.id) {
+          <!-- Vista de Tabla (Desktop) -->
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
                 <tr>
-                  <td>{{ type.id }}</td>
-                  <td class="font-semibold">{{ type.nombre }}</td>
-                  <td class="description-col">{{ type.descripcion || '-' }}</td>
-                  <td>
-                    <span 
-                      class="status-badge"
-                      [class.status-active]="type.isActive"
-                      [class.status-inactive]="!type.isActive"
-                    >
-                      {{ type.isActive ? 'Activo' : 'Inactivo' }}
-                    </span>
-                  </td>
-                  <td>{{ type.created_at ? (type.created_at | date:'dd/MM/yyyy') : '-' }}</td>
-                  <td class="actions-col">
-                    <div class="action-buttons">
-                      <button class="btn-icon btn-edit" (click)="openEditModal(type)" title="Editar">✏️</button>
-                      <button class="btn-icon btn-toggle" (click)="toggleStatus(type)" [title]="type.isActive ? 'Desactivar' : 'Activar'">
-                        {{ type.isActive ? '🚫' : '✅' }}
-                      </button>
-                      <button class="btn-icon btn-delete" (click)="deleteType(type)" title="Eliminar">🗑️</button>
-                    </div>
-                  </td>
+                  <th>ID</th>
+                  <th>Nombre</th>
+                  <th>Descripción</th>
+                  <th>Estado</th>
+                  <th>Fecha Creación</th>
+                  <th class="actions-col">Acciones</th>
                 </tr>
-              }
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                @for (type of filteredTypes(); track type.id) {
+                  <tr>
+                    <td>{{ type.id }}</td>
+                    <td class="font-semibold">{{ type.nombre }}</td>
+                    <td class="description-col">{{ type.descripcion || '-' }}</td>
+                    <td>
+                      <span 
+                        class="status-badge"
+                        [class.status-active]="type.isActive"
+                        [class.status-inactive]="!type.isActive"
+                      >
+                        {{ type.isActive ? 'Activo' : 'Inactivo' }}
+                      </span>
+                    </td>
+                    <td>{{ type.created_at ? (type.created_at | date:'dd/MM/yyyy') : '-' }}</td>
+                    <td class="actions-col">
+                      <div class="action-buttons">
+                        <button class="btn-icon btn-edit" (click)="openEditModal(type)" title="Editar">✏️</button>
+                        <button class="btn-icon btn-toggle" (click)="toggleStatus(type)" [title]="type.isActive ? 'Desactivar' : 'Activar'">
+                          {{ type.isActive ? '🚫' : '✅' }}
+                        </button>
+                        <button class="btn-icon btn-delete" (click)="deleteType(type)" title="Eliminar">🗑️</button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Vista de Cards (Móvil) -->
+          <div class="cards-wrapper">
+            @for (type of filteredTypes(); track type.id) {
+              <div class="admin-card">
+                <div class="card-header">
+                  <div class="card-id">ID: {{ type.id }}</div>
+                  <span 
+                    class="status-badge"
+                    [class.status-active]="type.isActive"
+                    [class.status-inactive]="!type.isActive"
+                  >
+                    {{ type.isActive ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </div>
+
+                <div class="card-body">
+                  <div class="card-title-section">
+                    <div class="card-title">{{ type.nombre }}</div>
+                  </div>
+
+                  @if (type.descripcion) {
+                    <div class="card-description">
+                      {{ type.descripcion }}
+                    </div>
+                  }
+
+                  <div class="card-meta">
+                    <div class="meta-item">
+                      <span class="meta-label">Fecha creación:</span>
+                      <span class="meta-value">{{ type.created_at ? (type.created_at | date:'dd/MM/yyyy') : '-' }}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card-actions">
+                  <button 
+                    class="btn-card btn-edit" 
+                    (click)="openEditModal(type)"
+                  >
+                    <span class="btn-icon">✏️</span>
+                    <span class="btn-text">Editar</span>
+                  </button>
+                  <button 
+                    class="btn-card btn-toggle" 
+                    (click)="toggleStatus(type)"
+                  >
+                    <span class="btn-icon">{{ type.isActive ? '🚫' : '✅' }}</span>
+                    <span class="btn-text">{{ type.isActive ? 'Desactivar' : 'Activar' }}</span>
+                  </button>
+                  <button 
+                    class="btn-card btn-delete" 
+                    (click)="deleteType(type)"
+                  >
+                    <span class="btn-icon">🗑️</span>
+                    <span class="btn-text">Eliminar</span>
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
         }
       </div>
     </div>
@@ -145,7 +209,7 @@ import { DocumentTypeService, DocumentType } from '../../../core/services/docume
       </div>
     }
   `,
-  styles: [`@use '../areas/areas-list.component.scss';`]
+  styleUrl: './document-types-list.component.scss'
 })
 export class DocumentTypesListComponent implements OnInit {
   types = signal<DocumentType[]>([]);

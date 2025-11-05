@@ -1,7 +1,7 @@
 import { Component, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { DocumentService } from '../../core/services/document.service';
 
 interface DocumentTracking {
@@ -51,7 +51,8 @@ export class TrackDocumentComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private documentService: DocumentService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private router: Router
   ) {
     this.searchForm = this.fb.group({
       trackingCode: ['', [Validators.required, Validators.pattern(/^SGD-\d{4}-\d{6}$/)]]
@@ -117,6 +118,13 @@ export class TrackDocumentComponent implements OnInit {
     this.searchForm.reset();
     this.document.set(null);
     this.errorMessage.set('');
+  }
+
+  /**
+   * Navega al landing page cuando se hace clic en el logo
+   */
+  navigateToLanding() {
+    this.router.navigate(['/']);
   }
 
 }

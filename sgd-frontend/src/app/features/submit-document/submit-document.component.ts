@@ -1,6 +1,7 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { DocumentService } from '../../core/services/document.service';
 import { CustomValidators } from '../../shared/validators/custom-validators';
 
@@ -74,7 +75,8 @@ export class SubmitDocumentComponent {
 
   constructor(
     private fb: FormBuilder,
-    private documentService: DocumentService
+    private documentService: DocumentService,
+    private router: Router
   ) {
     this.documentForm = this.fb.group({
       // Información del solicitante
@@ -256,11 +258,18 @@ export class SubmitDocumentComponent {
   }
 
   submitDocument() {
+    // Validar que el formulario sea válido
     if (this.documentForm.invalid) {
       this.errorMessage.set('Por favor complete todos los campos requeridos y acepte las condiciones');
       Object.keys(this.documentForm.controls).forEach(key => {
         this.documentForm.get(key)?.markAsTouched();
       });
+      return;
+    }
+
+    // Validar que haya al menos un archivo adjunto
+    if (this.selectedFiles().length === 0) {
+      this.errorMessage.set('Debes adjuntar al menos un archivo para enviar tu solicitud');
       return;
     }
 
@@ -381,6 +390,13 @@ export class SubmitDocumentComponent {
   isValid(fieldName: string): boolean {
     const control = this.documentForm.get(fieldName);
     return !!(control && control.valid && control.touched && control.value);
+  }
+
+  /**
+   * Navega al landing page cuando se hace clic en el logo
+   */
+  navigateToLanding() {
+    this.router.navigate(['/']);
   }
 
 }

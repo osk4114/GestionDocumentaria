@@ -36,6 +36,15 @@
         >
           🕐 Historial ({{ document()!.movements.length }})
         </button>
+        @if (document()!.attachments && document()!.attachments!.length > 0) {
+          <button 
+            class="tab" 
+            [class.active]="activeTab() === 'preview'"
+            (click)="setTab('preview')"
+          >
+            👁️ Previsualizar
+          </button>
+        }
       </div>
 
       <!-- Tab Content -->
@@ -355,7 +364,7 @@
 
                         @if (movement.user) {
                           <p class="timeline-user">
-                            <strong>Usuario:</strong> {{ movement.user.nombre }} - {{ movement.user.role.nombre }}
+                            <strong>Usuario:</strong> {{ movement.user.nombre }}@if (movement.user.role) { - {{ movement.user.role.nombre }}}
                           </p>
                         }
 
@@ -369,6 +378,53 @@
                     </div>
                   </div>
                 }
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Previsualización de Documentos -->
+        @if (activeTab() === 'preview') {
+          <div class="preview-section">
+            <!-- Selector de archivos si hay múltiples -->
+            @if (document()!.attachments!.length > 1) {
+              <div class="file-selector">
+                <label for="file-select">Seleccionar archivo:</label>
+                <select id="file-select" (change)="previewAttachment(document()!.attachments![$any($event.target).selectedIndex])">
+                  @for (attachment of document()!.attachments; track attachment.id; let i = $index) {
+                    <option [value]="i" [selected]="selectedAttachment()?.id === attachment.id">
+                      {{ attachment.originalName }}
+                    </option>
+                  }
+                </select>
+              </div>
+            }
+
+            <!-- Visor PDF -->
+            @if (pdfSrc() && selectedAttachment()?.fileType.includes('pdf')) {
+              <div class="pdf-viewer-container">
+                <ngx-extended-pdf-viewer
+                  [src]="pdfSrc()!"
+                  height="75vh"
+                  [textLayer]="true"
+                  [showHandToolButton]="true"
+                >
+                </ngx-extended-pdf-viewer>
+              </div>
+            } @else if (selectedAttachment()?.fileType.includes('image')) {
+              <div class="image-preview">
+                <img [src]="pdfSrc()" [alt]="selectedAttachment()?.originalName" />
+              </div>
+            } @else {
+              <div class="no-preview">
+                <p>⚠️ No se puede previsualizar este tipo de archivo</p>
+                <p>{{ selectedAttachment()?.originalName }}</p>
+                <button 
+                  class="btn-download"
+                  (click)="downloadAttachment(document()!.id, selectedAttachment()!.id, selectedAttachment()!.originalName)"
+                >
+                  ⬇️ Descargar archivo
+                </button>
               </div>
             }
           </div>

@@ -80,70 +80,137 @@
         <p>{{ searchTerm || filterArea !== 'all' || filterRole !== 'all' || filterStatus !== 'all' ? 'Intenta ajustar los filtros' : 'Comienza creando un nuevo usuario' }}</p>
       </div>
     } @else {
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Nombre</th>
-            <th>Email</th>
-            <th>Rol</th>
-            <th>Área</th>
-            <th>Estado</th>
-            <th>Fecha Creación</th>
-            <th class="actions-col">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (user of filteredUsers(); track user.id) {
+      <!-- Vista de Tabla (Desktop) -->
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
             <tr>
-              <td>{{ user.id }}</td>
-              <td class="font-semibold">{{ user.nombre }}</td>
-              <td>{{ user.email }}</td>
-              <td>
-                <span class="badge badge-role">{{ user.role?.nombre || '-' }}</span>
-              </td>
-              <td>
-                <span class="badge badge-area">{{ user.area?.sigla || '-' }}</span>
-              </td>
-              <td>
-                <span 
-                  class="status-badge"
-                  [class.status-active]="user.isActive"
-                  [class.status-inactive]="!user.isActive"
-                >
-                  {{ user.isActive ? 'Activo' : 'Inactivo' }}
-                </span>
-              </td>
-              <td>{{ user.created_at ? (user.created_at | date:'dd/MM/yyyy') : '-' }}</td>
-              <td class="actions-col">
-                <div class="action-buttons">
-                  <button 
-                    class="btn-icon btn-edit" 
-                    (click)="openEditModal(user)"
-                    title="Editar"
-                  >
-                    ✏️
-                  </button>
-                  <button 
-                    class="btn-icon btn-toggle" 
-                    (click)="toggleStatus(user)"
-                    [title]="user.isActive ? 'Desactivar' : 'Activar'"
-                  >
-                    {{ user.isActive ? '🚫' : '✅' }}
-                  </button>
-                  <button 
-                    class="btn-icon btn-delete" 
-                    (click)="deleteUser(user)"
-                    title="Eliminar"
-                  >
-                    🗑️
-                  </button>
-                </div>
-              </td>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Email</th>
+              <th>Rol</th>
+              <th>Área</th>
+              <th>Estado</th>
+              <th>Fecha Creación</th>
+              <th class="actions-col">Acciones</th>
             </tr>
-          }
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            @for (user of filteredUsers(); track user.id) {
+              <tr>
+                <td>{{ user.id }}</td>
+                <td class="font-semibold">{{ user.nombre }}</td>
+                <td>{{ user.email }}</td>
+                <td>
+                  <span class="badge badge-role">{{ user.role?.nombre || '-' }}</span>
+                </td>
+                <td>
+                  <span class="badge badge-area">{{ user.area?.sigla || '-' }}</span>
+                </td>
+                <td>
+                  <span 
+                    class="status-badge"
+                    [class.status-active]="user.isActive"
+                    [class.status-inactive]="!user.isActive"
+                  >
+                    {{ user.isActive ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </td>
+                <td>{{ user.created_at ? (user.created_at | date:'dd/MM/yyyy') : '-' }}</td>
+                <td class="actions-col">
+                  <div class="action-buttons">
+                    <button 
+                      class="btn-icon btn-edit" 
+                      (click)="openEditModal(user)"
+                      title="Editar"
+                    >
+                      ✏️
+                    </button>
+                    <button 
+                      class="btn-icon btn-toggle" 
+                      (click)="toggleStatus(user)"
+                      [title]="user.isActive ? 'Desactivar' : 'Activar'"
+                    >
+                      {{ user.isActive ? '🚫' : '✅' }}
+                    </button>
+                    <button 
+                      class="btn-icon btn-delete" 
+                      (click)="deleteUser(user)"
+                      title="Eliminar"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Vista de Cards (Móvil) -->
+      <div class="cards-wrapper">
+        @for (user of filteredUsers(); track user.id) {
+          <div class="user-card">
+            <div class="card-header">
+              <div class="card-id">ID: {{ user.id }}</div>
+              <span 
+                class="status-badge"
+                [class.status-active]="user.isActive"
+                [class.status-inactive]="!user.isActive"
+              >
+                {{ user.isActive ? 'Activo' : 'Inactivo' }}
+              </span>
+            </div>
+
+            <div class="card-body">
+              <div class="card-main-info">
+                <div class="card-name">{{ user.nombre }}</div>
+                <div class="card-email">📧 {{ user.email }}</div>
+              </div>
+
+              <div class="card-meta">
+                <div class="meta-item">
+                  <span class="meta-label">Rol:</span>
+                  <span class="badge badge-role">{{ user.role?.nombre || '-' }}</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">Área:</span>
+                  <span class="badge badge-area">{{ user.area?.sigla || '-' }}</span>
+                </div>
+                <div class="meta-item">
+                  <span class="meta-label">Fecha:</span>
+                  <span class="meta-value">{{ user.created_at ? (user.created_at | date:'dd/MM/yyyy') : '-' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="card-actions">
+              <button 
+                class="btn-card btn-edit" 
+                (click)="openEditModal(user)"
+              >
+                <span class="btn-icon">✏️</span>
+                <span class="btn-text">Editar</span>
+              </button>
+              <button 
+                class="btn-card btn-toggle" 
+                (click)="toggleStatus(user)"
+              >
+                <span class="btn-icon">{{ user.isActive ? '🚫' : '✅' }}</span>
+                <span class="btn-text">{{ user.isActive ? 'Desactivar' : 'Activar' }}</span>
+              </button>
+              <button 
+                class="btn-card btn-delete" 
+                (click)="deleteUser(user)"
+              >
+                <span class="btn-icon">🗑️</span>
+                <span class="btn-text">Eliminar</span>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
     }
   </div>
 </div>

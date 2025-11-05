@@ -277,4 +277,13 @@ export class DocumentService {
   getDocumentStatuses(): Observable<ApiResponse<any[]>> {
     return this.http.get<ApiResponse<any[]>>(`${this.apiUrl}/documents/statuses`);
   }
+
+  /**
+   * Actualiza la categoría de un documento
+   */
+  updateDocumentCategory(documentId: number, categoryId: number): Observable<ApiResponse<any>> {
+    return this.http.patch<ApiResponse<any>>(`${this.apiUrl}/documents/${documentId}/category`, {
+      categoryId
+    });
+  }
 }

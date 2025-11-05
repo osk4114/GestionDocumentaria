@@ -39,23 +39,11 @@ const AreaDocumentCategory = sequelize.define('AreaDocumentCategory', {
     field: 'color',
     comment: 'Color para identificación visual (hex)'
   },
-  icono: {
-    type: DataTypes.STRING(50),
-    defaultValue: 'file',
-    field: 'icono',
-    comment: 'Icono Font Awesome'
-  },
   orden: {
     type: DataTypes.INTEGER,
     defaultValue: 0,
     field: 'orden',
     comment: 'Orden de visualización'
-  },
-  requiereAdjunto: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false,
-    field: 'requiere_adjunto',
-    comment: 'Si esta categoría requiere archivos adjuntos'
   },
   isActive: {
     type: DataTypes.BOOLEAN,

@@ -3,10 +3,16 @@
 -- Sistema de Gestión Documentaria
 -- Ejecutar este script en phpMyAdmin o MySQL CLI
 -- 
--- VERSIÓN: 2.2
--- ÚLTIMA ACTUALIZACIÓN: 29 de Octubre 2025
+-- VERSIÓN: 2.3
+-- ÚLTIMA ACTUALIZACIÓN: 04 de Enero 2025
 -- 
 -- CAMBIOS EN ESTA VERSIÓN:
+-- - Tabla area_document_categories: Eliminados campos 'icono' y 'requiere_adjunto'
+-- - Sistema de archivos adjuntos: Ahora obligatorio en todos los documentos
+-- - Formatos permitidos: Solo PDF e imágenes (JPG, JPEG, PNG)
+-- - Categorías simplificadas: Solo nombre, código, color, descripción
+--
+-- CAMBIOS PREVIOS (v2.2):
 -- - Tabla senders: Agregado tipo_persona, email/telefono obligatorios
 -- - Tabla documents: doc_type_id permite NULL, agregado fecha_recepcion
 -- - Tabla documents: Agregado categoria_id para categorías personalizables
@@ -189,6 +195,7 @@ CREATE TABLE IF NOT EXISTS document_statuses (
 -- Tabla: area_document_categories
 -- Descripción: Categorías de documentos personalizables por área
 -- Agregado: 2025-10-29 - Permite que cada área cree sus categorías
+-- Actualizado: 2025-01-04 - Eliminados campos 'icono' y 'requiere_adjunto' (innecesarios)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS area_document_categories (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -197,9 +204,7 @@ CREATE TABLE IF NOT EXISTS area_document_categories (
     codigo VARCHAR(20) NOT NULL COMMENT 'Código corto para la categoría (ej: OFI, SOL, MEM)',
     descripcion TEXT COMMENT 'Descripción de la categoría',
     color VARCHAR(20) DEFAULT '#0066CC' COMMENT 'Color para identificación visual (hex)',
-    icono VARCHAR(50) DEFAULT 'file' COMMENT 'Icono Font Awesome',
     orden INT DEFAULT 0 COMMENT 'Orden de visualización',
-    requiere_adjunto BOOLEAN DEFAULT FALSE COMMENT 'Si esta categoría requiere archivos adjuntos',
     is_active BOOLEAN DEFAULT TRUE COMMENT 'Si la categoría está activa',
     created_by INT COMMENT 'Usuario que creó la categoría',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -367,19 +372,19 @@ INSERT INTO document_types (nombre, codigo, descripcion, requiere_adjunto, dias_
 ON DUPLICATE KEY UPDATE nombre=nombre;
 
 -- Insertar categorías de ejemplo para áreas
-INSERT INTO area_document_categories (area_id, nombre, codigo, descripcion, color, icono, orden, requiere_adjunto) VALUES
+INSERT INTO area_document_categories (area_id, nombre, codigo, descripcion, color, orden) VALUES
 -- Categorías para Mesa de Partes (área 1)
-(1, 'Oficio', 'OFI', 'Oficios recibidos', '#0066CC', 'file-text', 1, TRUE),
-(1, 'Memorándum', 'MEM', 'Memorándums internos', '#28a745', 'file-alt', 2, FALSE),
-(1, 'Solicitud', 'SOL', 'Solicitudes diversas', '#ffc107', 'file-invoice', 3, TRUE),
-(1, 'Informe', 'INF', 'Informes técnicos', '#dc3545', 'file-contract', 4, TRUE),
-(1, 'Carta', 'CAR', 'Cartas formales', '#6c757d', 'envelope', 5, FALSE),
+(1, 'Oficio', 'OFI', 'Oficios recibidos', '#0066CC', 1),
+(1, 'Memorándum', 'MEM', 'Memorándums internos', '#28a745', 2),
+(1, 'Solicitud', 'SOL', 'Solicitudes diversas', '#ffc107', 3),
+(1, 'Informe', 'INF', 'Informes técnicos', '#dc3545', 4),
+(1, 'Carta', 'CAR', 'Cartas formales', '#6c757d', 5),
 -- Categorías para Recursos Humanos (área 3)
-(3, 'Renuncia', 'REN', 'Cartas de renuncia', '#dc3545', 'user-times', 1, TRUE),
-(3, 'Permiso', 'PER', 'Solicitudes de permiso', '#ffc107', 'calendar-check', 2, TRUE),
-(3, 'Vacaciones', 'VAC', 'Solicitudes de vacaciones', '#28a745', 'umbrella-beach', 3, TRUE),
-(3, 'Licencia', 'LIC', 'Solicitudes de licencia', '#17a2b8', 'hospital', 4, TRUE),
-(3, 'Contrato', 'CON', 'Contratos laborales', '#6610f2', 'file-signature', 5, TRUE)
+(3, 'Renuncia', 'REN', 'Cartas de renuncia', '#dc3545', 1),
+(3, 'Permiso', 'PER', 'Solicitudes de permiso', '#ffc107', 2),
+(3, 'Vacaciones', 'VAC', 'Solicitudes de vacaciones', '#28a745', 3),
+(3, 'Licencia', 'LIC', 'Solicitudes de licencia', '#17a2b8', 4),
+(3, 'Contrato', 'CON', 'Contratos laborales', '#6610f2', 5)
 ON DUPLICATE KEY UPDATE nombre=nombre;
 
 -- ============================================================
@@ -407,11 +412,11 @@ CREATE INDEX idx_attachments_document ON attachments(document_id);
 -- - senders (remitentes externos - Mesa de Partes Virtual)
 -- - document_types (tipos de documentos globales)
 -- - document_statuses (estados del flujo)
--- - area_document_categories (categorías personalizables por área) ⭐ NUEVO
+-- - area_document_categories (categorías personalizables por área)
 -- - documents (tabla principal de documentos)
 -- - document_movements (trazabilidad completa)
--- - document_versions (historial de versiones con sello/firma) ⭐ NUEVO
--- - attachments (archivos adjuntos)
+-- - document_versions (historial de versiones con sello/firma)
+-- - attachments (archivos adjuntos - OBLIGATORIOS)
 -- - notifications (notificaciones a usuarios)
 --
 -- Estados disponibles: Pendiente, En Proceso, Derivado, Atendido, Observado, Archivado
@@ -420,12 +425,14 @@ CREATE INDEX idx_attachments_document ON attachments(document_id);
 --
 -- IMPORTANTE:
 -- - doc_type_id en documents permite NULL (para documentos sin clasificar)
--- - categoria_id en documents permite NULL (categoría personalizada del área) ⭐ NUEVO
+-- - categoria_id en documents permite NULL (categoría personalizada del área)
 -- - user_id en document_movements permite NULL (para acciones públicas/automáticas)
 -- - email y telefono en senders son OBLIGATORIOS (Mesa de Partes Virtual)
 -- - nombreCompleto en senders es OPCIONAL (identificación por email/telefono)
 -- - Cada área puede crear sus propias categorías sin límite
 -- - Las versiones de documentos mantienen historial completo con sello/firma
+-- - ARCHIVOS ADJUNTOS SON OBLIGATORIOS: Todo documento debe tener al menos 1 archivo PDF o imagen
+-- - FORMATOS PERMITIDOS: Solo PDF, JPG, JPEG, PNG (validado en frontend y backend)
 -- ============================================================
 
-SELECT 'Base de datos SGD v2.2 creada exitosamente - 14 tablas configuradas' AS mensaje;
+SELECT 'Base de datos SGD v2.3 creada exitosamente - 14 tablas configuradas' AS mensaje;

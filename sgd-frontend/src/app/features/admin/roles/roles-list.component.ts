@@ -56,33 +56,77 @@ import { RoleService, Role } from '../../../core/services/role.service';
             <h3>No se encontraron roles</h3>
           </div>
         } @else {
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Nombre</th>
-                <th>Descripción</th>
-                <th>Fecha Creación</th>
-                <th class="actions-col">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (role of filteredRoles(); track role.id) {
+          <!-- Vista de Tabla (Desktop) -->
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
                 <tr>
-                  <td>{{ role.id }}</td>
-                  <td class="font-semibold">{{ role.nombre }}</td>
-                  <td class="description-col">{{ role.descripcion || '-' }}</td>
-                  <td>{{ role.created_at ? (role.created_at | date:'dd/MM/yyyy') : '-' }}</td>
-                  <td class="actions-col">
-                    <div class="action-buttons">
-                      <button class="btn-icon btn-edit" (click)="openEditModal(role)" title="Editar">✏️</button>
-                      <button class="btn-icon btn-delete" (click)="deleteRole(role)" title="Eliminar">🗑️</button>
-                    </div>
-                  </td>
+                  <th>ID</th>
+                  <th>Nombre</th>
+                  <th>Descripción</th>
+                  <th>Fecha Creación</th>
+                  <th class="actions-col">Acciones</th>
                 </tr>
-              }
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                @for (role of filteredRoles(); track role.id) {
+                  <tr>
+                    <td>{{ role.id }}</td>
+                    <td class="font-semibold">{{ role.nombre }}</td>
+                    <td class="description-col">{{ role.descripcion || '-' }}</td>
+                    <td>{{ role.created_at ? (role.created_at | date:'dd/MM/yyyy') : '-' }}</td>
+                    <td class="actions-col">
+                      <div class="action-buttons">
+                        <button class="btn-icon btn-edit" (click)="openEditModal(role)" title="Editar">✏️</button>
+                        <button class="btn-icon btn-delete" (click)="deleteRole(role)" title="Eliminar">🗑️</button>
+                      </div>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Vista de Cards (Móvil) -->
+          <div class="cards-wrapper">
+            @for (role of filteredRoles(); track role.id) {
+              <div class="admin-card">
+                <div class="card-header">
+                  <div class="card-id">ID: {{ role.id }}</div>
+                  <div class="card-date">{{ role.created_at ? (role.created_at | date:'dd/MM/yyyy') : '-' }}</div>
+                </div>
+
+                <div class="card-body">
+                  <div class="card-title-section">
+                    <div class="card-title">{{ role.nombre }}</div>
+                  </div>
+
+                  @if (role.descripcion) {
+                    <div class="card-description">
+                      {{ role.descripcion }}
+                    </div>
+                  }
+                </div>
+
+                <div class="card-actions">
+                  <button 
+                    class="btn-card btn-edit" 
+                    (click)="openEditModal(role)"
+                  >
+                    <span class="btn-icon">✏️</span>
+                    <span class="btn-text">Editar</span>
+                  </button>
+                  <button 
+                    class="btn-card btn-delete" 
+                    (click)="deleteRole(role)"
+                  >
+                    <span class="btn-icon">🗑️</span>
+                    <span class="btn-text">Eliminar</span>
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
         }
       </div>
     </div>
@@ -115,7 +159,7 @@ import { RoleService, Role } from '../../../core/services/role.service';
       </div>
     }
   `,
-  styles: [`@use '../areas/areas-list.component.scss';`]
+  styleUrl: './roles-list.component.scss'
 })
 export class RolesListComponent implements OnInit {
   roles = signal<Role[]>([]);

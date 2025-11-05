@@ -286,6 +286,44 @@ exports.finalizeDocument = async (req, res) => {
 };
 
 /**
+ * Actualizar categoría de un documento
+ * PATCH /api/documents/:id/category
+ */
+exports.updateDocumentCategory = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { categoryId } = req.body;
+
+    // Validar datos requeridos
+    if (!categoryId) {
+      return res.status(400).json({
+        success: false,
+        message: 'El ID de la categoría es requerido'
+      });
+    }
+
+    const result = await documentService.updateDocumentCategory(
+      parseInt(id),
+      parseInt(categoryId),
+      req.user
+    );
+
+    res.status(200).json(result);
+
+  } catch (error) {
+    console.error('Error en updateDocumentCategory:', error);
+    const statusCode = error.message === 'Documento no encontrado' ? 404 :
+                       error.message.includes('permisos') || error.message.includes('área') ? 403 : 
+                       error.message.includes('Categoría no encontrada') ? 404 : 500;
+    res.status(statusCode).json({
+      success: false,
+      message: error.message || 'Error al actualizar categoría del documento',
+      error: error.message
+    });
+  }
+};
+
+/**
  * Cambiar estado de un documento manualmente
  * PUT /api/documents/:id/status
  */
@@ -587,7 +625,46 @@ exports.getDocumentsByStatus = async (req, res) => {
 };
 
 /**
- * Descargar archivo adjunto
+ * Visualizar archivo adjunto (inline, sin forzar descarga)
+ */
+exports.viewAttachment = async (req, res) => {
+  try {
+    const { documentId, attachmentId } = req.params;
+    const attachment = await documentService.getAttachmentById(documentId, attachmentId);
+
+    // Verificar que el archivo existe físicamente
+    const fs = require('fs');
+    const path = require('path');
+    const filePath = path.resolve(attachment.filePath);
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).json({
+        success: false,
+        message: 'Archivo no encontrado en el servidor'
+      });
+    }
+
+    // Establecer headers para visualización inline (NO forzar descarga)
+    res.setHeader('Content-Type', attachment.fileType);
+    res.setHeader('Content-Disposition', `inline; filename="${attachment.originalName}"`);
+    res.setHeader('Cache-Control', 'public, max-age=86400'); // Cache por 24 horas
+    
+    // Enviar archivo para visualización
+    res.sendFile(filePath);
+
+  } catch (error) {
+    console.error('Error en viewAttachment:', error);
+    const statusCode = error.message.includes('no encontrado') ? 404 : 500;
+    res.status(statusCode).json({
+      success: false,
+      message: error.message || 'Error al visualizar archivo',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Descargar archivo adjunto (fuerza descarga)
  */
 exports.downloadAttachment = async (req, res) => {
   try {
@@ -606,7 +683,7 @@ exports.downloadAttachment = async (req, res) => {
       });
     }
 
-    // Establecer headers para descarga
+    // Establecer headers para descarga (FORZAR descarga)
     res.setHeader('Content-Type', attachment.fileType);
     res.setHeader('Content-Disposition', `attachment; filename="${attachment.originalName}"`);
     

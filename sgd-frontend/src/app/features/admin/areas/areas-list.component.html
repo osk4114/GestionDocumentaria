@@ -68,66 +68,131 @@
         <p>{{ searchTerm || filterStatus !== 'all' ? 'Intenta ajustar los filtros' : 'Comienza creando una nueva área' }}</p>
       </div>
     } @else {
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>ID</th>
-            <th>Nombre</th>
-            <th>Sigla</th>
-            <th>Descripción</th>
-            <th>Estado</th>
-            <th>Fecha Creación</th>
-            <th class="actions-col">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (area of filteredAreas(); track area.id) {
+      <!-- Vista de Tabla (Desktop) -->
+      <div class="table-wrapper">
+        <table class="data-table">
+          <thead>
             <tr>
-              <td>{{ area.id }}</td>
-              <td class="font-semibold">{{ area.nombre }}</td>
-              <td>
-                <span class="badge badge-info">{{ area.sigla }}</span>
-              </td>
-              <td class="description-col">{{ area.descripcion || '-' }}</td>
-              <td>
-                <span 
-                  class="status-badge"
-                  [class.status-active]="area.isActive"
-                  [class.status-inactive]="!area.isActive"
-                >
-                  {{ area.isActive ? 'Activo' : 'Inactivo' }}
-                </span>
-              </td>
-              <td>{{ area.created_at ? (area.created_at | date:'dd/MM/yyyy') : '-' }}</td>
-              <td class="actions-col">
-                <div class="action-buttons">
-                  <button 
-                    class="btn-icon btn-edit" 
-                    (click)="openEditModal(area)"
-                    title="Editar"
-                  >
-                    ✏️
-                  </button>
-                  <button 
-                    class="btn-icon btn-toggle" 
-                    (click)="toggleStatus(area)"
-                    [title]="area.isActive ? 'Desactivar' : 'Activar'"
-                  >
-                    {{ area.isActive ? '🚫' : '✅' }}
-                  </button>
-                  <button 
-                    class="btn-icon btn-delete" 
-                    (click)="deleteArea(area)"
-                    title="Eliminar"
-                  >
-                    🗑️
-                  </button>
-                </div>
-              </td>
+              <th>ID</th>
+              <th>Nombre</th>
+              <th>Sigla</th>
+              <th>Descripción</th>
+              <th>Estado</th>
+              <th>Fecha Creación</th>
+              <th class="actions-col">Acciones</th>
             </tr>
-          }
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            @for (area of filteredAreas(); track area.id) {
+              <tr>
+                <td>{{ area.id }}</td>
+                <td class="font-semibold">{{ area.nombre }}</td>
+                <td>
+                  <span class="badge badge-info">{{ area.sigla }}</span>
+                </td>
+                <td class="description-col">{{ area.descripcion || '-' }}</td>
+                <td>
+                  <span 
+                    class="status-badge"
+                    [class.status-active]="area.isActive"
+                    [class.status-inactive]="!area.isActive"
+                  >
+                    {{ area.isActive ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </td>
+                <td>{{ area.created_at ? (area.created_at | date:'dd/MM/yyyy') : '-' }}</td>
+                <td class="actions-col">
+                  <div class="action-buttons">
+                    <button 
+                      class="btn-icon btn-edit" 
+                      (click)="openEditModal(area)"
+                      title="Editar"
+                    >
+                      ✏️
+                    </button>
+                    <button 
+                      class="btn-icon btn-toggle" 
+                      (click)="toggleStatus(area)"
+                      [title]="area.isActive ? 'Desactivar' : 'Activar'"
+                    >
+                      {{ area.isActive ? '🚫' : '✅' }}
+                    </button>
+                    <button 
+                      class="btn-icon btn-delete" 
+                      (click)="deleteArea(area)"
+                      title="Eliminar"
+                    >
+                      🗑️
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Vista de Cards (Móvil) -->
+      <div class="cards-wrapper">
+        @for (area of filteredAreas(); track area.id) {
+          <div class="admin-card">
+            <div class="card-header">
+              <div class="card-id">ID: {{ area.id }}</div>
+              <span 
+                class="status-badge"
+                [class.status-active]="area.isActive"
+                [class.status-inactive]="!area.isActive"
+              >
+                {{ area.isActive ? 'Activo' : 'Inactivo' }}
+              </span>
+            </div>
+
+            <div class="card-body">
+              <div class="card-title-section">
+                <div class="card-title">{{ area.nombre }}</div>
+                <span class="badge badge-info">{{ area.sigla }}</span>
+              </div>
+
+              @if (area.descripcion) {
+                <div class="card-description">
+                  {{ area.descripcion }}
+                </div>
+              }
+
+              <div class="card-meta">
+                <div class="meta-item">
+                  <span class="meta-label">Fecha creación:</span>
+                  <span class="meta-value">{{ area.created_at ? (area.created_at | date:'dd/MM/yyyy') : '-' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="card-actions">
+              <button 
+                class="btn-card btn-edit" 
+                (click)="openEditModal(area)"
+              >
+                <span class="btn-icon">✏️</span>
+                <span class="btn-text">Editar</span>
+              </button>
+              <button 
+                class="btn-card btn-toggle" 
+                (click)="toggleStatus(area)"
+              >
+                <span class="btn-icon">{{ area.isActive ? '🚫' : '✅' }}</span>
+                <span class="btn-text">{{ area.isActive ? 'Desactivar' : 'Activar' }}</span>
+              </button>
+              <button 
+                class="btn-card btn-delete" 
+                (click)="deleteArea(area)"
+              >
+                <span class="btn-icon">🗑️</span>
+                <span class="btn-text">Eliminar</span>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
     }
   </div>
 </div>

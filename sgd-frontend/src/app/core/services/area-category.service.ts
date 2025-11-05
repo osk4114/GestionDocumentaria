@@ -10,9 +10,7 @@ export interface AreaCategory {
   codigo: string;
   descripcion: string;
   color: string;
-  icono: string;
   orden: number;
-  requiereAdjunto: boolean;
   isActive: boolean;
   createdBy: number;
   created_at: string;

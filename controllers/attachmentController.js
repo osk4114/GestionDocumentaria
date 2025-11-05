@@ -72,7 +72,55 @@ exports.uploadAttachment = async (req, res) => {
 };
 
 /**
- * Descargar archivo adjunto
+ * Visualizar archivo adjunto (inline, sin forzar descarga)
+ */
+exports.viewAttachment = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const attachment = await Attachment.findByPk(id, {
+      include: [
+        { model: Document, as: 'document' }
+      ]
+    });
+
+    if (!attachment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Archivo no encontrado'
+      });
+    }
+
+    // Verificar que el archivo existe en el sistema
+    try {
+      await fs.access(attachment.rutaArchivo);
+    } catch {
+      return res.status(404).json({
+        success: false,
+        message: 'Archivo no encontrado en el servidor'
+      });
+    }
+
+    // Configurar headers para visualización inline
+    res.setHeader('Content-Type', attachment.tipoMime);
+    res.setHeader('Content-Disposition', `inline; filename="${attachment.nombreArchivo}"`);
+    res.setHeader('Cache-Control', 'no-cache');
+    
+    // Enviar archivo para visualización
+    res.sendFile(path.resolve(attachment.rutaArchivo));
+
+  } catch (error) {
+    console.error('Error en viewAttachment:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al visualizar archivo',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Descargar archivo adjunto (fuerza descarga)
  */
 exports.downloadAttachment = async (req, res) => {
   try {
@@ -101,7 +149,7 @@ exports.downloadAttachment = async (req, res) => {
       });
     }
 
-    // Enviar archivo
+    // Enviar archivo forzando descarga
     res.download(attachment.rutaArchivo, attachment.nombreArchivo);
 
   } catch (error) {

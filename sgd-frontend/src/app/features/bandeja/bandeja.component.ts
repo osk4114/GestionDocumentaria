@@ -4,7 +4,6 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { DocumentService, DocumentFilters } from '../../core/services/document.service';
 import { AuthService } from '../../core/services/auth.service';
-import { DocumentTypeService } from '../../core/services/document-type.service';
 import { AreaCategoryService, AreaCategory } from '../../core/services/area-category.service';
 import { DocumentDeriveComponent } from '../documents/document-derive/document-derive.component';
 import { DocumentDetailsComponent } from '../documents/document-details/document-details.component';
@@ -18,10 +17,6 @@ interface Document {
     nombreCompleto?: string;
     email?: string;
   };
-  documentType?: {
-    id: number;
-    nombre: string;
-  } | null;
   status: {
     id: number;
     nombre: string;
@@ -40,11 +35,6 @@ interface Document {
   } | null;
 }
 
-interface DocumentType {
-  id: number;
-  nombre: string;
-}
-
 @Component({
   selector: 'app-bandeja',
   standalone: true,
@@ -55,14 +45,12 @@ interface DocumentType {
 export class BandejaComponent implements OnInit {
   // Signals para estado reactivo
   documents = signal<Document[]>([]);
-  documentTypes = signal<DocumentType[]>([]);
   areaCategories = signal<AreaCategory[]>([]);
   loading = signal<boolean>(true);
   activeTab = signal<'todos' | 'pendientes' | 'proceso' | 'finalizados' | 'archivados'>('todos');
   
   // Filtros avanzados
   searchTerm = signal<string>('');
-  selectedDocumentType = signal<number | null>(null);
   selectedCategory = signal<number | null>(null);
   dateFrom = signal<string>('');
   dateTo = signal<string>('');
@@ -71,8 +59,10 @@ export class BandejaComponent implements OnInit {
   // Modales
   showDeriveModal = signal(false);
   showDetailsModal = signal(false);
+  showCategoryModal = signal(false);
   selectedDocumentId = signal<number>(0);
   selectedDocument = signal<Document | null>(null);
+  selectedCategoryId = signal<number | null>(null);
 
   // Computed values
   currentUser = computed(() => this.authService.currentUser());
@@ -120,29 +110,14 @@ export class BandejaComponent implements OnInit {
 
   constructor(
     private documentService: DocumentService,
-    private documentTypeService: DocumentTypeService,
     private areaCategoryService: AreaCategoryService,
     private authService: AuthService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
-    this.loadDocumentTypes();
     this.loadAreaCategories();
     this.loadDocuments();
-  }
-
-  loadDocumentTypes(): void {
-    this.documentTypeService.getAll().subscribe({
-      next: (response) => {
-        if (response.success && response.data) {
-          this.documentTypes.set(response.data);
-        }
-      },
-      error: (error) => {
-        console.error('Error al cargar tipos de documento:', error);
-      }
-    });
   }
 
   loadAreaCategories(): void {
@@ -177,10 +152,6 @@ export class BandejaComponent implements OnInit {
     if (this.searchTerm()) {
       filters.search = this.searchTerm();
     }
-    
-    if (this.selectedDocumentType()) {
-      filters.documentType = this.selectedDocumentType()!;
-    }
 
     if (this.selectedCategory()) {
       filters.category = this.selectedCategory()!;
@@ -214,7 +185,6 @@ export class BandejaComponent implements OnInit {
 
   clearFilters(): void {
     this.searchTerm.set('');
-    this.selectedDocumentType.set(null);
     this.selectedCategory.set(null);
     this.dateFrom.set('');
     this.dateTo.set('');
@@ -269,12 +239,54 @@ export class BandejaComponent implements OnInit {
   closeModals(): void {
     this.showDeriveModal.set(false);
     this.showDetailsModal.set(false);
+    this.showCategoryModal.set(false);
   }
 
   onDeriveSuccess(): void {
     this.closeModals();
     this.loadDocuments();
     alert('Documento derivado exitosamente');
+  }
+
+  openCategoryModal(doc: Document): void {
+    this.selectedDocument.set(doc);
+    this.selectedDocumentId.set(doc.id);
+    this.selectedCategoryId.set(doc.categoriaId || null);
+    this.showCategoryModal.set(true);
+  }
+
+  closeCategoryModal(): void {
+    this.showCategoryModal.set(false);
+    this.selectedDocument.set(null);
+    this.selectedCategoryId.set(null);
+  }
+
+  selectCategoryId(categoryId: number): void {
+    this.selectedCategoryId.set(categoryId);
+  }
+
+  assignCategoryToDocument(): void {
+    const documentId = this.selectedDocumentId();
+    const categoryId = this.selectedCategoryId();
+
+    if (!documentId || !categoryId) {
+      alert('Por favor seleccione una categoría');
+      return;
+    }
+
+    this.documentService.updateDocumentCategory(documentId, categoryId).subscribe({
+      next: (response) => {
+        if (response.success) {
+          alert('Categoría asignada correctamente');
+          this.closeCategoryModal();
+          this.loadDocuments();
+        }
+      },
+      error: (error) => {
+        console.error('Error al asignar categoría:', error);
+        alert(error.error?.message || 'Error al asignar categoría');
+      }
+    });
   }
 
   formatDate(dateString: string): string {

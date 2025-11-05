@@ -1,7 +1,9 @@
-import { Component, Input, Output, EventEmitter, OnInit, signal } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit, OnDestroy, signal, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { NgxExtendedPdfViewerModule } from 'ngx-extended-pdf-viewer';
 import { DocumentService } from '../../../core/services/document.service';
+import { StorageService } from '../../../core/services/storage.service';
 
 interface DocumentStatus {
   id: number;
@@ -97,18 +99,19 @@ interface DocumentDetails {
 @Component({
   selector: 'app-document-details',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, NgxExtendedPdfViewerModule],
+  schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './document-details.component.html',
   styleUrl: './document-details.component.scss'
 })
-export class DocumentDetailsComponent implements OnInit {
+export class DocumentDetailsComponent implements OnInit, OnDestroy {
   @Input() documentId!: number;
   @Output() onClose = new EventEmitter<void>();
   @Output() onAction = new EventEmitter<void>();
 
   document = signal<DocumentDetails | null>(null);
   loading = signal(true);
-  activeTab = signal<'info' | 'history'>('info');
+  activeTab = signal<'info' | 'history' | 'preview'>('info');
   
   // Control de cambio de estado
   availableStatuses = signal<DocumentStatus[]>([]);
@@ -118,12 +121,27 @@ export class DocumentDetailsComponent implements OnInit {
   // Control de acciones
   finalizingDocument = signal(false);
   archivingDocument = signal(false);
+  
+  // Previsualización de PDF
+  selectedAttachment = signal<any>(null);
+  pdfSrc = signal<string | null>(null);
 
-  constructor(private documentService: DocumentService) {}
+  constructor(
+    private documentService: DocumentService,
+    private storage: StorageService
+  ) {}
 
   ngOnInit(): void {
     this.loadDocumentDetails();
     this.loadAvailableStatuses();
+  }
+
+  ngOnDestroy(): void {
+    // Limpiar Blob URL al destruir el componente para evitar memory leaks
+    const blobUrl = this.pdfSrc();
+    if (blobUrl && blobUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(blobUrl);
+    }
   }
 
   loadDocumentDetails(): void {
@@ -202,11 +220,74 @@ export class DocumentDetailsComponent implements OnInit {
     }
   }
 
-  setTab(tab: 'info' | 'history'): void {
+  setTab(tab: 'info' | 'history' | 'preview'): void {
     this.activeTab.set(tab);
+    
+    // Si cambia a preview y hay adjuntos, seleccionar el primero PDF
+    if (tab === 'preview' && this.document()?.attachments) {
+      const firstPdf = this.document()!.attachments!.find(att => 
+        att.fileType.includes('pdf')
+      );
+      if (firstPdf) {
+        this.previewAttachment(firstPdf);
+      }
+    }
+  }
+  
+  async previewAttachment(attachment: any): Promise<void> {
+    this.selectedAttachment.set(attachment);
+    
+    try {
+      // Obtener token de autenticación
+      const token = this.storage.getToken();
+      if (!token) {
+        throw new Error('No hay sesión activa');
+      }
+
+      // Descargar el archivo como Blob para evitar que IDM lo intercepte
+      const url = `/api/documents/${this.document()!.id}/attachments/${attachment.id}/view`;
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}` // Enviar token JWT
+        },
+        credentials: 'include' // Incluir cookies también
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Error al cargar archivo: ${response.statusText}`);
+      }
+      
+      // Convertir a Blob
+      const blob = await response.blob();
+      
+      // Verificar que el Blob no esté vacío
+      if (blob.size === 0) {
+        throw new Error('El archivo está vacío');
+      }
+      
+      // Crear URL temporal del Blob (esto evita que IDM lo intercepte)
+      const blobUrl = URL.createObjectURL(blob);
+      
+      // Liberar URL anterior si existe
+      const previousUrl = this.pdfSrc();
+      if (previousUrl && previousUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(previousUrl);
+      }
+      
+      this.pdfSrc.set(blobUrl);
+    } catch (error) {
+      console.error('Error al cargar archivo para previsualización:', error);
+      alert(`Error al cargar el archivo para visualización: ${error instanceof Error ? error.message : 'Error desconocido'}`);
+    }
   }
 
   close(): void {
+    // Liberar URL del Blob si existe para evitar memory leaks
+    const blobUrl = this.pdfSrc();
+    if (blobUrl && blobUrl.startsWith('blob:')) {
+      URL.revokeObjectURL(blobUrl);
+    }
     this.onClose.emit();
   }
 
@@ -234,7 +315,8 @@ export class DocumentDetailsComponent implements OnInit {
   }
 
   downloadAttachment(documentId: number, attachmentId: number, filename: string): void {
-    const url = `http://localhost:3000/api/documents/${documentId}/attachments/${attachmentId}/download`;
+    // Usar ruta relativa para aprovechar el proxy de Angular
+    const url = `/api/documents/${documentId}/attachments/${attachmentId}/download`;
     
     const link = document.createElement('a');
     link.href = url;

@@ -24,23 +24,18 @@ const storage = multer.diskStorage({
 
 // Filtro de tipos de archivo permitidos
 const fileFilter = (req, file, cb) => {
-  // Tipos MIME permitidos
+  // Tipos MIME permitidos (solo PDF e imágenes)
   const allowedMimes = [
     'application/pdf',
-    'application/msword',
-    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    'application/vnd.ms-excel',
-    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
     'image/jpeg',
     'image/png',
-    'image/jpg',
-    'text/plain'
+    'image/jpg'
   ];
 
   if (allowedMimes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error(`Tipo de archivo no permitido: ${file.mimetype}. Solo se permiten PDF, Word, Excel, imágenes y texto plano.`), false);
+    cb(new Error(`Tipo de archivo no permitido: ${file.mimetype}. Solo se permiten archivos PDF e imágenes (JPG, JPEG, PNG).`), false);
   }
 };
 

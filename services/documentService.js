@@ -496,6 +496,83 @@ class DocumentService {
   }
 
   /**
+   * Actualizar categoría de un documento
+   * @param {number} documentId - ID del documento
+   * @param {number} categoryId - ID de la categoría
+   * @param {Object} user - Usuario que realiza la acción
+   * @returns {Object} Resultado de la operación
+   */
+  async updateDocumentCategory(documentId, categoryId, user) {
+    const transaction = await sequelize.transaction();
+    
+    try {
+      // Buscar documento
+      const document = await Document.findByPk(documentId, { 
+        include: [{ model: Area, as: 'currentArea' }],
+        transaction 
+      });
+
+      if (!document) {
+        throw new Error('Documento no encontrado');
+      }
+
+      // Verificar permisos: el documento debe estar en el área del usuario
+      if (document.currentAreaId !== user.areaId && user.role?.nombre !== 'Administrador') {
+        throw new Error('No tienes permisos para actualizar este documento');
+      }
+
+      // Verificar que la categoría existe y pertenece al área del documento
+      const category = await AreaDocumentCategory.findOne({
+        where: { 
+          id: categoryId,
+          areaId: document.currentAreaId,
+          isActive: true
+        },
+        transaction
+      });
+
+      if (!category) {
+        throw new Error('Categoría no encontrada o no pertenece a esta área');
+      }
+
+      // Actualizar categoría del documento
+      const previousCategoryId = document.categoriaId;
+      await document.update({ categoriaId: categoryId }, { transaction });
+
+      // Crear movimiento registrando el cambio de categoría
+      await DocumentMovement.create({
+        documentId: document.id,
+        fromAreaId: document.currentAreaId,
+        toAreaId: document.currentAreaId,
+        userId: user.id,
+        accion: 'Actualización de Categoría',
+        observacion: previousCategoryId 
+          ? `Categoría cambiada a: ${category.nombre}` 
+          : `Categoría asignada: ${category.nombre}`
+      }, { transaction });
+
+      await transaction.commit();
+
+      // Retornar documento actualizado con la categoría
+      const updatedDocument = await Document.findByPk(documentId, {
+        include: [
+          { model: AreaDocumentCategory, as: 'categoria' }
+        ]
+      });
+
+      return { 
+        success: true, 
+        message: 'Categoría actualizada exitosamente',
+        data: updatedDocument
+      };
+
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+  }
+
+  /**
    * Desarchivar documento (reactivar)
    * @param {Number} documentId - ID del documento
    * @param {Object} user - Usuario que desarchiva

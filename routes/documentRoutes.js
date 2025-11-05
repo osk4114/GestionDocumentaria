@@ -142,6 +142,13 @@ router.post('/:id/derive', authMiddleware, documentController.deriveDocument);
 router.post('/:id/finalize', authMiddleware, documentController.finalizeDocument);
 
 /**
+ * @route   PATCH /api/documents/:id/category
+ * @desc    Actualizar categoría del documento
+ * @access  Private (Área actual o Admin)
+ */
+router.patch('/:id/category', authMiddleware, documentController.updateDocumentCategory);
+
+/**
  * @route   PUT /api/documents/:id/status
  * @desc    Cambiar estado del documento manualmente
  * @access  Private (Área actual o Admin)
@@ -149,8 +156,15 @@ router.post('/:id/finalize', authMiddleware, documentController.finalizeDocument
 router.put('/:id/status', authMiddleware, documentController.changeDocumentStatus);
 
 /**
+ * @route   GET /api/documents/:documentId/attachments/:attachmentId/view
+ * @desc    Visualizar archivo adjunto (inline, sin forzar descarga)
+ * @access  Public (puede ser consultado por código de seguimiento)
+ */
+router.get('/:documentId/attachments/:attachmentId/view', documentController.viewAttachment);
+
+/**
  * @route   GET /api/documents/:documentId/attachments/:attachmentId/download
- * @desc    Descargar archivo adjunto
+ * @desc    Descargar archivo adjunto (fuerza descarga)
  * @access  Public (puede ser consultado por código de seguimiento)
  */
 router.get('/:documentId/attachments/:attachmentId/download', documentController.downloadAttachment);
