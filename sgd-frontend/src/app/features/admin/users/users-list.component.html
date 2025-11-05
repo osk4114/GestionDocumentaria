@@ -4,7 +4,11 @@
       <h1 class="page-title">Gestión de Usuarios</h1>
       <p class="page-subtitle">Administra los usuarios del sistema</p>
     </div>
-    <button class="btn-primary" (click)="openCreateModal()">
+    <button 
+      *hasAnyPermission="['users.create.all', 'users.create.area']"
+      class="btn-primary" 
+      (click)="openCreateModal()"
+    >
       <span>➕</span> Nuevo Usuario
     </button>
   </div>
@@ -120,6 +124,7 @@
                 <td class="actions-col">
                   <div class="action-buttons">
                     <button 
+                      *hasAnyPermission="['users.edit.all', 'users.edit.area']"
                       class="btn-icon btn-edit" 
                       (click)="openEditModal(user)"
                       title="Editar"
@@ -127,6 +132,7 @@
                       ✏️
                     </button>
                     <button 
+                      *hasPermission="'users.activate'"
                       class="btn-icon btn-toggle" 
                       (click)="toggleStatus(user)"
                       [title]="user.isActive ? 'Desactivar' : 'Activar'"
@@ -134,6 +140,7 @@
                       {{ user.isActive ? '🚫' : '✅' }}
                     </button>
                     <button 
+                      *hasPermission="'users.delete'"
                       class="btn-icon btn-delete" 
                       (click)="deleteUser(user)"
                       title="Eliminar"
@@ -187,6 +194,7 @@
 
             <div class="card-actions">
               <button 
+                *hasAnyPermission="['users.edit.all', 'users.edit.area']"
                 class="btn-card btn-edit" 
                 (click)="openEditModal(user)"
               >
@@ -194,6 +202,7 @@
                 <span class="btn-text">Editar</span>
               </button>
               <button 
+                *hasPermission="'users.activate'"
                 class="btn-card btn-toggle" 
                 (click)="toggleStatus(user)"
               >
@@ -201,6 +210,7 @@
                 <span class="btn-text">{{ user.isActive ? 'Desactivar' : 'Activar' }}</span>
               </button>
               <button 
+                *hasPermission="'users.delete'"
                 class="btn-card btn-delete" 
                 (click)="deleteUser(user)"
               >

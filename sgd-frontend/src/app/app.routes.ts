@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authGuard, publicGuard } from './core/guards/auth.guard';
+import { authGuard, publicGuard, permissionGuard } from './core/guards/auth.guard';
 import { LandingComponent } from './features/landing/landing.component';
 import { LoginComponent } from './features/auth/login/login.component';
 import { DashboardComponent } from './features/dashboard/dashboard.component';
@@ -72,23 +72,33 @@ export const routes: Routes = [
       },
       {
         path: 'areas',
-        component: AreasListComponent
+        component: AreasListComponent,
+        canActivate: [permissionGuard],
+        data: { requiredPermission: 'areas.view.all' }
       },
       {
         path: 'roles',
-        component: RolesListComponent
+        component: RolesListComponent,
+        canActivate: [permissionGuard],
+        data: { requiredPermission: 'roles.view' }
       },
       {
         path: 'users',
-        component: UsersListComponent
+        component: UsersListComponent,
+        canActivate: [permissionGuard],
+        data: { requiredPermissions: ['users.view.all', 'users.view.area'] }
       },
       {
         path: 'categories',
-        component: CategoriesListComponent
+        component: CategoriesListComponent,
+        canActivate: [permissionGuard],
+        data: { requiredPermission: 'categories.view' }
       },
       {
         path: 'reports',
-        component: ReportsComponent
+        component: ReportsComponent,
+        canActivate: [permissionGuard],
+        data: { requiredPermissions: ['reports.view.all', 'reports.view.area'] }
       }
     ]
   },

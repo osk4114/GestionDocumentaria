@@ -38,3 +38,6 @@ export const publicGuard: CanActivateFn = (route, state) => {
 
   return true;
 };
+
+// Re-export permissionGuard para acceso unificado
+export { permissionGuard } from './permission.guard';

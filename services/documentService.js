@@ -993,7 +993,7 @@ class DocumentService {
           { 
             model: AreaDocumentCategory, 
             as: 'categoria', 
-            attributes: ['id', 'nombre', 'codigo', 'color', 'icono'],
+            attributes: ['id', 'nombre', 'codigo', 'color'],
             required: false // LEFT JOIN para incluir documentos sin categoría
           }
         ],

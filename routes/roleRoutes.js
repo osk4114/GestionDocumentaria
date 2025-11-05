@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const roleController = require('../controllers/roleController');
 const { authMiddleware } = require('../middleware/authMiddleware');
-const { isAdmin } = require('../middleware/roleMiddleware');
+const { checkPermission } = require('../middleware/permissionMiddleware');
 
 /**
  * Rutas de Roles
@@ -10,38 +10,59 @@ const { isAdmin } = require('../middleware/roleMiddleware');
  */
 
 /**
+ * @route   GET /api/roles/permissions
+ * @desc    Obtener todos los permisos disponibles (agrupados por categoría)
+ * @access  Private (solo admin para gestión de roles)
+ */
+router.get('/permissions', authMiddleware, checkPermission('roles.view'), roleController.getAllPermissions);
+
+/**
  * @route   GET /api/roles
- * @desc    Obtener todos los roles
+ * @desc    Obtener todos los roles (con opciones: ?includePermissions=true&activeOnly=true)
  * @access  Public (para selects en formularios)
  */
 router.get('/', roleController.getAllRoles);
 
 /**
- * @route   GET /api/roles/:id
- * @desc    Obtener rol por ID
- * @access  Private
+ * @route   GET /api/roles/custom
+ * @desc    Obtener solo roles personalizados (no del sistema)
+ * @access  Private (requiere ver roles)
  */
-router.get('/:id', authMiddleware, roleController.getRoleById);
+router.get('/custom', authMiddleware, checkPermission('roles.view'), roleController.getCustomRoles);
+
+/**
+ * @route   GET /api/roles/:id
+ * @desc    Obtener rol por ID (incluye permisos y usuarios)
+ * @access  Private (requiere ver roles)
+ */
+router.get('/:id', authMiddleware, checkPermission('roles.view'), roleController.getRoleById);
 
 /**
  * @route   POST /api/roles
  * @desc    Crear nuevo rol
- * @access  Private (Solo Admin)
+ * @access  Private (requiere crear roles)
  */
-router.post('/', authMiddleware, isAdmin, roleController.createRole);
+router.post('/', authMiddleware, checkPermission('roles.create'), roleController.createRole);
 
 /**
  * @route   PUT /api/roles/:id
  * @desc    Actualizar rol
- * @access  Private (Solo Admin)
+ * @access  Private (requiere editar roles)
  */
-router.put('/:id', authMiddleware, isAdmin, roleController.updateRole);
+router.put('/:id', authMiddleware, checkPermission('roles.edit'), roleController.updateRole);
+
+/**
+ * @route   PATCH /api/roles/:id/toggle-status
+ * @desc    Activar/Desactivar rol
+ * @access  Private (requiere editar roles)
+ */
+router.patch('/:id/toggle-status', authMiddleware, checkPermission('roles.edit'), roleController.toggleRoleStatus);
 
 /**
  * @route   DELETE /api/roles/:id
  * @desc    Eliminar rol
- * @access  Private (Solo Admin)
+ * @access  Private (requiere eliminar roles)
  */
-router.delete('/:id', authMiddleware, isAdmin, roleController.deleteRole);
+router.delete('/:id', authMiddleware, checkPermission('roles.delete'), roleController.deleteRole);
 
 module.exports = router;

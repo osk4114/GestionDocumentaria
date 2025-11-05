@@ -2,6 +2,8 @@ const { sequelize } = require('../config/sequelize');
 
 // Importar todos los modelos
 const Role = require('./Role');
+const Permission = require('./Permission');
+const RolePermission = require('./RolePermission');
 const Area = require('./Area');
 const User = require('./User');
 const Sender = require('./Sender');
@@ -21,6 +23,51 @@ const LoginAttempt = require('./LoginAttempt')(sequelize);
 // ============================================================
 // Definir relaciones entre modelos
 // ============================================================
+
+// -------- RELACIONES DE ROLE Y PERMISSIONS --------
+// Relación muchos a muchos entre Role y Permission
+Role.belongsToMany(Permission, {
+  through: RolePermission,
+  foreignKey: 'rol_id',
+  otherKey: 'permission_id',
+  as: 'permissions'
+});
+Permission.belongsToMany(Role, {
+  through: RolePermission,
+  foreignKey: 'permission_id',
+  otherKey: 'rol_id',
+  as: 'roles'
+});
+
+// RolePermission pertenece a Role
+RolePermission.belongsTo(Role, {
+  foreignKey: 'rol_id',
+  as: 'role'
+});
+Role.hasMany(RolePermission, {
+  foreignKey: 'rol_id',
+  as: 'rolePermissions'
+});
+
+// RolePermission pertenece a Permission
+RolePermission.belongsTo(Permission, {
+  foreignKey: 'permission_id',
+  as: 'permission'
+});
+Permission.hasMany(RolePermission, {
+  foreignKey: 'permission_id',
+  as: 'permissionRoles'
+});
+
+// RolePermission asignado por un User
+RolePermission.belongsTo(User, {
+  foreignKey: 'asignado_por',
+  as: 'assignedBy'
+});
+User.hasMany(RolePermission, {
+  foreignKey: 'asignado_por',
+  as: 'assignedPermissions'
+});
 
 // -------- RELACIONES DE USER --------
 // User pertenece a un Role
@@ -260,6 +307,8 @@ const syncDatabase = async (force = false) => {
 module.exports = {
   sequelize,
   Role,
+  Permission,
+  RolePermission,
   Area,
   User,
   Sender,

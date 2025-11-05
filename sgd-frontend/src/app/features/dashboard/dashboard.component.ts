@@ -9,6 +9,8 @@ import { DocumentDeriveComponent } from '../documents/document-derive/document-d
 import { DocumentDetailsComponent } from '../documents/document-details/document-details.component';
 import { NotificationsPanelComponent } from '../../shared/components/notifications-panel/notifications-panel.component';
 import { ToastService } from '../../core/services/toast.service';
+import { PERMISSION_DIRECTIVES } from '../../shared/directives';
+import { PermissionService } from '../../core/services/permission.service';
 
 interface Document {
   id: number;
@@ -41,7 +43,15 @@ interface Stats {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, DocumentDeriveComponent, DocumentDetailsComponent, NotificationsPanelComponent],
+  imports: [
+    CommonModule, 
+    RouterModule, 
+    FormsModule, 
+    DocumentDeriveComponent, 
+    DocumentDetailsComponent, 
+    NotificationsPanelComponent,
+    ...PERMISSION_DIRECTIVES
+  ],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
@@ -97,7 +107,8 @@ export class DashboardComponent implements OnInit {
     private authService: AuthService,
     private documentService: DocumentService,
     private router: Router,
-    private toastService: ToastService
+    private toastService: ToastService,
+    public permissionService: PermissionService
   ) {}
 
   ngOnInit(): void {

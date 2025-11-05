@@ -24,7 +24,11 @@
           Mi Bandeja
         </button>
         
-        <button class="btn-admin" routerLink="/admin">
+        <button 
+          *hasAnyPermission="['users.view.all', 'roles.view', 'areas.view']" 
+          class="btn-admin" 
+          routerLink="/admin"
+        >
           ⚙️ Administración
         </button>
         <button class="btn-logout" (click)="onLogout()">
@@ -178,10 +182,20 @@
               <td>{{ doc.currentArea?.nombre || 'Sin área' }}</td>
               <td class="date">{{ formatDate(doc.created_at) }}</td>
               <td class="actions-cell">
-                <button class="btn-action btn-view" (click)="openDetailsModal(doc); $event.stopPropagation()" title="Ver detalles">
+                <button 
+                  *hasAnyPermission="['documents.view.all', 'documents.view.area', 'documents.view.own']"
+                  class="btn-action btn-view" 
+                  (click)="openDetailsModal(doc); $event.stopPropagation()" 
+                  title="Ver detalles"
+                >
                   👁️
                 </button>
-                <button class="btn-action btn-derive" (click)="openDeriveModal(doc); $event.stopPropagation()" title="Derivar">
+                <button 
+                  *hasPermission="'documents.derive'"
+                  class="btn-action btn-derive" 
+                  (click)="openDeriveModal(doc); $event.stopPropagation()" 
+                  title="Derivar"
+                >
                   📤
                 </button>
               </td>

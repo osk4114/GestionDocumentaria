@@ -2,11 +2,12 @@ import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RoleService, Role } from '../../../core/services/role.service';
+import { PermissionSelectorComponent } from '../../../shared/components/permission-selector/permission-selector.component';
 
 @Component({
   selector: 'app-roles-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, PermissionSelectorComponent],
   template: `
     <div class="roles-container">
       <div class="page-header">
@@ -147,6 +148,15 @@ import { RoleService, Role } from '../../../core/services/role.service';
               <label class="form-label">Descripción</label>
               <textarea [(ngModel)]="formData().descripcion" class="form-textarea" rows="3" placeholder="Descripción del rol..."></textarea>
             </div>
+            
+            <!-- Selector de Permisos -->
+            <div class="form-group">
+              <label class="form-label">Permisos del Rol</label>
+              <app-permission-selector 
+                [selectedPermissionIds]="selectedPermissionIds()"
+                (permissionSelectionChange)="onPermissionSelectionChange($event)">
+              </app-permission-selector>
+            </div>
           </div>
           <div class="modal-footer">
             <button class="btn-secondary" (click)="closeModal()">Cancelar</button>
@@ -168,6 +178,7 @@ export class RolesListComponent implements OnInit {
   showModal = signal(false);
   modalMode = signal<'create' | 'edit'>('create');
   formData = signal({ id: 0, nombre: '', descripcion: '' });
+  selectedPermissionIds = signal<number[]>([]);
   searchTerm = '';
   successMessage = signal('');
   errorMessage = signal('');
@@ -212,12 +223,16 @@ export class RolesListComponent implements OnInit {
   openCreateModal(): void {
     this.modalMode.set('create');
     this.formData.set({ id: 0, nombre: '', descripcion: '' });
+    this.selectedPermissionIds.set([]);
     this.showModal.set(true);
   }
 
   openEditModal(role: Role): void {
     this.modalMode.set('edit');
     this.formData.set({ id: role.id, nombre: role.nombre, descripcion: role.descripcion || '' });
+    // Establecer permisos existentes del rol
+    const permissionIds = role.permissions ? role.permissions.map(p => p.id) : [];
+    this.selectedPermissionIds.set(permissionIds);
     this.showModal.set(true);
   }
 
@@ -237,7 +252,11 @@ export class RolesListComponent implements OnInit {
     }
     
     this.loading.set(true);
-    const payload = { nombre: data.nombre, descripcion: data.descripcion };
+    const payload = { 
+      nombre: data.nombre, 
+      descripcion: data.descripcion,
+      permisos: this.selectedPermissionIds()
+    };
     
     console.log(`📤 [ROLES] Enviando ${mode === 'create' ? 'POST' : 'PUT'} request:`, payload);
     
@@ -275,6 +294,11 @@ export class RolesListComponent implements OnInit {
         error: (err) => this.showError(err.error?.message || 'Error al eliminar')
       });
     }
+  }
+
+  onPermissionSelectionChange(selectedIds: number[]): void {
+    console.log('🔄 [ROLES] Permisos seleccionados:', selectedIds);
+    this.selectedPermissionIds.set(selectedIds);
   }
 
   showSuccess(msg: string): void { this.successMessage.set(msg); setTimeout(() => this.successMessage.set(''), 3000); }

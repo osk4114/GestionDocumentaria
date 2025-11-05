@@ -18,12 +18,28 @@ export interface User {
 }
 
 /**
+ * Modelo de Permiso
+ */
+export interface Permission {
+  id: number;
+  codigo: string;
+  nombre: string;
+  descripcion?: string;
+  categoria: string;
+  nivel?: string;
+}
+
+/**
  * Modelo de Rol
  */
 export interface Role {
   id: number;
   nombre: string;
   descripcion?: string;
+  es_sistema?: boolean;
+  puede_asignar_permisos?: boolean;
+  is_active?: boolean;
+  permissions?: Permission[];
 }
 
 /**

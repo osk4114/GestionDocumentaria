@@ -1,7 +1,7 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { v4: uuidv4 } = require('uuid');
-const { User, Role, Area, UserSession, LoginAttempt } = require('../models');
+const { User, Role, Area, UserSession, LoginAttempt, Permission, RolePermission } = require('../models');
 const { Op } = require('sequelize');
 
 // Configuración JWT desde variables de entorno
@@ -73,7 +73,17 @@ const register = async (req, res) => {
     // Obtener usuario con relaciones
     const userWithRelations = await User.findByPk(user.id, {
       include: [
-        { model: Role, as: 'role', attributes: ['id', 'nombre'] },
+        { 
+          model: Role, 
+          as: 'role', 
+          attributes: ['id', 'nombre', 'es_sistema', 'puede_asignar_permisos'],
+          include: [{
+            model: Permission,
+            as: 'permissions',
+            attributes: ['id', 'codigo', 'nombre', 'descripcion', 'categoria'],
+            through: { attributes: [] }
+          }]
+        },
         { model: Area, as: 'area', attributes: ['id', 'nombre', 'sigla'] }
       ],
       attributes: { exclude: ['password'] }
@@ -272,7 +282,17 @@ const login = async (req, res) => {
     const user = await User.findOne({ 
       where: { email },
       include: [
-        { model: Role, as: 'role', attributes: ['id', 'nombre'] },
+        { 
+          model: Role, 
+          as: 'role', 
+          attributes: ['id', 'nombre', 'es_sistema', 'puede_asignar_permisos'],
+          include: [{
+            model: Permission,
+            as: 'permissions',
+            attributes: ['id', 'codigo', 'nombre', 'descripcion', 'categoria'],
+            through: { attributes: [] }
+          }]
+        },
         { model: Area, as: 'area', attributes: ['id', 'nombre', 'sigla'] }
       ]
     });
@@ -314,6 +334,10 @@ const login = async (req, res) => {
     const userResponse = user.toJSON();
     delete userResponse.password;
 
+    // Formatear permisos para fácil acceso
+    const permissions = userResponse.role?.permissions || [];
+    const permissionCodes = permissions.map(p => p.codigo);
+
     res.status(200).json({
       success: true,
       message: 'Login exitoso',
@@ -322,7 +346,8 @@ const login = async (req, res) => {
         token,
         refreshToken,
         expiresIn: JWT_EXPIRES_IN,
-        sessionId: session.id
+        sessionId: session.id,
+        permissions: permissionCodes // Array de códigos de permisos para fácil verificación
       }
     });
 
@@ -345,7 +370,17 @@ const getProfile = async (req, res) => {
     // req.user viene del middleware de autenticación
     const user = await User.findByPk(req.user.id, {
       include: [
-        { model: Role, as: 'role', attributes: ['id', 'nombre', 'descripcion'] },
+        { 
+          model: Role, 
+          as: 'role', 
+          attributes: ['id', 'nombre', 'descripcion', 'es_sistema', 'puede_asignar_permisos'],
+          include: [{
+            model: Permission,
+            as: 'permissions',
+            attributes: ['id', 'codigo', 'nombre', 'descripcion', 'categoria'],
+            through: { attributes: [] }
+          }]
+        },
         { model: Area, as: 'area', attributes: ['id', 'nombre', 'sigla'] }
       ],
       attributes: { exclude: ['password'] }
@@ -358,9 +393,17 @@ const getProfile = async (req, res) => {
       });
     }
 
+    // Formatear permisos para fácil acceso
+    const userResponse = user.toJSON();
+    const permissions = userResponse.role?.permissions || [];
+    const permissionCodes = permissions.map(p => p.codigo);
+
     res.status(200).json({
       success: true,
-      data: user
+      data: {
+        ...userResponse,
+        permissionCodes // Array de códigos para verificación rápida
+      }
     });
 
   } catch (error) {

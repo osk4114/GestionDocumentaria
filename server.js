@@ -20,6 +20,9 @@ const reportRoutes = require('./routes/reportRoutes');
 const areaRoutes = require('./routes/areaRoutes');
 const roleRoutes = require('./routes/roleRoutes');
 const userRoutes = require('./routes/userRoutes');
+// Rutas de permisos (v3.0)
+const permissionRoutes = require('./routes/permissionRoutes');
+const rolePermissionRoutes = require('./routes/rolePermissionRoutes');
 
 // Importar servicios
 const { startCleanupSchedule } = require('./services/sessionCleanupService');
@@ -114,6 +117,9 @@ app.use('/api/reports', reportRoutes);
 app.use('/api/areas', areaRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/users', userRoutes);
+// Rutas de permisos (v3.0 RBAC)
+app.use('/api/permissions', permissionRoutes);
+app.use('/api/roles', rolePermissionRoutes);
 
 // Configurar Socket.IO
 io.on('connection', (socket) => {

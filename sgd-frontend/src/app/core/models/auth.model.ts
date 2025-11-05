@@ -20,6 +20,7 @@ export interface LoginResponse {
     sessionId: number;
     expiresIn: string;
     user: User;
+    permissions?: string[]; // Códigos de permisos del usuario
   };
 }
 

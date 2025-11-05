@@ -21,7 +21,7 @@
 
     <!-- Menú -->
     <nav class="sidebar-menu">
-      @for (item of menuItems; track item.route; let i = $index) {
+      @for (item of visibleMenuItems(); track item.route; let i = $index) {
         <a 
           [routerLink]="item.route" 
           routerLinkActive="active"

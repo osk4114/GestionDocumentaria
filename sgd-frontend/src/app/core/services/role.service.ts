@@ -7,8 +7,34 @@ export interface Role {
   id: number;
   nombre: string;
   descripcion?: string;
+  es_sistema?: boolean;
+  puede_asignar_permisos?: boolean;
+  is_active?: boolean;
   created_at?: string;
   updated_at?: string;
+  permissions?: Permission[];
+}
+
+export interface Permission {
+  id: number;
+  codigo: string;
+  nombre: string;
+  descripcion: string;
+  categoria: string;
+}
+
+export interface CreateRoleRequest {
+  nombre: string;
+  descripcion?: string;
+  puede_asignar_permisos?: boolean;
+  permisos?: number[]; // IDs de permisos seleccionados
+}
+
+export interface UpdateRoleRequest {
+  nombre?: string;
+  descripcion?: string;
+  puede_asignar_permisos?: boolean;
+  permisos?: number[]; // IDs de permisos seleccionados
 }
 
 export interface ApiResponse<T> {
@@ -43,15 +69,15 @@ export class RoleService {
   /**
    * Crear nuevo rol
    */
-  create(role: Partial<Role>): Observable<ApiResponse<Role>> {
-    return this.http.post<ApiResponse<Role>>(this.apiUrl, role);
+  create(roleData: CreateRoleRequest): Observable<ApiResponse<Role>> {
+    return this.http.post<ApiResponse<Role>>(this.apiUrl, roleData);
   }
 
   /**
    * Actualizar rol
    */
-  update(id: number, role: Partial<Role>): Observable<ApiResponse<Role>> {
-    return this.http.put<ApiResponse<Role>>(`${this.apiUrl}/${id}`, role);
+  update(id: number, roleData: UpdateRoleRequest): Observable<ApiResponse<Role>> {
+    return this.http.put<ApiResponse<Role>>(`${this.apiUrl}/${id}`, roleData);
   }
 
   /**

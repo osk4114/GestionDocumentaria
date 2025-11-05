@@ -10,7 +10,65 @@
   color: #92400e;
 }
 
+/* ==================== MODAL PERSONALIZADO ==================== */
+.modal-content {
+  max-width: 900px !important;
+  max-height: 95vh !important;
+  height: 95vh !important;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-body {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 1.5rem;
+
+  .form-group:last-child {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    margin-bottom: 0;
+
+    .form-label {
+      margin-bottom: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    app-permission-selector {
+      flex: 1;
+      min-height: 0;
+      display: block;
+      height: 100%;
+    }
+  }
+
+  .form-group:not(:last-child) {
+    flex-shrink: 0;
+    margin-bottom: 1rem;
+  }
+}
+
+.modal-footer {
+  flex-shrink: 0;
+  border-top: 1px solid #e5e7eb;
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
 /* ==================== RESPONSIVE ADICIONALES ==================== */
+@media (max-width: 1023px) {
+  .modal-content {
+    max-width: 95vw !important;
+  }
+}
+
 @media (max-width: 767px) {
   .roles-container {
     padding: 0.75rem;
@@ -41,5 +99,18 @@
 
   .btn-card {
     min-height: 64px;
+  }
+
+  /* Modal responsive en móvil */
+  .modal-content {
+    max-width: 100% !important;
+    max-height: 100vh !important;
+    height: 100vh !important;
+    margin: 0;
+    border-radius: 0;
+  }
+
+  .categories-container.simplified {
+    max-height: calc(100vh - 400px);
   }
 }

@@ -4,11 +4,13 @@ import { FormsModule } from '@angular/forms';
 import { UserService, UserAdmin } from '../../../core/services/user.service';
 import { AreaService, Area } from '../../../core/services/area.service';
 import { RoleService, Role } from '../../../core/services/role.service';
+import { PermissionService } from '../../../core/services/permission.service';
+import { PERMISSION_DIRECTIVES } from '../../../shared/directives';
 
 @Component({
   selector: 'app-users-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ...PERMISSION_DIRECTIVES],
   templateUrl: './users-list.component.html',
   styleUrl: './users-list.component.scss'
 })
@@ -46,7 +48,8 @@ export class UsersListComponent implements OnInit {
   constructor(
     private userService: UserService,
     private areaService: AreaService,
-    private roleService: RoleService
+    private roleService: RoleService,
+    public permissionService: PermissionService
   ) {}
 
   ngOnInit(): void {

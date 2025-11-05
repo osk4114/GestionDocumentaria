@@ -5,6 +5,7 @@ import { Observable, tap, catchError, throwError, BehaviorSubject } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { StorageService } from './storage.service';
 import { WebSocketService } from './websocket.service';
+import { PermissionService } from './permission.service';
 import { 
   LoginCredentials, 
   LoginResponse, 
@@ -35,7 +36,8 @@ export class AuthService {
     private http: HttpClient,
     private storage: StorageService,
     private router: Router,
-    private websocketService: WebSocketService
+    private websocketService: WebSocketService,
+    private permissionService: PermissionService
   ) {
     this.loadUserFromStorage();
   }
@@ -50,6 +52,10 @@ export class AuthService {
     if (user && hasToken && !this.storage.isTokenExpired()) {
       this.currentUser.set(user);
       this.isAuthenticatedSubject.next(true);
+      
+      // Cargar permisos desde el usuario almacenado
+      const permissions = (user.role as any)?.permissions?.map((p: any) => p.codigo) || [];
+      this.permissionService.setPermissions(permissions);
       
       // 🔌 Conectar WebSocket si el usuario ya estaba autenticado
       this.websocketService.connect();
@@ -66,7 +72,7 @@ export class AuthService {
     return this.http.post<LoginResponse>(`${this.API_URL}/login`, credentials).pipe(
       tap(response => {
         if (response.success && response.data) {
-          const { token, refreshToken, sessionId, user } = response.data;
+          const { token, refreshToken, sessionId, user, permissions } = response.data;
           
           // Guardar en storage
           this.storage.setToken(token);
@@ -77,6 +83,15 @@ export class AuthService {
           // Actualizar estado
           this.currentUser.set(user);
           this.isAuthenticatedSubject.next(true);
+
+          // Cargar permisos en el servicio
+          if (permissions && permissions.length > 0) {
+            this.permissionService.setPermissions(permissions);
+          } else {
+            // Fallback: extraer desde user.role.permissions
+            const permissionCodes = user.role?.permissions?.map((p: any) => p.codigo) || [];
+            this.permissionService.setPermissions(permissionCodes);
+          }
 
           // 🔌 Conectar WebSocket para recibir notificaciones en tiempo real
           this.websocketService.connect();
@@ -171,6 +186,10 @@ export class AuthService {
         if (response.success && response.data) {
           this.storage.setUser(response.data);
           this.currentUser.set(response.data);
+          
+          // Actualizar permisos
+          const permissions = (response.data.role as any)?.permissions?.map((p: any) => p.codigo) || [];
+          this.permissionService.setPermissions(permissions);
         }
       }),
       catchError(this.handleError)
@@ -211,6 +230,7 @@ export class AuthService {
     this.storage.clearAll();
     this.currentUser.set(null);
     this.isAuthenticatedSubject.next(false);
+    this.permissionService.clearPermissions();
     this.websocketService.disconnect();
     // NO redirigir automáticamente - los guards manejan las redirecciones cuando es necesario
   }
