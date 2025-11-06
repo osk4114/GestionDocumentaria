@@ -160,6 +160,24 @@
       <div class="advanced-filters" *ngIf="showFilters()">
         <div class="filter-row">
           <div class="filter-group">
+            <label for="doctype-filter">Tipo de Documento</label>
+            <select 
+              id="doctype-filter"
+              class="filter-select"
+              [ngModel]="selectedDocType()"
+              (ngModelChange)="selectedDocType.set($event ? +$event : null)"
+            >
+              <option [value]="null">Todos los tipos</option>
+              <option 
+                *ngFor="let docType of documentTypes()" 
+                [value]="docType.id"
+              >
+                {{ docType.nombre }}
+              </option>
+            </select>
+          </div>
+
+          <div class="filter-group">
             <label for="category-filter">Categoría</label>
             <select 
               id="category-filter"
@@ -240,6 +258,7 @@
             <tr>
               <th>Código</th>
               <th>Asunto</th>
+              <th>Tipo</th>
               <th>Categoría</th>
               <th>Remitente</th>
               <th>Estado</th>
@@ -251,6 +270,31 @@
             <tr *ngFor="let doc of filteredDocuments()">
               <td class="code">{{ doc.trackingCode }}</td>
               <td class="subject">{{ doc.asunto }}</td>
+              <td class="doctype-cell">
+                <div class="doctype-wrapper">
+                  <span 
+                    *ngIf="doc.documentType"
+                    class="doctype-badge"
+                  >
+                    {{ doc.documentType.nombre }}
+                  </span>
+                  <span 
+                    *ngIf="!doc.documentType"
+                    class="doctype-badge no-doctype"
+                  >
+                    Sin clasificar
+                  </span>
+                  <button
+                    class="btn-assign-doctype"
+                    (click)="openDocTypeModal(doc)"
+                    [title]="doc.documentType ? 'Cambiar tipo' : 'Asignar tipo'"
+                  >
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                    </svg>
+                  </button>
+                </div>
+              </td>
               <td class="category-cell">
                 <div class="category-wrapper">
                   <span 
@@ -509,6 +553,69 @@
         [disabled]="!selectedCategoryId()"
       >
         Asignar Categoría
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Asignar Tipo de Documento -->
+<div class="modal-overlay" *ngIf="showDocTypeModal()" (click)="closeDocTypeModal()">
+  <div class="modal-doctype" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h3>Asignar Tipo de Documento</h3>
+      <button class="btn-close" (click)="closeDocTypeModal()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+    
+    <div class="modal-body">
+      <div class="document-info">
+        <p><strong>Documento:</strong> {{ selectedDocument()?.trackingCode }}</p>
+        <p><strong>Asunto:</strong> {{ selectedDocument()?.asunto }}</p>
+        <p *ngIf="selectedDocument()?.documentType">
+          <strong>Tipo actual:</strong>
+          <span class="doctype-badge">
+            {{ selectedDocument()!.documentType!.nombre }}
+          </span>
+        </p>
+      </div>
+
+      <div class="doctype-selection">
+        <label>Selecciona un tipo:</label>
+        <div class="doctypes-list">
+          <button
+            *ngFor="let docType of documentTypes()"
+            class="doctype-option"
+            [class.selected]="selectedDocTypeId() === docType.id"
+            (click)="selectDocTypeId(docType.id)"
+          >
+            <svg class="icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+            </svg>
+            <div class="doctype-info">
+              <span class="doctype-name">{{ docType.nombre }}</span>
+              <span class="doctype-desc" *ngIf="docType.descripcion">{{ docType.descripcion }}</span>
+            </div>
+            <svg *ngIf="selectedDocTypeId() === docType.id" class="check-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" (click)="closeDocTypeModal()">
+        Cancelar
+      </button>
+      <button 
+        class="btn btn-primary" 
+        (click)="assignDocTypeToDocument()"
+        [disabled]="!selectedDocTypeId()"
+      >
+        Asignar Tipo
       </button>
     </div>
   </div>

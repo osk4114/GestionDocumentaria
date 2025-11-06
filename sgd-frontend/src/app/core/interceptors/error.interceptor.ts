@@ -24,7 +24,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         console.log('⚠️ [ERROR INTERCEPTOR] Error 401 detectado');
         
         // Rutas públicas - no redirigir al login
-        const publicRoutes = ['/login', '/register', '/submit', '/tracking/', '/document-types'];
+        const publicRoutes = ['/login', '/register', '/submit', '/tracking/', '/document-types/active'];
         const isPublicRoute = publicRoutes.some(route => req.url.includes(route));
         
         if (isPublicRoute) {

@@ -43,6 +43,35 @@ exports.getAllDocumentTypes = async (req, res) => {
 };
 
 /**
+ * Obtener solo tipos de documento activos
+ * @route GET /api/document-types/active
+ * @access Public (para selects en formularios)
+ */
+exports.getActiveDocumentTypes = async (req, res) => {
+  try {
+    const documentTypes = await DocumentType.findAll({
+      where: { isActive: true },
+      order: [['nombre', 'ASC']],
+      attributes: ['id', 'nombre', 'descripcion', 'codigo']
+    });
+
+    res.status(200).json({
+      success: true,
+      count: documentTypes.length,
+      data: documentTypes
+    });
+
+  } catch (error) {
+    console.error('Error en getActiveDocumentTypes:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener tipos de documento activos',
+      error: error.message
+    });
+  }
+};
+
+/**
  * Obtener tipo de documento por ID
  * @route GET /api/document-types/:id
  * @access Private
@@ -239,7 +268,7 @@ exports.updateDocumentType = async (req, res) => {
 };
 
 /**
- * Desactivar tipo de documento
+ * Eliminar tipo de documento permanentemente
  * @route DELETE /api/document-types/:id
  * @access Private (Solo Admin)
  */
@@ -265,11 +294,46 @@ exports.deleteDocumentType = async (req, res) => {
     if (documentsCount > 0) {
       return res.status(400).json({
         success: false,
-        message: `No se puede desactivar porque hay ${documentsCount} documento(s) de este tipo`
+        message: `No se puede eliminar porque hay ${documentsCount} documento(s) de este tipo. Desactívelo en su lugar.`
       });
     }
 
-    // Desactivar tipo de documento
+    // Eliminar tipo de documento permanentemente
+    await documentType.destroy();
+
+    res.status(200).json({
+      success: true,
+      message: 'Tipo de documento eliminado exitosamente'
+    });
+
+  } catch (error) {
+    console.error('Error en deleteDocumentType:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al eliminar tipo de documento',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Desactivar tipo de documento (soft delete)
+ * @route PATCH /api/document-types/:id/deactivate
+ * @access Private (Solo Admin)
+ */
+exports.deactivateDocumentType = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const documentType = await DocumentType.findByPk(id);
+
+    if (!documentType) {
+      return res.status(404).json({
+        success: false,
+        message: 'Tipo de documento no encontrado'
+      });
+    }
+
     await documentType.update({ isActive: false });
 
     res.status(200).json({
@@ -279,7 +343,7 @@ exports.deleteDocumentType = async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Error en deleteDocumentType:', error);
+    console.error('Error en deactivateDocumentType:', error);
     res.status(500).json({
       success: false,
       message: 'Error al desactivar tipo de documento',

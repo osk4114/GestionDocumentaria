@@ -1,0 +1,2 @@
+Versión de prueba - 2025-11-06T15:27:53.941Z
+Este es un documento de prueba para el sistema de versiones.

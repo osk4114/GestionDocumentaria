@@ -1,7 +1,9 @@
 .admin-layout {
   display: flex;
   min-height: 100vh;
+  height: 100vh;
   background-color: #f5f5f5;
+  overflow: hidden;
 }
 
 /* ==================== SIDEBAR ==================== */
@@ -149,6 +151,8 @@
   display: flex;
   flex-direction: column;
   transition: margin-left 0.3s ease;
+  height: 100vh;
+  overflow: hidden;
 
   .sidebar-collapsed ~ & {
     margin-left: 80px;
@@ -164,8 +168,11 @@
   align-items: center;
   position: sticky;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 50;
   box-shadow: 0 2px 8px rgba(193, 39, 45, 0.08); /* Sombra roja muy sutil */
+  width: 100%;
 
   .header-left {
     .back-btn {
@@ -235,7 +242,9 @@
   flex: 1;
   padding: 2rem;
   overflow-y: auto;
+  overflow-x: hidden;
   background: #f9fafb; /* Fondo gris muy claro */
+  position: relative;
 }
 
 /* ==================== MOBILE OVERLAY ==================== */
@@ -284,12 +293,61 @@
 
 /* ==================== RESPONSIVE ==================== */
 
-/* Tablet (768px - 1023px) */
-@media (max-width: 1023px) {
+/* Desktop grande (>= 1280px) - Sin cambios */
+@media (min-width: 1280px) {
+  .sidebar {
+    width: 280px;
+  }
+
+  .main-content {
+    margin-left: 280px;
+  }
+
+  .content-body {
+    padding: 2rem 3rem;
+  }
+}
+
+/* Tablet grande (1024px - 1279px) */
+@media (max-width: 1279px) and (min-width: 1024px) {
+  .sidebar {
+    width: 240px;
+  }
+
+  .main-content {
+    margin-left: 240px;
+  }
+
   .content-header {
     padding: 1rem 1.5rem;
+  }
+
+  .content-body {
+    padding: 1.5rem 2rem;
+  }
+
+  .sidebar-menu .menu-item {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* Tablet (768px - 1023px) */
+@media (max-width: 1023px) and (min-width: 768px) {
+  .sidebar {
+    width: 220px;
+  }
+
+  .main-content {
+    margin-left: 220px;
+  }
+
+  .content-header {
+    padding: 0.875rem 1.25rem;
 
     .header-right {
+      gap: 0.75rem;
+
       .user-info {
         .user-name {
           font-size: 0.8125rem;
@@ -307,7 +365,16 @@
   }
 
   .content-body {
-    padding: 1.5rem;
+    padding: 1.25rem 1.5rem;
+  }
+
+  .sidebar-menu .menu-item {
+    padding: 0.625rem 1rem;
+    font-size: 0.8125rem;
+
+    .menu-icon {
+      font-size: 1.125rem;
+    }
   }
 }
 

@@ -82,40 +82,62 @@ export class PermissionManagementService {
    */
   formatCategoryName(categoria: string): string {
     const categoryNames: { [key: string]: string } = {
-      'auth': '🔐 Autenticación',
-      'users': '👥 Usuarios',
-      'roles': '🏷️ Roles',
-      'areas': '🏢 Áreas',
-      'categories': '📁 Categorías',
-      'document_types': '📋 Tipos de Documento',
-      'documents': '📄 Documentos',
-      'attachments': '📎 Adjuntos',
-      'versions': '📚 Versiones',
-      'movements': '🔄 Movimientos',
-      'reports': '📊 Reportes',
-      'system': '⚙️ Sistema'
+      'auth': 'Autenticación',
+      'users': 'Usuarios',
+      'roles': 'Roles',
+      'areas': 'Áreas',
+      'categories': 'Categorías',
+      'document_types': 'Tipos de Documento',
+      'documents': 'Documentos',
+      'attachments': 'Adjuntos',
+      'versions': 'Versiones',
+      'movements': 'Movimientos',
+      'reports': 'Reportes',
+      'system': 'Sistema'
     };
 
     return categoryNames[categoria] || categoria.toUpperCase();
   }
 
   /**
-   * Obtener color para categoría
+   * Obtener icono para categoría (sin emoji)
+   */
+  getCategoryIcon(categoria: string): string {
+    const categoryIcons: { [key: string]: string } = {
+      'auth': '🔐',
+      'users': '👤',
+      'roles': '👥',
+      'areas': '🏢',
+      'categories': '🏷️',
+      'document_types': '📋',
+      'documents': '📄',
+      'attachments': '📎',
+      'versions': '📚',
+      'movements': '↔️',
+      'reports': '📊',
+      'system': '⚙️'
+    };
+
+    return categoryIcons[categoria] || '📦';
+  }
+
+  /**
+   * Obtener color para categoría (tonos más sobrios)
    */
   getCategoryColor(categoria: string): string {
     const categoryColors: { [key: string]: string } = {
-      'auth': '#4F46E5',        // Indigo
-      'users': '#059669',       // Emerald
-      'roles': '#DC2626',       // Red
-      'areas': '#2563EB',       // Blue
-      'categories': '#7C3AED',  // Violet
-      'document_types': '#EA580C', // Orange
-      'documents': '#0891B2',   // Cyan
-      'attachments': '#65A30D', // Lime
-      'versions': '#CA8A04',    // Yellow
-      'movements': '#BE185D',   // Pink
-      'reports': '#9333EA',     // Purple
-      'system': '#374151'       // Gray
+      'auth': '#475569',        // Slate
+      'users': '#64748b',       // Slate light
+      'roles': '#78716c',       // Stone
+      'areas': '#52525b',       // Zinc
+      'categories': '#71717a',  // Zinc light
+      'document_types': '#737373', // Neutral
+      'documents': '#6b7280',   // Gray
+      'attachments': '#57534e', // Stone dark
+      'versions': '#6b7280',    // Gray
+      'movements': '#78716c',   // Stone
+      'reports': '#64748b',     // Slate light
+      'system': '#374151'       // Gray dark
     };
 
     return categoryColors[categoria] || '#6B7280';

@@ -3,12 +3,21 @@
 -- Sistema de Gestión Documentaria
 -- Ejecutar este script en phpMyAdmin o MySQL CLI
 -- 
--- VERSIÓN: 3.0
--- ÚLTIMA ACTUALIZACIÓN: 05 de Noviembre 2025
+-- VERSIÓN: 3.1
+-- ÚLTIMA ACTUALIZACIÓN: 06 de Noviembre 2025
 -- 
--- CAMBIOS EN ESTA VERSIÓN (v3.0):
+-- CAMBIOS EN ESTA VERSIÓN (v3.1):
+-- ✨ TIPOS DE DOCUMENTO - SEPARACIÓN DELETE Y DEACTIVATE
+-- - Nuevo permiso: document_types.deactivate (soft delete)
+-- - Modificado permiso: document_types.delete (hard delete permanente)
+-- - Endpoint PATCH /api/document-types/:id/deactivate (nuevo)
+-- - Endpoint DELETE /api/document-types/:id ahora elimina permanentemente
+-- - Frontend: Botones separados para desactivar (toggle) y eliminar
+-- - Total de permisos: 86 (era 85)
+--
+-- CAMBIOS EN VERSIÓN ANTERIOR (v3.0):
 -- ✨ SISTEMA DE PERMISOS GRANULARES IMPLEMENTADO
--- - Nueva tabla: permissions (85+ permisos del sistema)
+-- - Nueva tabla: permissions (permisos del sistema)
 -- - Nueva tabla: role_permissions (relación muchos a muchos)
 -- - Modificada tabla: roles (campos es_sistema, puede_asignar_permisos, is_active)
 -- - Roles predefinidos: Solo Administrador y Jefe de Área
@@ -513,13 +522,14 @@ INSERT INTO permissions (codigo, nombre, descripcion, categoria, es_sistema) VAL
 ('categories.toggle', 'Activar/Desactivar Categorías', 'Puede activar o desactivar categorías', 'categories', TRUE)
 ON DUPLICATE KEY UPDATE nombre=nombre;
 
--- CATEGORÍA: DOCUMENT_TYPES (5 permisos)
+-- CATEGORÍA: DOCUMENT_TYPES (6 permisos)
 INSERT INTO permissions (codigo, nombre, descripcion, categoria, es_sistema) VALUES
 ('document_types.view', 'Ver Tipos de Documento', 'Puede ver tipos de documento del sistema', 'document_types', TRUE),
 ('document_types.create', 'Crear Tipos de Documento', 'Puede crear nuevos tipos de documento', 'document_types', TRUE),
 ('document_types.edit', 'Editar Tipos de Documento', 'Puede editar tipos de documento', 'document_types', TRUE),
-('document_types.delete', 'Eliminar Tipos de Documento', 'Puede eliminar tipos de documento', 'document_types', TRUE),
-('document_types.activate', 'Activar Tipos de Documento', 'Puede activar/desactivar tipos', 'document_types', TRUE)
+('document_types.delete', 'Eliminar Tipos de Documento', 'Puede eliminar permanentemente tipos de documento', 'document_types', TRUE),
+('document_types.activate', 'Activar Tipos de Documento', 'Puede activar tipos desactivados', 'document_types', TRUE),
+('document_types.deactivate', 'Desactivar Tipos de Documento', 'Puede desactivar tipos de documento existentes', 'document_types', TRUE)
 ON DUPLICATE KEY UPDATE nombre=nombre;
 
 -- CATEGORÍA: DOCUMENTS (16 permisos)
@@ -689,38 +699,70 @@ CREATE INDEX idx_notifications_user ON notifications(user_id, is_read);
 CREATE INDEX idx_attachments_document ON attachments(document_id);
 
 -- ============================================================
--- RESUMEN DE ESTRUCTURA
+-- RESUMEN DE ESTRUCTURA (v3.1)
 -- ============================================================
--- Total de tablas: 14
--- - roles (gestión de permisos)
--- - areas (departamentos de la institución)
--- - users (usuarios del sistema)
--- - user_sessions (sesiones JWT)
--- - login_attempts (seguridad anti fuerza bruta)
--- - senders (remitentes externos - Mesa de Partes Virtual)
--- - document_types (tipos de documentos globales)
--- - document_statuses (estados del flujo)
--- - area_document_categories (categorías personalizables por área)
--- - documents (tabla principal de documentos)
--- - document_movements (trazabilidad completa)
--- - document_versions (historial de versiones con sello/firma)
--- - attachments (archivos adjuntos - OBLIGATORIOS)
--- - notifications (notificaciones a usuarios)
+-- Total de tablas: 16
+-- Total de permisos: 86 (12 categorías)
+-- Total de roles predefinidos: 2 (Administrador, Jefe de Área)
 --
--- Estados disponibles: Pendiente, En Proceso, Derivado, Atendido, Observado, Archivado
--- Áreas predefinidas: Mesa de Partes, Dirección General, RRHH, Logística, Asesoría Legal
--- Roles predefinidos: Administrador, Jefe de Área, Funcionario, Mesa de Partes
+-- TABLAS DEL SISTEMA:
+-- 1. roles (gestión de roles y permisos)
+-- 2. permissions (permisos granulares del sistema - 86 permisos)
+-- 3. role_permissions (relación muchos a muchos roles-permisos)
+-- 4. areas (departamentos de la institución)
+-- 5. users (usuarios del sistema)
+-- 6. user_sessions (sesiones JWT con refresh tokens)
+-- 7. login_attempts (seguridad anti fuerza bruta)
+-- 8. senders (remitentes externos - Mesa de Partes Virtual)
+-- 9. document_types (tipos de documentos globales)
+-- 10. document_statuses (estados del flujo de documentos)
+-- 11. area_document_categories (categorías personalizables por área)
+-- 12. documents (tabla principal de documentos)
+-- 13. document_movements (trazabilidad completa de movimientos)
+-- 14. document_versions (historial de versiones con sello/firma)
+-- 15. attachments (archivos adjuntos - OBLIGATORIOS)
+-- 16. notifications (notificaciones a usuarios)
 --
--- IMPORTANTE:
--- - doc_type_id en documents permite NULL (para documentos sin clasificar)
--- - categoria_id en documents permite NULL (categoría personalizada del área)
--- - user_id en document_movements permite NULL (para acciones públicas/automáticas)
--- - email y telefono en senders son OBLIGATORIOS (Mesa de Partes Virtual)
--- - nombreCompleto en senders es OPCIONAL (identificación por email/telefono)
--- - Cada área puede crear sus propias categorías sin límite
--- - Las versiones de documentos mantienen historial completo con sello/firma
--- - ARCHIVOS ADJUNTOS SON OBLIGATORIOS: Todo documento debe tener al menos 1 archivo PDF o imagen
--- - FORMATOS PERMITIDOS: Solo PDF, JPG, JPEG, PNG (validado en frontend y backend)
+-- CATEGORÍAS DE PERMISOS (86 total):
+-- - auth: 6 permisos (registro, perfil, sesiones)
+-- - users: 9 permisos (gestión de usuarios)
+-- - roles: 5 permisos (gestión de roles)
+-- - areas: 9 permisos (gestión de áreas)
+-- - categories: 6 permisos (categorías por área)
+-- - document_types: 6 permisos (tipos globales) ← ACTUALIZADO en v3.1
+-- - documents: 16 permisos (gestión documental)
+-- - attachments: 4 permisos (archivos adjuntos)
+-- - versions: 5 permisos (versionado)
+-- - movements: 5 permisos (derivaciones)
+-- - reports: 4 permisos (reportes)
+-- - system: 3 permisos (configuración)
+--
+-- DATOS INICIALES (SEEDS):
+-- - Estados: Pendiente, En Proceso, Derivado, Atendido, Observado, Archivado
+-- - Áreas: Mesa de Partes, Dirección General, RRHH, Logística, Asesoría Legal
+-- - Roles: Administrador (TODOS los permisos), Jefe de Área (permisos de su área)
+-- - Tipos de documento: Solicitud, Reclamo, Consulta, Recurso, Oficio
+-- - Categorías de ejemplo: Por área (Mesa de Partes: 5 categorías, RRHH: 5 categorías)
+--
+-- REGLAS IMPORTANTES:
+-- ✅ doc_type_id en documents permite NULL (documentos sin tipo desde mesa de partes)
+-- ✅ categoria_id en documents permite NULL (categoría personalizada opcional)
+-- ✅ user_id en document_movements permite NULL (acciones públicas/automáticas)
+-- ✅ email y telefono en senders son OBLIGATORIOS (Mesa de Partes Virtual)
+-- ✅ Cada área puede crear categorías ilimitadas (area_document_categories)
+-- ✅ Versiones mantienen historial completo con flags tiene_sello/tiene_firma
+-- ✅ ARCHIVOS ADJUNTOS OBLIGATORIOS: Mínimo 1 archivo PDF o imagen por documento
+-- ✅ FORMATOS PERMITIDOS: Solo PDF, JPG, JPEG, PNG (validación frontend y backend)
+-- ⚠️ TIPOS DE DOCUMENTO: DELETE elimina permanente, DEACTIVATE es soft delete
+-- ⚠️ expires_at en user_sessions NO debe tener ON UPDATE CURRENT_TIMESTAMP
+-- 
+-- FLUJO DE TRABAJO:
+-- 1. Mesa de Partes Virtual → Ciudadano presenta documento (doc_type_id puede ser NULL)
+-- 2. Mesa de Partes Interna → Asigna tipo y deriva a área correspondiente
+-- 3. Área Receptora → Asigna categoría propia y procesa documento
+-- 4. Derivaciones → Movimientos entre áreas con trazabilidad completa
+-- 5. Versiones → Cada área puede subir versión con sello/firma
+-- 6. Finalización → Atendido/Archivado con historial completo
 -- ============================================================
 
-SELECT 'Base de datos SGD v2.3 creada exitosamente - 14 tablas configuradas' AS mensaje;
+SELECT 'Base de datos SGD v3.1 creada exitosamente - 16 tablas, 86 permisos' AS mensaje;

@@ -18,6 +18,13 @@ const { checkPermission } = require('../middleware/permissionMiddleware');
 router.get('/', documentTypeController.getAllDocumentTypes);
 
 /**
+ * @route   GET /api/document-types/active
+ * @desc    Obtener solo tipos de documento activos
+ * @access  Public (para selects en formularios)
+ */
+router.get('/active', documentTypeController.getActiveDocumentTypes);
+
+/**
  * @route   GET /api/document-types/:id
  * @desc    Obtener tipo de documento por ID
  * @access  Private (requiere ver tipos de documento)
@@ -40,10 +47,10 @@ router.put('/:id', authMiddleware, checkPermission('document_types.edit'), docum
 
 /**
  * @route   DELETE /api/document-types/:id
- * @desc    Desactivar tipo de documento
- * @access  Private (requiere desactivar tipos de documento)
+ * @desc    Eliminar tipo de documento permanentemente
+ * @access  Private (requiere eliminar tipos de documento)
  */
-router.delete('/:id', authMiddleware, checkPermission('document_types.deactivate'), documentTypeController.deleteDocumentType);
+router.delete('/:id', authMiddleware, checkPermission('document_types.delete'), documentTypeController.deleteDocumentType);
 
 /**
  * @route   PATCH /api/document-types/:id/activate
@@ -51,5 +58,12 @@ router.delete('/:id', authMiddleware, checkPermission('document_types.deactivate
  * @access  Private (requiere activar tipos de documento)
  */
 router.patch('/:id/activate', authMiddleware, checkPermission('document_types.activate'), documentTypeController.activateDocumentType);
+
+/**
+ * @route   PATCH /api/document-types/:id/deactivate
+ * @desc    Desactivar tipo de documento (soft delete)
+ * @access  Private (requiere desactivar tipos de documento)
+ */
+router.patch('/:id/deactivate', authMiddleware, checkPermission('document_types.deactivate'), documentTypeController.deactivateDocumentType);
 
 module.exports = router;

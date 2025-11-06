@@ -573,6 +573,82 @@ class DocumentService {
   }
 
   /**
+   * Actualizar tipo de documento
+   * @param {Number} documentId - ID del documento
+   * @param {Number} docTypeId - ID del tipo de documento
+   * @param {Object} user - Usuario que actualiza
+   * @returns {Object} Resultado de la operación
+   */
+  async updateDocumentType(documentId, docTypeId, user) {
+    const transaction = await sequelize.transaction();
+    
+    try {
+      // Buscar documento
+      const document = await Document.findByPk(documentId, { 
+        include: [{ model: Area, as: 'currentArea' }],
+        transaction 
+      });
+
+      if (!document) {
+        throw new Error('Documento no encontrado');
+      }
+
+      // Verificar permisos: el documento debe estar en el área del usuario o ser administrador
+      if (document.currentAreaId !== user.areaId && user.role?.nombre !== 'Administrador') {
+        throw new Error('No tienes permisos para actualizar este documento');
+      }
+
+      // Verificar que el tipo de documento existe y está activo
+      const docType = await DocumentType.findOne({
+        where: { 
+          id: docTypeId,
+          isActive: true
+        },
+        transaction
+      });
+
+      if (!docType) {
+        throw new Error('Tipo de documento no encontrado o inactivo');
+      }
+
+      // Actualizar tipo de documento
+      const previousDocTypeId = document.docTypeId;
+      await document.update({ docTypeId: docTypeId }, { transaction });
+
+      // Crear movimiento registrando el cambio de tipo
+      await DocumentMovement.create({
+        documentId: document.id,
+        fromAreaId: document.currentAreaId,
+        toAreaId: document.currentAreaId,
+        userId: user.id,
+        accion: 'Actualización de Tipo',
+        observacion: previousDocTypeId 
+          ? `Tipo cambiado a: ${docType.nombre}` 
+          : `Tipo asignado: ${docType.nombre}`
+      }, { transaction });
+
+      await transaction.commit();
+
+      // Retornar documento actualizado con el tipo
+      const updatedDocument = await Document.findByPk(documentId, {
+        include: [
+          { model: DocumentType, as: 'documentType' }
+        ]
+      });
+
+      return { 
+        success: true, 
+        message: 'Tipo de documento actualizado exitosamente',
+        data: updatedDocument
+      };
+
+    } catch (error) {
+      await transaction.rollback();
+      throw error;
+    }
+  }
+
+  /**
    * Desarchivar documento (reactivar)
    * @param {Number} documentId - ID del documento
    * @param {Object} user - Usuario que desarchiva
@@ -898,6 +974,8 @@ class DocumentService {
    */
   async getDocumentByTrackingCode(trackingCode) {
     try {
+      const { DocumentVersion } = require('../models');
+      
       const document = await Document.findOne({
         where: { trackingCode },
         include: [
@@ -922,7 +1000,18 @@ class DocumentService {
         throw new Error('Documento no encontrado');
       }
 
-      return document;
+      // Obtener la última versión si existe
+      const latestVersion = await DocumentVersion.findOne({
+        where: { documentId: document.id },
+        attributes: ['versionNumber', 'tieneSello', 'tieneFirma', 'uploadedAt'],
+        order: [['versionNumber', 'DESC']]
+      });
+
+      // Agregar versión al documento
+      const documentData = document.toJSON();
+      documentData.latestVersion = latestVersion ? latestVersion.toJSON() : null;
+
+      return documentData;
 
     } catch (error) {
       throw error;

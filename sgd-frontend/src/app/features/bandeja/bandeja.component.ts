@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { DocumentService, DocumentFilters } from '../../core/services/document.service';
 import { AuthService } from '../../core/services/auth.service';
 import { AreaCategoryService, AreaCategory } from '../../core/services/area-category.service';
+import { DocumentTypeService, DocumentType } from '../../core/services/document-type.service';
 import { DocumentDeriveComponent } from '../documents/document-derive/document-derive.component';
 import { DocumentDetailsComponent } from '../documents/document-details/document-details.component';
 
@@ -26,6 +27,11 @@ interface Document {
     nombre: string;
     sigla: string;
   };
+  docTypeId?: number | null;
+  documentType?: {
+    id: number;
+    nombre: string;
+  } | null;
   categoriaId?: number | null;
   categoria?: {
     id: number;
@@ -46,12 +52,14 @@ export class BandejaComponent implements OnInit {
   // Signals para estado reactivo
   documents = signal<Document[]>([]);
   areaCategories = signal<AreaCategory[]>([]);
+  documentTypes = signal<DocumentType[]>([]);
   loading = signal<boolean>(true);
   activeTab = signal<'todos' | 'pendientes' | 'proceso' | 'finalizados' | 'archivados'>('todos');
   
   // Filtros avanzados
   searchTerm = signal<string>('');
   selectedCategory = signal<number | null>(null);
+  selectedDocType = signal<number | null>(null);
   dateFrom = signal<string>('');
   dateTo = signal<string>('');
   showFilters = signal<boolean>(false);
@@ -60,9 +68,11 @@ export class BandejaComponent implements OnInit {
   showDeriveModal = signal(false);
   showDetailsModal = signal(false);
   showCategoryModal = signal(false);
+  showDocTypeModal = signal(false);
   selectedDocumentId = signal<number>(0);
   selectedDocument = signal<Document | null>(null);
   selectedCategoryId = signal<number | null>(null);
+  selectedDocTypeId = signal<number | null>(null);
 
   // Computed values
   currentUser = computed(() => this.authService.currentUser());
@@ -111,12 +121,14 @@ export class BandejaComponent implements OnInit {
   constructor(
     private documentService: DocumentService,
     private areaCategoryService: AreaCategoryService,
+    private documentTypeService: DocumentTypeService,
     private authService: AuthService,
     private router: Router
   ) {}
 
   ngOnInit(): void {
     this.loadAreaCategories();
+    this.loadDocumentTypes();
     this.loadDocuments();
   }
 
@@ -132,6 +144,19 @@ export class BandejaComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error al cargar categorías del área:', error);
+      }
+    });
+  }
+
+  loadDocumentTypes(): void {
+    this.documentTypeService.getActive().subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.documentTypes.set(response.data);
+        }
+      },
+      error: (error) => {
+        console.error('Error al cargar tipos de documento:', error);
       }
     });
   }
@@ -155,6 +180,10 @@ export class BandejaComponent implements OnInit {
 
     if (this.selectedCategory()) {
       filters.category = this.selectedCategory()!;
+    }
+
+    if (this.selectedDocType()) {
+      filters.documentType = this.selectedDocType()!;
     }
     
     if (this.dateFrom()) {
@@ -186,6 +215,7 @@ export class BandejaComponent implements OnInit {
   clearFilters(): void {
     this.searchTerm.set('');
     this.selectedCategory.set(null);
+    this.selectedDocType.set(null);
     this.dateFrom.set('');
     this.dateTo.set('');
     this.loadDocuments();
@@ -240,6 +270,7 @@ export class BandejaComponent implements OnInit {
     this.showDeriveModal.set(false);
     this.showDetailsModal.set(false);
     this.showCategoryModal.set(false);
+    this.showDocTypeModal.set(false);
   }
 
   onDeriveSuccess(): void {
@@ -285,6 +316,47 @@ export class BandejaComponent implements OnInit {
       error: (error) => {
         console.error('Error al asignar categoría:', error);
         alert(error.error?.message || 'Error al asignar categoría');
+      }
+    });
+  }
+
+  openDocTypeModal(doc: Document): void {
+    this.selectedDocument.set(doc);
+    this.selectedDocumentId.set(doc.id);
+    this.selectedDocTypeId.set(doc.docTypeId || null);
+    this.showDocTypeModal.set(true);
+  }
+
+  closeDocTypeModal(): void {
+    this.showDocTypeModal.set(false);
+    this.selectedDocument.set(null);
+    this.selectedDocTypeId.set(null);
+  }
+
+  selectDocTypeId(docTypeId: number): void {
+    this.selectedDocTypeId.set(docTypeId);
+  }
+
+  assignDocTypeToDocument(): void {
+    const documentId = this.selectedDocumentId();
+    const docTypeId = this.selectedDocTypeId();
+
+    if (!documentId || !docTypeId) {
+      alert('Por favor seleccione un tipo de documento');
+      return;
+    }
+
+    this.documentService.updateDocumentType(documentId, docTypeId).subscribe({
+      next: (response) => {
+        if (response.success) {
+          alert('Tipo de documento asignado correctamente');
+          this.closeDocTypeModal();
+          this.loadDocuments();
+        }
+      },
+      error: (error) => {
+        console.error('Error al asignar tipo:', error);
+        alert(error.error?.message || 'Error al asignar tipo de documento');
       }
     });
   }

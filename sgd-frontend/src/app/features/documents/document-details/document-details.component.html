@@ -45,6 +45,16 @@
             👁️ Previsualizar
           </button>
         }
+        <button 
+          class="tab tab-versions" 
+          (click)="openVersionsModal()"
+          title="Ver versiones del documento"
+        >
+          📚 Versiones
+          @if (versionsCount() > 0) {
+            <span class="versions-badge">{{ versionsCount() }}</span>
+          }
+        </button>
       </div>
 
       <!-- Tab Content -->
@@ -293,6 +303,51 @@
               }
             </div>
 
+            <!-- Versiones del Documento -->
+            @if (versionsCount() > 0) {
+              <div class="section">
+                <div class="section-header-with-action">
+                  <h3 class="section-title">📚 Versiones del Documento ({{ versionsCount() }})</h3>
+                  <button class="btn-link" (click)="openVersionsModal()">Ver todas →</button>
+                </div>
+                
+                <div class="versions-summary">
+                  <div class="version-current-badge">
+                    <span class="badge badge-version">Versión {{ latestVersionNumber() }}</span>
+                    @if (latestVersion()) {
+                      @if (latestVersion()!.tieneSello) {
+                        <span class="badge badge-sello">✅ Sello</span>
+                      }
+                      @if (latestVersion()!.tieneFirma) {
+                        <span class="badge badge-firma">✍️ Firma Electrónica</span>
+                      }
+                    }
+                  </div>
+                  @if (latestVersion()) {
+                    <div class="version-info-box">
+                      <p class="version-detail">
+                        <strong>Archivo:</strong> {{ latestVersion()!.originalName }}
+                      </p>
+                      <p class="version-detail">
+                        <strong>Tamaño:</strong> {{ formatFileSize(latestVersion()!.fileSize) }}
+                      </p>
+                      @if (latestVersion()!.descripcion) {
+                        <p class="version-detail">
+                          <strong>Descripción:</strong> {{ latestVersion()!.descripcion }}
+                        </p>
+                      }
+                      <p class="version-detail">
+                        <strong>Subido:</strong> {{ formatDate(latestVersion()!.created_at) }}
+                        @if (latestVersion()!.uploader) {
+                          por {{ latestVersion()!.uploader.nombre }}
+                        }
+                      </p>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+
             <!-- Archivos Adjuntos -->
             @if (document()!.attachments && document()!.attachments!.length > 0) {
               <div class="section">
@@ -476,3 +531,21 @@
 
   </div>
 </div>
+
+<!-- Modal de Versiones -->
+@if (showVersionsModal()) {
+  <app-document-versions-modal
+    [documentId]="documentId"
+    [documentTrackingCode]="document()!.trackingCode"
+    (onClose)="closeVersionsModal()"
+    (onVersionUploaded)="onVersionUploaded()"
+  />
+}
+@if (showVersionsModal()) {
+  <app-document-versions-modal
+    [documentId]="documentId"
+    [documentTrackingCode]="document()?.trackingCode || ''"
+    (onClose)="closeVersionsModal()"
+    (onVersionUploaded)="onVersionUploaded()"
+  />
+}

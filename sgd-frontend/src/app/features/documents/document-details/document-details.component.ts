@@ -4,6 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { NgxExtendedPdfViewerModule } from 'ngx-extended-pdf-viewer';
 import { DocumentService } from '../../../core/services/document.service';
 import { StorageService } from '../../../core/services/storage.service';
+import { DocumentVersionsModalComponent } from '../document-versions-modal/document-versions-modal.component';
+import { DocumentVersionService } from '../../../core/services/document-version.service';
 
 interface DocumentStatus {
   id: number;
@@ -99,7 +101,7 @@ interface DocumentDetails {
 @Component({
   selector: 'app-document-details',
   standalone: true,
-  imports: [CommonModule, FormsModule, NgxExtendedPdfViewerModule],
+  imports: [CommonModule, FormsModule, NgxExtendedPdfViewerModule, DocumentVersionsModalComponent],
   schemas: [CUSTOM_ELEMENTS_SCHEMA],
   templateUrl: './document-details.component.html',
   styleUrl: './document-details.component.scss'
@@ -126,14 +128,22 @@ export class DocumentDetailsComponent implements OnInit, OnDestroy {
   selectedAttachment = signal<any>(null);
   pdfSrc = signal<string | null>(null);
 
+  // Control de versiones
+  showVersionsModal = signal(false);
+  versionsCount = signal(0);
+  latestVersionNumber = signal(0);
+  latestVersion = signal<any>(null);
+
   constructor(
     private documentService: DocumentService,
-    private storage: StorageService
+    private storage: StorageService,
+    private versionService: DocumentVersionService
   ) {}
 
   ngOnInit(): void {
     this.loadDocumentDetails();
     this.loadAvailableStatuses();
+    this.loadVersionsInfo();
   }
 
   ngOnDestroy(): void {
@@ -404,5 +414,49 @@ export class DocumentDetailsComponent implements OnInit, OnDestroy {
         }
       });
     }
+  }
+
+  /**
+   * Cargar información de versiones
+   */
+  loadVersionsInfo(): void {
+    this.versionService.getVersions(this.documentId).subscribe({
+      next: (response) => {
+        if (response.success && Array.isArray(response.data)) {
+          this.versionsCount.set(response.data.length);
+          if (response.data.length > 0) {
+            const latest = response.data[0];
+            this.latestVersionNumber.set(latest.versionNumber);
+            this.latestVersion.set(latest);
+          }
+        }
+      },
+      error: (error) => {
+        console.error('Error al cargar versiones:', error);
+        // No mostrar error al usuario, solo registrar en consola
+      }
+    });
+  }
+
+  /**
+   * Abrir modal de versiones
+   */
+  openVersionsModal(): void {
+    this.showVersionsModal.set(true);
+  }
+
+  /**
+   * Cerrar modal de versiones
+   */
+  closeVersionsModal(): void {
+    this.showVersionsModal.set(false);
+  }
+
+  /**
+   * Manejar subida de nueva versión
+   */
+  onVersionUploaded(): void {
+    this.loadVersionsInfo(); // Recargar contador
+    this.loadDocumentDetails(); // Recargar detalles del documento
   }
 }

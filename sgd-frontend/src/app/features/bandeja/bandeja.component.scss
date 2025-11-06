@@ -659,6 +659,69 @@
 }
 
 /* Category Styles */
+// Celda de Tipo de Documento
+.doctype-cell {
+  padding: 0.75rem 1rem !important;
+}
+
+.doctype-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.doctype-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.875rem;
+  border-radius: 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  white-space: nowrap;
+  box-shadow: 0 2px 4px rgba(102, 126, 234, 0.2);
+
+  &.no-doctype {
+    background: #f3f4f6;
+    color: #9ca3af;
+    box-shadow: none;
+    border: 1px dashed #d1d5db;
+  }
+}
+
+.btn-assign-doctype {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+
+  svg {
+    color: #6b7280;
+    width: 14px;
+    height: 14px;
+  }
+
+  &:hover {
+    background: #667eea;
+    border-color: #667eea;
+    transform: translateY(-1px);
+
+    svg {
+      color: white;
+    }
+  }
+}
+
 .category-cell {
   padding: 0.75rem 1rem !important;
 }
@@ -861,6 +924,177 @@
     font-size: 0.75rem;
     color: var(--color-text-secondary);
     font-family: monospace;
+  }
+}
+
+/* Document Type Modal */
+.modal-doctype {
+  background: white;
+  border-radius: 12px;
+  max-width: 600px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.5rem;
+    border-bottom: 2px solid #f3f4f6;
+
+    h3 {
+      margin: 0;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--color-text-primary);
+    }
+
+    .btn-close {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      padding: 0;
+      background: transparent;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      svg {
+        color: #6b7280;
+      }
+
+      &:hover {
+        background: #f3f4f6;
+
+        svg {
+          color: var(--color-text-primary);
+        }
+      }
+    }
+  }
+
+  .modal-body {
+    padding: 1.5rem;
+  }
+
+  .modal-footer {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    padding: 1.5rem;
+    border-top: 2px solid #f3f4f6;
+  }
+
+  .document-info {
+    .doctype-badge {
+      margin-left: 0.5rem;
+      vertical-align: middle;
+    }
+  }
+}
+
+.doctype-selection {
+  label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: 0.75rem;
+  }
+}
+
+.doctypes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+
+  /* Scrollbar personalizado */
+  &::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: #f3f4f6;
+    border-radius: 3px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+
+    &:hover {
+      background: #94a3b8;
+    }
+  }
+}
+
+.doctype-option {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 1rem;
+  background: white;
+  border: 2px solid #e5e7eb;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  position: relative;
+
+  &:hover {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.05) 0%, rgba(118, 75, 162, 0.05) 100%);
+    border-color: #667eea;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+  }
+
+  &.selected {
+    background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
+  }
+
+  .icon {
+    color: #667eea;
+    width: 24px;
+    height: 24px;
+    flex-shrink: 0;
+  }
+
+  .doctype-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+
+    .doctype-name {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    .doctype-desc {
+      font-size: 0.8125rem;
+      color: var(--color-text-secondary);
+      line-height: 1.4;
+    }
+  }
+
+  .check-icon {
+    color: #667eea;
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
   }
 }
 

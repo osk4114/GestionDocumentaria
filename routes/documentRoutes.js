@@ -194,6 +194,16 @@ router.patch('/:id/category', authMiddleware,
 );
 
 /**
+ * @route   PATCH /api/documents/:id/document-type
+ * @desc    Actualizar tipo de documento
+ * @access  Private (requiere permiso de editar documentos)
+ */
+router.patch('/:id/document-type', authMiddleware, 
+  checkAnyPermission(['documents.edit.all', 'documents.edit.area']),
+  documentController.updateDocumentType
+);
+
+/**
  * @route   PUT /api/documents/:id/status
  * @desc    Cambiar estado del documento manualmente
  * @access  Private (requiere permiso de cambiar estados)
@@ -247,7 +257,7 @@ router.get('/:documentId/versions/latest', authMiddleware,
  * @access  Private (requiere permiso de crear versiones)
  */
 router.post('/:documentId/versions', authMiddleware, 
-  checkPermission('versions.create'),
+  checkPermission('versions.upload'),
   uploadDocumentVersion, handleMulterError, 
   documentVersionController.uploadVersion
 );

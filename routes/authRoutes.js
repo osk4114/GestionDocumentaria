@@ -2,15 +2,15 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
 const { authMiddleware } = require('../middleware/authMiddleware');
-const { isAdmin } = require('../middleware/roleMiddleware');
+const { checkAnyPermission } = require('../middleware/permissionMiddleware');
 const { loginLimiter, registerLimiter } = require('../middleware/rateLimitMiddleware');
 
 /**
  * @route   POST /api/auth/register
  * @desc    Registrar nuevo usuario
- * @access  Private (Solo admin puede crear usuarios)
+ * @access  Private (requiere crear usuarios)
  */
-router.post('/register', registerLimiter, authMiddleware, isAdmin, authController.register);
+router.post('/register', registerLimiter, authMiddleware, checkAnyPermission(['users.create.all', 'users.create.area']), authController.register);
 
 /**
  * @route   POST /api/auth/login

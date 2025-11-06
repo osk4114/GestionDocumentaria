@@ -19,6 +19,12 @@ interface DocumentTracking {
     nombre: string;
     color: string;
   };
+  latestVersion?: {
+    versionNumber: number;
+    tieneSello: boolean;
+    tieneFirma: boolean;
+    uploadedAt: string;
+  } | null;
   movements: Array<{
     id: number;
     accion: string;

@@ -324,6 +324,44 @@ exports.updateDocumentCategory = async (req, res) => {
 };
 
 /**
+ * Actualizar tipo de documento
+ * PATCH /api/documents/:id/document-type
+ */
+exports.updateDocumentType = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { docTypeId } = req.body;
+
+    // Validar datos requeridos
+    if (!docTypeId) {
+      return res.status(400).json({
+        success: false,
+        message: 'El ID del tipo de documento es requerido'
+      });
+    }
+
+    const result = await documentService.updateDocumentType(
+      parseInt(id),
+      parseInt(docTypeId),
+      req.user
+    );
+
+    res.status(200).json(result);
+
+  } catch (error) {
+    console.error('Error en updateDocumentType:', error);
+    const statusCode = error.message === 'Documento no encontrado' ? 404 :
+                       error.message.includes('permisos') || error.message.includes('área') ? 403 : 
+                       error.message.includes('Tipo de documento no encontrado') ? 404 : 500;
+    res.status(statusCode).json({
+      success: false,
+      message: error.message || 'Error al actualizar tipo de documento',
+      error: error.message
+    });
+  }
+};
+
+/**
  * Cambiar estado de un documento manualmente
  * PUT /api/documents/:id/status
  */

@@ -72,6 +72,7 @@ import { DocumentTypeService, DocumentType } from '../../../core/services/docume
                 <tr>
                   <th>ID</th>
                   <th>Nombre</th>
+                  <th>Código</th>
                   <th>Descripción</th>
                   <th>Estado</th>
                   <th>Fecha Creación</th>
@@ -83,6 +84,7 @@ import { DocumentTypeService, DocumentType } from '../../../core/services/docume
                   <tr>
                     <td>{{ type.id }}</td>
                     <td class="font-semibold">{{ type.nombre }}</td>
+                    <td><span class="code-badge">{{ type.codigo }}</span></td>
                     <td class="description-col">{{ type.descripcion || '-' }}</td>
                     <td>
                       <span 
@@ -127,6 +129,7 @@ import { DocumentTypeService, DocumentType } from '../../../core/services/docume
                 <div class="card-body">
                   <div class="card-title-section">
                     <div class="card-title">{{ type.nombre }}</div>
+                    <span class="code-badge">{{ type.codigo }}</span>
                   </div>
 
                   @if (type.descripcion) {
@@ -186,6 +189,10 @@ import { DocumentTypeService, DocumentType } from '../../../core/services/docume
               <input type="text" [(ngModel)]="formData().nombre" class="form-input" placeholder="Ej: Oficio"/>
             </div>
             <div class="form-group">
+              <label class="form-label">Código <span class="required">*</span></label>
+              <input type="text" [(ngModel)]="formData().codigo" class="form-input" placeholder="Ej: OFC" maxlength="20"/>
+            </div>
+            <div class="form-group">
               <label class="form-label">Descripción</label>
               <textarea [(ngModel)]="formData().descripcion" class="form-textarea" rows="3" placeholder="Descripción del tipo de documento..."></textarea>
             </div>
@@ -217,7 +224,7 @@ export class DocumentTypesListComponent implements OnInit {
   loading = signal(false);
   showModal = signal(false);
   modalMode = signal<'create' | 'edit'>('create');
-  formData = signal({ id: 0, nombre: '', descripcion: '', isActive: true });
+  formData = signal({ id: 0, nombre: '', codigo: '', descripcion: '', isActive: true });
   searchTerm = '';
   filterStatus = 'all';
   successMessage = signal('');
@@ -250,13 +257,13 @@ export class DocumentTypesListComponent implements OnInit {
 
   openCreateModal(): void {
     this.modalMode.set('create');
-    this.formData.set({ id: 0, nombre: '', descripcion: '', isActive: true });
+    this.formData.set({ id: 0, nombre: '', codigo: '', descripcion: '', isActive: true });
     this.showModal.set(true);
   }
 
   openEditModal(type: DocumentType): void {
     this.modalMode.set('edit');
-    this.formData.set({ id: type.id, nombre: type.nombre, descripcion: type.descripcion || '', isActive: type.isActive });
+    this.formData.set({ id: type.id, nombre: type.nombre, codigo: type.codigo || '', descripcion: type.descripcion || '', isActive: type.isActive });
     this.showModal.set(true);
   }
 
@@ -265,10 +272,11 @@ export class DocumentTypesListComponent implements OnInit {
   saveType(): void {
     const data = this.formData();
     if (!data.nombre) { this.showError('El nombre es obligatorio'); return; }
+    if (!data.codigo) { this.showError('El código es obligatorio'); return; }
     this.loading.set(true);
     const action = this.modalMode() === 'create' 
-      ? this.typeService.create({ nombre: data.nombre, descripcion: data.descripcion, isActive: data.isActive })
-      : this.typeService.update(data.id, { nombre: data.nombre, descripcion: data.descripcion });
+      ? this.typeService.create({ nombre: data.nombre, codigo: data.codigo, descripcion: data.descripcion, isActive: data.isActive })
+      : this.typeService.update(data.id, { nombre: data.nombre, codigo: data.codigo, descripcion: data.descripcion });
     action.subscribe({
       next: () => { this.showSuccess(`Tipo ${this.modalMode() === 'create' ? 'creado' : 'actualizado'}`); this.loadTypes(); this.closeModal(); this.loading.set(false); },
       error: (err) => { this.showError(err.error?.message || 'Error'); this.loading.set(false); }
@@ -276,20 +284,39 @@ export class DocumentTypesListComponent implements OnInit {
   }
 
   toggleStatus(type: DocumentType): void {
-    if (confirm(`¿${type.isActive ? 'Desactivar' : 'Activar'} "${type.nombre}"?`)) {
-      const action = type.isActive ? this.typeService.deactivate(type.id) : this.typeService.activate(type.id);
+    if (confirm(`¿Está seguro de ${type.isActive ? 'desactivar' : 'activar'} el tipo de documento "${type.nombre}"?`)) {
+      const action = type.isActive 
+        ? this.typeService.deactivate(type.id)
+        : this.typeService.activate(type.id);
+
       action.subscribe({
-        next: () => { this.showSuccess(`Tipo ${type.isActive ? 'desactivado' : 'activado'}`); this.loadTypes(); },
-        error: () => this.showError('Error al cambiar estado')
+        next: (response) => {
+          if (response.success) {
+            this.showSuccess(`Tipo de documento ${type.isActive ? 'desactivado' : 'activado'} exitosamente`);
+            this.loadTypes();
+          }
+        },
+        error: (error) => {
+          console.error('Error al cambiar estado:', error);
+          this.showError('Error al cambiar el estado del tipo de documento');
+        }
       });
     }
   }
 
   deleteType(type: DocumentType): void {
-    if (confirm(`¿Eliminar "${type.nombre}"?`)) {
+    if (confirm(`¿Está seguro de eliminar el tipo de documento "${type.nombre}"?\n\nEsta acción no se puede deshacer.`)) {
       this.typeService.delete(type.id).subscribe({
-        next: () => { this.showSuccess('Tipo eliminado'); this.loadTypes(); },
-        error: (err) => this.showError(err.error?.message || 'Error al eliminar')
+        next: (response) => {
+          if (response.success) {
+            this.showSuccess('Tipo de documento eliminado exitosamente');
+            this.loadTypes();
+          }
+        },
+        error: (error) => {
+          console.error('Error al eliminar tipo de documento:', error);
+          this.showError(error.error?.message || 'Error al eliminar el tipo de documento');
+        }
       });
     }
   }

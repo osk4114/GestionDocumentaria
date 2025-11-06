@@ -60,21 +60,7 @@ export class PermissionSelectorComponent implements OnInit {
   }
 
   getCategoryIcon(category: string): string {
-    const icons: { [key: string]: string } = {
-      'auth': '🔐',
-      'users': '👥',
-      'roles': '🎭',
-      'areas': '🏢',
-      'categories': '📁',
-      'document_types': '📄',
-      'documents': '📋',
-      'attachments': '📎',
-      'versions': '🔄',
-      'movements': '↔️',
-      'reports': '📊',
-      'system': '⚙️'
-    };
-    return icons[category] || '📦';
+    return this.permissionMgmtService.getCategoryIcon(category);
   }
 
   getCategoryDescription(category: string): string {

@@ -6,6 +6,7 @@ import { environment } from '../../environments/environment';
 export interface DocumentType {
   id: number;
   nombre: string;
+  codigo: string;
   descripcion?: string;
   isActive: boolean;
   created_at?: string;
@@ -63,16 +64,23 @@ export class DocumentTypeService {
   }
 
   /**
-   * Activar tipo
+   * Activar tipo (solo si está inactivo)
    */
   activate(id: number): Observable<ApiResponse<DocumentType>> {
     return this.http.patch<ApiResponse<DocumentType>>(`${this.apiUrl}/${id}/activate`, {});
   }
 
   /**
-   * Desactivar tipo
+   * Desactivar tipo (soft delete)
    */
   deactivate(id: number): Observable<ApiResponse<DocumentType>> {
     return this.http.patch<ApiResponse<DocumentType>>(`${this.apiUrl}/${id}/deactivate`, {});
+  }
+
+  /**
+   * Obtener solo tipos activos
+   */
+  getActive(): Observable<ApiResponse<DocumentType[]>> {
+    return this.http.get<ApiResponse<DocumentType[]>>(`${this.apiUrl}/active`);
   }
 }

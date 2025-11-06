@@ -286,4 +286,10 @@ export class DocumentService {
       categoryId
     });
   }
+
+  updateDocumentType(documentId: number, docTypeId: number): Observable<ApiResponse<any>> {
+    return this.http.patch<ApiResponse<any>>(`${this.apiUrl}/documents/${documentId}/document-type`, {
+      docTypeId
+    });
+  }
 }

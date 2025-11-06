@@ -1,0 +1,199 @@
+<div class="modal-overlay" (click)="close()">
+  <div class="modal-container" (click)="$event.stopPropagation()">
+    <!-- Header (fixed) -->
+    <div class="modal-header">
+      <div class="header-content">
+        <h2 class="modal-title">📚 Versiones del Documento</h2>
+        <p class="modal-subtitle">{{ documentTrackingCode }}</p>
+      </div>
+      <button class="btn-close" (click)="close()" title="Cerrar">✕</button>
+    </div>
+
+    <!-- Alertas (fixed) -->
+    @if (successMessage()) {
+      <div class="alert alert-success">✓ {{ successMessage() }}</div>
+    }
+    @if (errorMessage()) {
+      <div class="alert alert-error">✗ {{ errorMessage() }}</div>
+    }
+
+    <!-- Botón subir nueva versión (fixed) -->
+    <div class="actions-bar">
+      <button 
+        class="btn-primary" 
+        (click)="toggleUploadForm()"
+        [disabled]="uploading()">
+        @if (showUploadForm()) {
+          <span>✕</span> Cancelar
+        } @else {
+          <span>📤</span> Subir Nueva Versión
+        }
+      </button>
+    </div>
+
+    <!-- Contenedor scrollable -->
+    <div class="modal-scrollable-content">
+      <!-- Formulario de subida (colapsable) -->
+      @if (showUploadForm()) {
+        <div class="upload-form-card">
+        <h3 class="form-title">Subir Nueva Versión</h3>
+        
+        <div class="form-group">
+          <label class="form-label">Archivo *</label>
+          <input 
+            type="file" 
+            id="versionFileInput"
+            (change)="onFileSelected($event)"
+            accept=".pdf,.doc,.docx,.xls,.xlsx"
+            class="file-input"
+          />
+          @if (selectedFile) {
+            <div class="selected-file">
+              📄 {{ selectedFile.name }} ({{ formatSize(selectedFile.size) }})
+            </div>
+          }
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Descripción (opcional)</label>
+          <textarea 
+            [(ngModel)]="uploadDescription"
+            placeholder="Describe los cambios en esta versión..."
+            rows="2"
+            class="textarea-input"
+            [disabled]="uploading()">
+          </textarea>
+        </div>
+
+        <div class="checkboxes-row">
+          <label class="checkbox-label">
+            <input 
+              type="checkbox" 
+              [(ngModel)]="uploadTieneSello"
+              [disabled]="uploading()"
+            />
+            <span>✅ Tiene Sello</span>
+          </label>
+          
+          <label class="checkbox-label">
+            <input 
+              type="checkbox" 
+              [(ngModel)]="uploadTieneFirma"
+              [disabled]="uploading()"
+            />
+            <span>✍️ Tiene Firma Electrónica</span>
+          </label>
+        </div>
+
+        <div class="form-actions">
+          <button 
+            class="btn-secondary" 
+            (click)="toggleUploadForm()"
+            [disabled]="uploading()">
+            Cancelar
+          </button>
+          <button 
+            class="btn-primary" 
+            (click)="uploadVersion()"
+            [disabled]="!selectedFile || uploading()">
+            @if (uploading()) {
+              <span class="spinner-small"></span> Subiendo...
+            } @else {
+              📤 Subir Versión
+            }
+          </button>
+        </div>
+      </div>
+      }
+
+      <!-- Lista de versiones -->
+      @if (loading()) {
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <p>Cargando versiones...</p>
+        </div>
+      } @else if (versions().length === 0) {
+        <div class="empty-state">
+          <span class="empty-icon">📭</span>
+          <h3>Sin versiones</h3>
+          <p>Este documento aún no tiene versiones registradas</p>
+        </div>
+      } @else {
+        <div class="versions-list">
+          @for (version of versions(); track version.id) {
+            <div class="version-card" [class.latest]="version.versionNumber === versions()[0].versionNumber">
+              <div class="version-header">
+                <div class="version-info">
+                  <span class="version-number">
+                    Versión {{ version.versionNumber }}
+                    @if (version.versionNumber === versions()[0].versionNumber) {
+                      <span class="badge-latest">Actual</span>
+                    }
+                  </span>
+                  <span class="version-date">{{ formatDate(version.created_at) }}</span>
+                </div>
+                <div class="version-badges">
+                  @if (version.tieneSello) {
+                    <span class="badge badge-sello" title="Tiene Sello">✅ Sello</span>
+                  }
+                  @if (version.tieneFirma) {
+                    <span class="badge badge-firma" title="Tiene Firma Electrónica">✍️ Firma</span>
+                  }
+                </div>
+              </div>
+
+              <div class="version-details">
+                <div class="detail-row">
+                  <span class="detail-label">Archivo:</span>
+                  <span class="detail-value">{{ version.originalName }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="detail-label">Tamaño:</span>
+                  <span class="detail-value">{{ formatSize(version.fileSize) }}</span>
+                </div>
+                @if (version.uploader) {
+                  <div class="detail-row">
+                    <span class="detail-label">Subido por:</span>
+                    <span class="detail-value">{{ version.uploader.nombre }}</span>
+                  </div>
+                }
+                @if (version.area) {
+                  <div class="detail-row">
+                    <span class="detail-label">Área:</span>
+                    <span class="detail-value">{{ version.area.sigla }} - {{ version.area.nombre }}</span>
+                  </div>
+                }
+                @if (version.descripcion) {
+                  <div class="detail-row full-width">
+                    <span class="detail-label">Descripción:</span>
+                    <span class="detail-value description">{{ version.descripcion }}</span>
+                  </div>
+                }
+              </div>
+
+              <div class="version-actions">
+                <button 
+                  class="btn-action btn-download" 
+                  (click)="downloadVersion(version)"
+                  title="Descargar">
+                  ⬇️ Descargar
+                </button>
+                <button 
+                  class="btn-action btn-delete" 
+                  (click)="deleteVersion(version)"
+                  title="Eliminar">
+                  🗑️ Eliminar
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div> <!-- Fin modal-scrollable-content -->
+
+    <!-- Footer (fixed) -->
+    <div class="modal-footer">
+      <button class="btn-secondary" (click)="close()">Cerrar</button>
+    </div>
+  </div>
+</div>
