@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed } from '@angular/core';
+import { Component, OnInit, signal, computed, effect, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -6,6 +6,7 @@ import { DocumentService, DocumentFilters } from '../../core/services/document.s
 import { AuthService } from '../../core/services/auth.service';
 import { AreaCategoryService, AreaCategory } from '../../core/services/area-category.service';
 import { DocumentTypeService, DocumentType } from '../../core/services/document-type.service';
+import { RealtimeEventsService } from '../../core/services/realtime-events.service';
 import { DocumentDeriveComponent } from '../documents/document-derive/document-derive.component';
 import { DocumentDetailsComponent } from '../documents/document-details/document-details.component';
 
@@ -123,6 +124,7 @@ export class BandejaComponent implements OnInit {
     private areaCategoryService: AreaCategoryService,
     private documentTypeService: DocumentTypeService,
     private authService: AuthService,
+    private realtimeEvents: RealtimeEventsService,
     private router: Router
   ) {}
 
@@ -130,6 +132,33 @@ export class BandejaComponent implements OnInit {
     this.loadAreaCategories();
     this.loadDocumentTypes();
     this.loadDocuments();
+    this.setupRealtimeEvents();
+  }
+
+  private setupRealtimeEvents(): void {
+    // Documento creado - solo refrescar la lista
+    this.realtimeEvents.getDocumentCreated$().subscribe(() => {
+      console.log('🔄 [BANDEJA] Documento creado - Refrescando lista...');
+      this.loadDocuments();
+    });
+
+    // Documento derivado - solo refrescar la lista
+    this.realtimeEvents.getDocumentDerived$().subscribe(() => {
+      console.log('🔄 [BANDEJA] Documento derivado - Refrescando lista...');
+      this.loadDocuments();
+    });
+
+    // Documento actualizado - solo refrescar la lista
+    this.realtimeEvents.getDocumentUpdated$().subscribe(() => {
+      console.log('🔄 [BANDEJA] Documento actualizado - Refrescando lista...');
+      this.loadDocuments();
+    });
+
+    // Documento finalizado - solo refrescar la lista
+    this.realtimeEvents.getDocumentFinalized$().subscribe(() => {
+      console.log('🔄 [BANDEJA] Documento finalizado - Refrescando lista...');
+      this.loadDocuments();
+    });
   }
 
   loadAreaCategories(): void {
@@ -372,5 +401,95 @@ export class BandejaComponent implements OnInit {
 
   goToDashboard(): void {
     this.router.navigate(['/dashboard']);
+  }
+
+  // 🔥 MÉTODOS PARA EVENTOS EN TIEMPO REAL
+  private callCount = 0;
+  private lastCallTime = 0;
+
+  private handleNewDocument(newDoc: any): void {
+    this.callCount++;
+    const now = Date.now();
+    const timeSinceLastCall = now - this.lastCallTime;
+    this.lastCallTime = now;
+
+    console.log(`🔄 [handleNewDocument] Llamada #${this.callCount} (${timeSinceLastCall}ms desde última llamada)`);
+    
+    if (this.callCount > 10) {
+      console.error('🚨 LOOP INFINITO DETECTADO - Deteniendo ejecución');
+      return;
+    }
+
+    console.log('📦 Documento recibido:', newDoc);
+    
+    const current = this.documents();
+    console.log('📋 Documentos actuales:', current.length);
+    
+    if (current.some(d => d.id === newDoc.id)) {
+      console.log('📌 Documento ya existe (ID: ' + newDoc.id + '), actualizando...');
+      this.updateDocumentInList(newDoc);
+      return;
+    }
+
+    console.log('🆕 Transformando documento nuevo...');
+    const transformedDoc = this.transformDocument(newDoc);
+    console.log('✨ Documento transformado:', transformedDoc);
+    
+    console.log('➕ Agregando a la lista...');
+    this.documents.update(docs => {
+      const updated = [transformedDoc, ...docs];
+      console.log('📊 Nueva cantidad de documentos:', updated.length);
+      return updated;
+    });
+    console.log('✅ [handleNewDocument] Completado');
+  }
+
+  private updateDocumentInList(updatedDoc: any): void {
+    console.log('🔄 [updateDocumentInList] Actualizando documento ID:', updatedDoc.id);
+    const transformedDoc = this.transformDocument(updatedDoc);
+    this.documents.update(current => 
+      current.map(doc => {
+        if (doc.id === transformedDoc.id) {
+          console.log('🔄 Actualizando documento:', doc.trackingCode);
+          return { ...doc, ...transformedDoc };
+        }
+        return doc;
+      })
+    );
+    console.log('✅ [updateDocumentInList] Completado');
+  }
+
+  private transformDocument(doc: any): Document {
+    console.log('🔄 [transformDocument] Transformando:', doc);
+    try {
+      const transformed: Document = {
+        id: doc.id,
+        trackingCode: doc.tracking_code || doc.trackingCode,
+        asunto: doc.asunto,
+        created_at: doc.created_at,
+        sender: {
+          nombreCompleto: doc.sender?.nombre_completo || doc.sender?.nombreCompleto || '',
+          email: doc.sender?.email || ''
+        },
+        status: {
+          id: doc.status?.id || 0,
+          nombre: doc.status?.nombre || '',
+          color: doc.status?.color || '#999999'
+        },
+        currentArea: doc.currentArea || doc.current_area ? {
+          nombre: (doc.currentArea || doc.current_area)?.nombre || '',
+          sigla: (doc.currentArea || doc.current_area)?.sigla || ''
+        } : undefined,
+        docTypeId: doc.docTypeId || doc.doc_type_id || null,
+        documentType: doc.documentType || doc.document_type || null,
+        categoriaId: doc.categoriaId || doc.categoria_id || null,
+        categoria: doc.categoria || null
+      };
+      console.log('✅ [transformDocument] Transformado:', transformed);
+      return transformed;
+    } catch (error) {
+      console.error('❌ [transformDocument] Error:', error);
+      throw error;
+    }
   }
 }

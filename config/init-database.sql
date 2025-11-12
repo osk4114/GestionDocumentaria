@@ -3,10 +3,18 @@
 -- Sistema de Gestión Documentaria
 -- Ejecutar este script en phpMyAdmin o MySQL CLI
 -- 
--- VERSIÓN: 3.1
--- ÚLTIMA ACTUALIZACIÓN: 06 de Noviembre 2025
+-- VERSIÓN: 3.2
+-- ÚLTIMA ACTUALIZACIÓN: 08 de Noviembre 2025
 -- 
--- CAMBIOS EN ESTA VERSIÓN (v3.1):
+-- CAMBIOS EN ESTA VERSIÓN (v3.2):
+-- 🗑️ ELIMINACIÓN DEL SISTEMA DE NOTIFICACIONES
+-- - Eliminada tabla: notifications
+-- - Eliminado índice: idx_notifications_user
+-- - Removidas relaciones con users y documents
+-- - Sistema WebSocket se mantiene para futuras funcionalidades
+-- - Total de tablas: 15 (era 16)
+--
+-- CAMBIOS EN VERSIÓN ANTERIOR (v3.1):
 -- ✨ TIPOS DE DOCUMENTO - SEPARACIÓN DELETE Y DEACTIVATE
 -- - Nuevo permiso: document_types.deactivate (soft delete)
 -- - Modificado permiso: document_types.delete (hard delete permanente)
@@ -388,23 +396,6 @@ CREATE TABLE IF NOT EXISTS document_versions (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
--- Tabla: notifications
--- Descripción: Notificaciones para usuarios
--- ============================================================
-CREATE TABLE IF NOT EXISTS notifications (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    document_id INT,
-    tipo VARCHAR(50) NOT NULL,
-    mensaje VARCHAR(255) NOT NULL,
-    is_read BOOLEAN DEFAULT FALSE,
-    read_at TIMESTAMP NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- ============================================================
 -- Datos iniciales (Seeds)
 -- ============================================================
 
@@ -695,13 +686,12 @@ CREATE INDEX idx_documents_current_area ON documents(current_area_id);
 CREATE INDEX idx_documents_current_user ON documents(current_user_id);
 CREATE INDEX idx_movements_document ON document_movements(document_id);
 CREATE INDEX idx_movements_timestamp ON document_movements(timestamp);
-CREATE INDEX idx_notifications_user ON notifications(user_id, is_read);
 CREATE INDEX idx_attachments_document ON attachments(document_id);
 
 -- ============================================================
--- RESUMEN DE ESTRUCTURA (v3.1)
+-- RESUMEN DE ESTRUCTURA (v3.2)
 -- ============================================================
--- Total de tablas: 16
+-- Total de tablas: 15
 -- Total de permisos: 86 (12 categorías)
 -- Total de roles predefinidos: 2 (Administrador, Jefe de Área)
 --
@@ -721,7 +711,6 @@ CREATE INDEX idx_attachments_document ON attachments(document_id);
 -- 13. document_movements (trazabilidad completa de movimientos)
 -- 14. document_versions (historial de versiones con sello/firma)
 -- 15. attachments (archivos adjuntos - OBLIGATORIOS)
--- 16. notifications (notificaciones a usuarios)
 --
 -- CATEGORÍAS DE PERMISOS (86 total):
 -- - auth: 6 permisos (registro, perfil, sesiones)

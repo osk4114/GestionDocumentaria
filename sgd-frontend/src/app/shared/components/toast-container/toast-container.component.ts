@@ -28,6 +28,16 @@ export class ToastContainerComponent {
   }
 
   close(id: string): void {
-    this.toastService.remove(id);
+    // Agregar clase de animación de salida
+    const toastElement = document.querySelector(`[data-toast-id="${id}"]`);
+    if (toastElement) {
+      toastElement.classList.add('toast-removing');
+      // Esperar a que termine la animación antes de remover
+      setTimeout(() => {
+        this.toastService.remove(id);
+      }, 300);
+    } else {
+      this.toastService.remove(id);
+    }
   }
 }

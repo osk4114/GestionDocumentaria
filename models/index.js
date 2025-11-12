@@ -12,7 +12,6 @@ const DocumentStatus = require('./DocumentStatus');
 const Document = require('./Document');
 const DocumentMovement = require('./DocumentMovement');
 const Attachment = require('./Attachment');
-const Notification = require('./Notification');
 const AreaDocumentCategory = require('./AreaDocumentCategory');
 const DocumentVersion = require('./DocumentVersion');
 
@@ -203,27 +202,6 @@ User.hasMany(Attachment, {
   as: 'uploadedFiles'
 });
 
-// -------- RELACIONES DE NOTIFICATION --------
-// Notification pertenece a un User
-Notification.belongsTo(User, {
-  foreignKey: 'userId',
-  as: 'user'
-});
-User.hasMany(Notification, {
-  foreignKey: 'userId',
-  as: 'notifications'
-});
-
-// Notification puede estar relacionada a un Document
-Notification.belongsTo(Document, {
-  foreignKey: 'documentId',
-  as: 'document'
-});
-Document.hasMany(Notification, {
-  foreignKey: 'documentId',
-  as: 'notifications'
-});
-
 // -------- RELACIONES DE AREA_DOCUMENT_CATEGORY --------
 // AreaDocumentCategory pertenece a un Area
 AreaDocumentCategory.belongsTo(Area, {
@@ -317,7 +295,6 @@ module.exports = {
   Document,
   DocumentMovement,
   Attachment,
-  Notification,
   UserSession,
   LoginAttempt,
   AreaDocumentCategory,

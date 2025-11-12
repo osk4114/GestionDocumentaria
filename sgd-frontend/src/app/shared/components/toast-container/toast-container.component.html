@@ -3,7 +3,7 @@
     <div 
       class="toast" 
       [ngClass]="getTypeClass(toast.type)"
-      [@slideIn]
+      [attr.data-toast-id]="toast.id"
     >
       <div class="toast-icon">
         {{ getIcon(toast.type) }}

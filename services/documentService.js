@@ -1,6 +1,7 @@
-const { Document, Sender, DocumentType, DocumentStatus, Area, User, DocumentMovement, Attachment, Notification, AreaDocumentCategory } = require('../models');
+const { Document, Sender, DocumentType, DocumentStatus, Area, User, DocumentMovement, Attachment, AreaDocumentCategory } = require('../models');
 const { Op } = require('sequelize');
 const { sequelize } = require('../config/sequelize');
+const realtimeEvents = require('./realtimeEventService');
 
 /**
  * Servicio de Gestión de Documentos
@@ -130,6 +131,11 @@ class DocumentService {
         ]
       });
 
+      // 🔥 EVENTO EN TIEMPO REAL: Documento creado
+      // Notificar a usuarios de Mesa de Partes
+      const mesaDePartesUsers = await realtimeEvents.getUsersByArea(mesaDePartes.id);
+      await realtimeEvents.emitDocumentCreated(createdDocument, mesaDePartesUsers);
+
       return {
         document: createdDocument,
         sender,
@@ -239,15 +245,6 @@ class DocumentService {
         }, { transaction });
       }
 
-      // Crear notificación para usuarios del área
-      await this.createNotification({
-        areaId: user.areaId,
-        documentId: document.id,
-        titulo: 'Nuevo documento recibido',
-        mensaje: `Documento "${asunto}" ha sido ingresado al sistema`,
-        tipo: 'nuevo_documento'
-      }, transaction);
-
       await transaction.commit();
 
       // Obtener documento completo con relaciones
@@ -328,16 +325,6 @@ class DocumentService {
         observacion: observacion || 'Documento derivado'
       }, { transaction });
 
-      // Crear notificación para el área destino
-      await this.createNotification({
-        areaId: toAreaId,
-        userId: toUserId,
-        documentId: document.id,
-        titulo: 'Documento derivado a tu área',
-        mensaje: `El documento "${document.asunto}" ha sido derivado a tu área`,
-        tipo: 'derivacion'
-      }, transaction);
-
       await transaction.commit();
 
       // Obtener documento actualizado
@@ -350,6 +337,14 @@ class DocumentService {
           { model: User, as: 'currentUser', attributes: ['id', 'nombre', 'email'] }
         ]
       });
+
+      // 🔥 EVENTO EN TIEMPO REAL: Documento derivado
+      await realtimeEvents.emitDocumentDerived(
+        updatedDocument, 
+        fromAreaId, 
+        toAreaId, 
+        toUserId
+      );
 
       return updatedDocument;
 
@@ -406,15 +401,6 @@ class DocumentService {
         observacion: observacion || 'Documento atendido y finalizado'
       }, { transaction });
 
-      // Crear notificación
-      await this.createNotification({
-        areaId: document.currentAreaId,
-        documentId: document.id,
-        titulo: 'Documento finalizado',
-        mensaje: `El documento "${document.asunto}" ha sido finalizado`,
-        tipo: 'finalizacion'
-      }, transaction);
-
       await transaction.commit();
 
       // Obtener documento actualizado
@@ -427,6 +413,9 @@ class DocumentService {
           { model: User, as: 'currentUser', attributes: ['id', 'nombre'] }
         ]
       });
+
+      // 🔥 EVENTO EN TIEMPO REAL: Documento finalizado
+      await realtimeEvents.emitDocumentFinalized(finalizedDocument);
 
       return finalizedDocument;
 
@@ -486,6 +475,19 @@ class DocumentService {
       }, { transaction });
 
       await transaction.commit();
+
+      // Obtener documento archivado completo
+      const archivedDocument = await Document.findByPk(documentId, {
+        include: [
+          { model: Sender, as: 'sender' },
+          { model: DocumentType, as: 'documentType' },
+          { model: DocumentStatus, as: 'status' },
+          { model: Area, as: 'currentArea' }
+        ]
+      });
+
+      // 🔥 EVENTO EN TIEMPO REAL: Documento archivado
+      await realtimeEvents.emitDocumentArchived(archivedDocument);
 
       return { success: true, message: 'Documento archivado exitosamente' };
 
@@ -1389,72 +1391,6 @@ class DocumentService {
       return documents;
     } catch (error) {
       throw error;
-    }
-  }
-
-  /**
-   * Crear notificación para usuarios
-   * @param {Object} data - Datos de la notificación
-   * @param {Object} transaction - Transacción de Sequelize
-   */
-  async createNotification(data, transaction) {
-    try {
-      const { areaId, userId, documentId, titulo, mensaje, tipo } = data;
-
-      // Si se especifica un usuario, crear notificación solo para él
-      if (userId) {
-        await Notification.create({
-          userId,
-          documentId,
-          titulo,
-          mensaje,
-          tipo,
-          leido: false
-        }, { transaction });
-        
-        // Emitir notificación por WebSocket
-        if (global.io) {
-          global.io.to(`user:${userId}`).emit('notification', {
-            titulo,
-            mensaje,
-            tipo,
-            documentId
-          });
-        }
-      } 
-      // Si se especifica un área, crear notificación para todos los usuarios del área
-      else if (areaId) {
-        const users = await User.findAll({
-          where: { areaId },
-          attributes: ['id'],
-          transaction
-        });
-
-        for (const user of users) {
-          await Notification.create({
-            userId: user.id,
-            documentId,
-            titulo,
-            mensaje,
-            tipo,
-            leido: false
-          }, { transaction });
-
-          // Emitir notificación por WebSocket
-          if (global.io) {
-            global.io.to(`user:${user.id}`).emit('notification', {
-              titulo,
-              mensaje,
-              tipo,
-              documentId
-            });
-          }
-        }
-      }
-
-    } catch (error) {
-      console.error('Error al crear notificación:', error);
-      // No lanzar error para no afectar la transacción principal
     }
   }
 
