@@ -25,7 +25,7 @@ const User = sequelize.define('User', {
   },
   rolId: {
     type: DataTypes.INTEGER,
-    allowNull: false,
+    allowNull: true,  // Permite NULL para poder eliminar roles sin bloqueos
     field: 'rol_id'
   },
   areaId: {

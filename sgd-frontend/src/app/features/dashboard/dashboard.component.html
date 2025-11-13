@@ -22,7 +22,21 @@
         </button>
         
         <button 
-          *hasAnyPermission="['users.view.all', 'roles.view', 'areas.view']" 
+          *hasAnyPermission="[
+            'users.view.all', 
+            'users.view.area', 
+            'roles.view', 
+            'areas.view', 
+            'area_mgmt.users.view', 
+            'area_mgmt.roles.view',
+            'document_types.view',
+            'area_mgmt.document_types.view',
+            'categories.view',
+            'area_mgmt.categories.full',
+            'reports.view.all',
+            'reports.view.area',
+            'area_mgmt.reports.view'
+          ]" 
           class="btn-admin" 
           routerLink="/admin"
         >
@@ -166,7 +180,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let doc of paginatedDocuments()">
+            <tr *ngFor="let doc of paginatedDocuments()" class="clickable-row" (click)="openDetailsModal(doc)">
               <td class="code">{{ doc.trackingCode }}</td>
               <td class="subject">{{ doc.asunto }}</td>
               <td>{{ doc.sender.nombreCompleto || doc.sender.email || 'Sin datos' }}</td>
@@ -180,20 +194,31 @@
               <td class="date">{{ formatDate(doc.created_at) }}</td>
               <td class="actions-cell">
                 <button 
-                  *hasAnyPermission="['documents.view.all', 'documents.view.area', 'documents.view.own']"
+                  *hasAnyPermission="['documents.view.all', 'documents.view.area', 'documents.view.own', 'area_mgmt.documents.view', 'area_mgmt.documents.view.own']"
                   class="btn-action btn-view" 
                   (click)="openDetailsModal(doc); $event.stopPropagation()" 
                   title="Ver detalles"
                 >
-                  👁️
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                  </svg>
                 </button>
                 <button 
-                  *hasPermission="'documents.derive'"
+                  *hasAnyPermission="['documents.derive', 'area_mgmt.documents.derive']"
                   class="btn-action btn-derive" 
                   (click)="openDeriveModal(doc); $event.stopPropagation()" 
                   title="Derivar"
                 >
                   📤
+                </button>
+                <button 
+                  *hasAnyPermission="['documents.archive', 'area_mgmt.documents.archive']"
+                  class="btn-action btn-archive" 
+                  (click)="archiveDocument(doc); $event.stopPropagation()" 
+                  title="Archivar"
+                >
+                  🗄️
                 </button>
               </td>
             </tr>

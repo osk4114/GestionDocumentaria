@@ -16,6 +16,21 @@ exports.getCategoriesByArea = async (req, res) => {
     const { areaId } = req.params;
     const { active } = req.query;
 
+    // 🔒 VALIDACIÓN DE ÁREA PARA ENCARGADOS
+    const userPermissions = req.user?.permissions || [];
+    const hasAreaMgmtPermissions = userPermissions.some(p => p.codigo?.startsWith('area_mgmt.'));
+    const isAdmin = userPermissions.some(p => p.codigo === 'categories.view' || p.codigo === 'categories.create');
+    
+    if (hasAreaMgmtPermissions && !isAdmin) {
+      if (req.user.areaId && parseInt(areaId) !== req.user.areaId) {
+        console.log(`⛔ [CATEGORIES] Usuario área ${req.user.areaId} intentó acceder a área ${areaId}`);
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para ver categorías de otras áreas'
+        });
+      }
+    }
+
     // Verificar que el área existe
     const area = await Area.findByPk(areaId);
     if (!area) {
@@ -30,6 +45,8 @@ exports.getCategoriesByArea = async (req, res) => {
     if (active !== undefined) {
       where.isActive = active === 'true';
     }
+
+    console.log(`🔒 [CATEGORIES] Obteniendo categorías del área: ${areaId}`);
 
     const categories = await AreaDocumentCategory.findAll({
       where,
@@ -88,6 +105,21 @@ exports.getCategoryById = async (req, res) => {
         success: false,
         message: 'Categoría no encontrada'
       });
+    }
+
+    // 🔒 VALIDACIÓN DE ÁREA PARA ENCARGADOS
+    const userPermissions = req.user?.permissions || [];
+    const hasAreaMgmtPermissions = userPermissions.some(p => p.codigo?.startsWith('area_mgmt.'));
+    const isAdmin = userPermissions.some(p => p.codigo === 'categories.view');
+    
+    if (hasAreaMgmtPermissions && !isAdmin) {
+      if (req.user.areaId && category.areaId !== req.user.areaId) {
+        console.log(`⛔ [CATEGORIES] Usuario área ${req.user.areaId} intentó acceder a categoría del área ${category.areaId}`);
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para ver categorías de otras áreas'
+        });
+      }
     }
 
     res.status(200).json({

@@ -41,37 +41,6 @@
         <p class="form-hint">Selecciona el área a la que deseas derivar el documento</p>
       </div>
 
-      <!-- Seleccionar usuario (opcional) -->
-      <div class="form-group">
-        <label class="form-label">
-          Usuario responsable (opcional)
-        </label>
-        
-        @if (loadingUsers()) {
-          <div class="loading-users">
-            <div class="spinner-small"></div>
-            <span>Cargando usuarios...</span>
-          </div>
-        } @else if (formData().toAreaId === 0) {
-          <p class="form-hint disabled">Primero selecciona un área</p>
-        } @else if (users().length === 0) {
-          <p class="form-hint disabled">No hay usuarios disponibles en esta área</p>
-        } @else {
-          <select 
-            [(ngModel)]="formData().toUserId"
-            class="form-select"
-          >
-            <option [value]="undefined">Sin asignar (área en general)</option>
-            @for (user of users(); track user.id) {
-              <option [value]="user.id">
-                {{ user.nombre }} - {{ user.role?.nombre }}
-              </option>
-            }
-          </select>
-          <p class="form-hint">Opcionalmente asigna el documento a un usuario específico</p>
-        }
-      </div>
-
       <!-- Observación -->
       <div class="form-group">
         <label class="form-label">
@@ -96,12 +65,7 @@
           </div>
           <div class="summary-item">
             <span class="summary-label">A:</span>
-            <span class="summary-value">
-              {{ getAreaName(formData().toAreaId) }}
-              @if (formData().toUserId) {
-                → {{ getUserName(formData().toUserId) }}
-              }
-            </span>
+            <span class="summary-value">{{ getAreaName(formData().toAreaId) }}</span>
           </div>
         </div>
       }

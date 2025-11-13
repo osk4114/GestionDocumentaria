@@ -65,7 +65,7 @@ export class UserService {
    * Obtener usuarios por área
    */
   getByArea(areaId: number): Observable<ApiResponse<UserAdmin[]>> {
-    return this.http.get<ApiResponse<UserAdmin[]>>(`${this.apiUrl}?area=${areaId}`);
+    return this.http.get<ApiResponse<UserAdmin[]>>(`${this.apiUrl}?areaId=${areaId}`);
   }
 
   /**

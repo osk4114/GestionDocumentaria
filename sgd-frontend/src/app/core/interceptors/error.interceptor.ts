@@ -76,10 +76,19 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
         }
       }
 
-      // Error 403 - Permisos insuficientes
+      // Error 403 - Permisos insuficientes o validación de negocio
       if (error.status === 403) {
-        console.error('❌ Acceso denegado - Permisos insuficientes');
-        router.navigate(['/dashboard']);
+        const errorMessage = error.error?.message || error.message || '';
+        
+        // Diferenciar entre error de permisos y validación de negocio
+        if (errorMessage.includes('No tiene permiso') || errorMessage.includes('Acceso denegado')) {
+          console.error('❌ Acceso denegado - Permisos insuficientes');
+          console.error('   Permiso requerido:', errorMessage);
+          // NO redirigir automáticamente - el componente manejará el error
+        } else {
+          // Error de validación de negocio (no de permisos)
+          console.warn('⚠️ Validación de negocio:', errorMessage);
+        }
       }
 
       // Error 429 - Rate limiting

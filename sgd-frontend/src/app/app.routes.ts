@@ -9,6 +9,7 @@ import { SessionsComponent } from './features/sessions/sessions.component';
 import { SubmitDocumentComponent } from './features/submit-document/submit-document.component';
 import { TrackDocumentComponent } from './features/track-document/track-document.component';
 import { AdminLayoutComponent } from './features/admin/admin-layout/admin-layout.component';
+import { AdminRedirectComponent } from './features/admin/admin-redirect/admin-redirect.component';
 import { AreasListComponent } from './features/admin/areas/areas-list.component';
 import { RolesListComponent } from './features/admin/roles/roles-list.component';
 import { UsersListComponent } from './features/admin/users/users-list.component';
@@ -68,8 +69,7 @@ export const routes: Routes = [
     children: [
       {
         path: '',
-        redirectTo: 'areas',
-        pathMatch: 'full'
+        component: AdminRedirectComponent
       },
       {
         path: 'areas',
@@ -81,31 +81,31 @@ export const routes: Routes = [
         path: 'roles',
         component: RolesListComponent,
         canActivate: [permissionGuard],
-        data: { requiredPermission: 'roles.view' }
+        data: { requiredPermissions: ['roles.view', 'area_mgmt.roles.view'] }
       },
       {
         path: 'users',
         component: UsersListComponent,
         canActivate: [permissionGuard],
-        data: { requiredPermissions: ['users.view.all', 'users.view.area'] }
+        data: { requiredPermissions: ['users.view.all', 'users.view.area', 'area_mgmt.users.view'] }
       },
       {
         path: 'categories',
         component: CategoriesListComponent,
         canActivate: [permissionGuard],
-        data: { requiredPermission: 'categories.view' }
+        data: { requiredPermissions: ['categories.view', 'area_mgmt.categories.full'] }
       },
       {
         path: 'document-types',
         component: DocumentTypesListComponent,
         canActivate: [permissionGuard],
-        data: { requiredPermission: 'document_types.view' }
+        data: { requiredPermissions: ['document_types.view', 'area_mgmt.document_types.view'] }
       },
       {
         path: 'reports',
         component: ReportsComponent,
         canActivate: [permissionGuard],
-        data: { requiredPermissions: ['reports.view.all', 'reports.view.area'] }
+        data: { requiredPermissions: ['reports.view.all', 'reports.view.area', 'area_mgmt.reports.view'] }
       }
     ]
   },

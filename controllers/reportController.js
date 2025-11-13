@@ -7,10 +7,22 @@ const Sequelize = require('sequelize');
  */
 exports.getStats = async (req, res) => {
   try {
+    // 🔒 FILTRADO POR ÁREA PARA ENCARGADOS
+    const userPermissions = req.user?.permissions || [];
+    const hasAreaMgmtPermissions = userPermissions.some(p => p.codigo?.startsWith('area_mgmt.'));
+    const isAdmin = userPermissions.some(p => p.codigo === 'reports.view.all');
+    
+    let areaFilter = '';
+    if (hasAreaMgmtPermissions && !isAdmin && req.user?.areaId) {
+      areaFilter = `WHERE d.current_area_id = ${req.user.areaId}`;
+      console.log(`🔒 [REPORTS] Filtrando estadísticas por área: ${req.user.areaId}`);
+    }
+
     // 1. Total de documentos
     const totalResult = await sequelize.query(`
       SELECT COUNT(*) as total
-      FROM documents
+      FROM documents d
+      ${areaFilter}
     `, { type: Sequelize.QueryTypes.SELECT });
 
     const totalDocuments = totalResult[0].total;
@@ -23,17 +35,19 @@ exports.getStats = async (req, res) => {
         COUNT(d.id) as count
       FROM documents d
       INNER JOIN document_statuses ds ON d.status_id = ds.id
+      ${areaFilter}
       GROUP BY ds.id, ds.nombre, ds.color
       ORDER BY ds.id
     `, { type: Sequelize.QueryTypes.SELECT });
 
-    // 3. Documentos por área
+    // 3. Documentos por área (solo muestra la propia área si es encargado)
     const byArea = await sequelize.query(`
       SELECT 
         a.nombre as area,
         COUNT(d.id) as count
       FROM documents d
       INNER JOIN areas a ON d.current_area_id = a.id
+      ${areaFilter}
       GROUP BY a.id, a.nombre
       ORDER BY count DESC
     `, { type: Sequelize.QueryTypes.SELECT });
@@ -45,29 +59,32 @@ exports.getStats = async (req, res) => {
         COUNT(d.id) as count
       FROM documents d
       INNER JOIN document_types dt ON d.doc_type_id = dt.id
+      ${areaFilter}
       GROUP BY dt.id, dt.nombre
       ORDER BY count DESC
       LIMIT 10
     `, { type: Sequelize.QueryTypes.SELECT });
 
     // 5. Documentos por mes (últimos 6 meses)
+    const whereClause = areaFilter ? `${areaFilter} AND d.created_at >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)` : 'WHERE d.created_at >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)';
     const byMonth = await sequelize.query(`
       SELECT 
         DATE_FORMAT(d.created_at, '%b %Y') as month,
         COUNT(d.id) as count
       FROM documents d
-      WHERE d.created_at >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+      ${whereClause}
       GROUP BY DATE_FORMAT(d.created_at, '%Y-%m'), DATE_FORMAT(d.created_at, '%b %Y')
       ORDER BY DATE_FORMAT(d.created_at, '%Y-%m') ASC
     `, { type: Sequelize.QueryTypes.SELECT });
 
     // 6. Documentos por prioridad
+    const priorityWhere = areaFilter ? `${areaFilter} AND d.prioridad IS NOT NULL` : 'WHERE d.prioridad IS NOT NULL';
     const byPriority = await sequelize.query(`
       SELECT 
         d.prioridad as priority,
         COUNT(d.id) as count
       FROM documents d
-      WHERE d.prioridad IS NOT NULL
+      ${priorityWhere}
       GROUP BY d.prioridad
       ORDER BY 
         CASE d.prioridad

@@ -852,7 +852,7 @@ class DocumentService {
    * @param {Object} filters - Filtros de búsqueda
    * @returns {Array} Lista de documentos
    */
-  async getDocuments(filters = {}) {
+  async getDocuments(filters = {}, user = null) {
     try {
       const { 
         status, 
@@ -869,9 +869,37 @@ class DocumentService {
       
       const where = {};
       
+      // 🔒 FILTRADO POR ÁREA Y USUARIO
+      if (user) {
+        const userPermissions = user.permissions || [];
+        const hasGlobalAccess = userPermissions.some(p => 
+          p.codigo === 'documents.view.all'
+        );
+        
+        // Si NO tiene permiso global, aplicar filtros restrictivos
+        if (!hasGlobalAccess && user.areaId) {
+          // 🎯 FILTRO COMBINADO: Área + Usuario específico
+          where[Op.and] = [
+            { currentAreaId: user.areaId },                    // Del área del usuario
+            {
+              [Op.or]: [
+                { currentUserId: null },                       // Sin usuario asignado (área general)
+                { currentUserId: user.id }                     // Asignado específicamente a este usuario
+              ]
+            }
+          ];
+          
+          console.log(`🔒 [DOCUMENTS] Filtrando por área ${user.areaId} y usuario ${user.id}`);
+        }
+      }
+      
       // Filtros básicos
       if (status) where.statusId = status;
-      if (area) where.currentAreaId = area;
+      if (area) {
+        // Si se especifica área explícitamente, sobrescribir
+        delete where[Op.and];
+        where.currentAreaId = area;
+      }
       if (type) where.documentTypeId = type;
       
       // Filtro de archivados

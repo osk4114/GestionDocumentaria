@@ -24,14 +24,16 @@ router.get('/', areaController.getAllAreas);
  * @desc    Obtener área por ID con información detallada
  * @access  Private (requiere ver áreas)
  */
-router.get('/:id', authMiddleware, checkPermission('areas.view'), areaController.getAreaById);
+router.get('/:id', authMiddleware, checkPermission('areas.view.all'), areaController.getAreaById);
 
 /**
  * @route   GET /api/areas/:id/stats
  * @desc    Obtener estadísticas del área
  * @access  Private (requiere ver estadísticas de áreas)
  */
-router.get('/:id/stats', authMiddleware, checkPermission('areas.stats.view'), areaController.getAreaStats);
+router.get('/:id/stats', authMiddleware, 
+  checkAnyPermission(['areas.view.stats.all', 'areas.view.stats.own']), 
+  areaController.getAreaStats);
 
 /**
  * @route   POST /api/areas
@@ -45,7 +47,9 @@ router.post('/', authMiddleware, checkPermission('areas.create'), areaController
  * @desc    Actualizar área
  * @access  Private (requiere editar áreas)
  */
-router.put('/:id', authMiddleware, checkPermission('areas.edit'), areaController.updateArea);
+router.put('/:id', authMiddleware, 
+  checkAnyPermission(['areas.edit.all', 'areas.edit.own']), 
+  areaController.updateArea);
 
 /**
  * @route   DELETE /api/areas/:id
@@ -77,48 +81,48 @@ router.patch('/:id/deactivate', authMiddleware, checkPermission('areas.deactivat
  * @desc    Obtener todas las categorías de un área
  * @access  Private (requiere ver categorías)
  */
-router.get('/:areaId/categories', authMiddleware, checkPermission('categories.view'), areaCategoryController.getCategoriesByArea);
+router.get('/:areaId/categories', authMiddleware, checkAnyPermission(['categories.view', 'area_mgmt.categories.full']), areaCategoryController.getCategoriesByArea);
 
 /**
  * @route   POST /api/areas/:areaId/categories
  * @desc    Crear nueva categoría para un área
  * @access  Private (requiere crear categorías)
  */
-router.post('/:areaId/categories', authMiddleware, checkPermission('categories.create'), areaCategoryController.createCategory);
+router.post('/:areaId/categories', authMiddleware, checkAnyPermission(['categories.create', 'area_mgmt.categories.full']), areaCategoryController.createCategory);
 
 /**
  * @route   PUT /api/areas/:areaId/categories/reorder
  * @desc    Reordenar categorías de un área
  * @access  Private (requiere editar categorías)
  */
-router.put('/:areaId/categories/reorder', authMiddleware, checkPermission('categories.edit'), areaCategoryController.reorderCategories);
+router.put('/:areaId/categories/reorder', authMiddleware, checkAnyPermission(['categories.edit', 'area_mgmt.categories.full']), areaCategoryController.reorderCategories);
 
 /**
  * @route   GET /api/areas/categories/:id
  * @desc    Obtener categoría por ID
  * @access  Private (requiere ver categorías)
  */
-router.get('/categories/:id', authMiddleware, checkPermission('categories.view'), areaCategoryController.getCategoryById);
+router.get('/categories/:id', authMiddleware, checkAnyPermission(['categories.view', 'area_mgmt.categories.full']), areaCategoryController.getCategoryById);
 
 /**
  * @route   PUT /api/areas/categories/:id
  * @desc    Actualizar categoría
  * @access  Private (requiere editar categorías)
  */
-router.put('/categories/:id', authMiddleware, checkPermission('categories.edit'), areaCategoryController.updateCategory);
+router.put('/categories/:id', authMiddleware, checkAnyPermission(['categories.edit', 'area_mgmt.categories.full']), areaCategoryController.updateCategory);
 
 /**
  * @route   DELETE /api/areas/categories/:id
  * @desc    Eliminar categoría
  * @access  Private (requiere eliminar categorías)
  */
-router.delete('/categories/:id', authMiddleware, checkPermission('categories.delete'), areaCategoryController.deleteCategory);
+router.delete('/categories/:id', authMiddleware, checkAnyPermission(['categories.delete', 'area_mgmt.categories.full']), areaCategoryController.deleteCategory);
 
 /**
  * @route   PATCH /api/areas/categories/:id/toggle
  * @desc    Activar/Desactivar categoría
  * @access  Private (requiere editar categorías)
  */
-router.patch('/categories/:id/toggle', authMiddleware, checkPermission('categories.edit'), areaCategoryController.toggleCategory);
+router.patch('/categories/:id/toggle', authMiddleware, checkAnyPermission(['categories.edit', 'area_mgmt.categories.full']), areaCategoryController.toggleCategory);
 
 module.exports = router;

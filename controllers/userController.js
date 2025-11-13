@@ -1,6 +1,8 @@
-const { User, Role, Area, UserSession } = require('../models');
+const { User, Role, Area, UserSession, Document, DocumentMovement, Attachment, AreaDocumentCategory, DocumentVersion } = require('../models');
 const { Op } = require('sequelize');
 const bcrypt = require('bcryptjs');
+const { sequelize } = require('../config/sequelize');
+const { shouldFilterByArea, getAreaFilter } = require('../middleware/areaFilterMiddleware');
 
 /**
  * Controlador de Usuarios
@@ -25,8 +27,19 @@ exports.getAllUsers = async (req, res) => {
     if (roleId) {
       where.rolId = roleId;
     }
+    
+    // 🔒 FILTRO POR ÁREA
     if (areaId) {
+      // Si se especifica explícitamente un areaId, usarlo (para derivaciones)
       where.areaId = areaId;
+      console.log(`🔍 [USERS] Filtrando por área especificada: ${areaId}`);
+    } else if (shouldFilterByArea(req)) {
+      // Si NO se especifica área, aplicar filtro automático para usuarios con area_mgmt.*
+      const areaFilter = getAreaFilter(req);
+      if (areaFilter) {
+        where.areaId = areaFilter.areaId;
+        console.log(`🔒 [USERS] Filtrando usuarios por área del usuario: ${areaFilter.areaId}`);
+      }
     }
 
     const users = await User.findAll({
@@ -179,6 +192,24 @@ exports.createUser = async (req, res) => {
         return res.status(400).json({
           success: false,
           message: 'El área especificada está desactivada'
+        });
+      }
+      
+      // 🔒 VALIDACIÓN: Si tiene permisos area_mgmt.*, solo puede crear usuarios en SU área
+      if (shouldFilterByArea(req)) {
+        if (areaId !== req.user.areaId) {
+          return res.status(403).json({
+            success: false,
+            message: 'No tiene permiso para crear usuarios en otras áreas. Solo puede crear usuarios en su área asignada.'
+          });
+        }
+      }
+    } else {
+      // 🔒 Si tiene permisos area_mgmt.* y NO proporciona área, usar su área por defecto
+      if (shouldFilterByArea(req)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Debe especificar un área. Solo puede crear usuarios en su área asignada.'
         });
       }
     }
@@ -342,6 +373,22 @@ exports.updateUser = async (req, res) => {
       ]
     });
 
+    // 🔔 EVENTO WEBSOCKET: Notificar al usuario que su perfil fue actualizado
+    if (global.io) {
+      const eventData = {
+        event: 'user:updated',
+        timestamp: new Date().toISOString(),
+        userId: updatedUser.id,
+        user: updatedUser,
+        message: `Tu perfil ha sido actualizado`,
+        changedFields: Object.keys(updateData)
+      };
+
+      // Emitir solo al usuario afectado
+      global.io.to(`user:${updatedUser.id}`).emit('user:updated', eventData);
+      console.log(`📤 Evento 'user:updated' enviado a usuario ${updatedUser.id} (${updatedUser.email})`);
+    }
+
     res.status(200).json({
       success: true,
       message: 'Usuario actualizado exitosamente',
@@ -367,51 +414,136 @@ exports.updateUser = async (req, res) => {
 };
 
 /**
- * Desactivar usuario
+ * Eliminar usuario (DELETE físico con reasignación)
  * @route DELETE /api/users/:id
  * @access Private (Solo Admin)
  */
 exports.deleteUser = async (req, res) => {
+  const t = await sequelize.transaction();
+  
   try {
     const { id } = req.params;
 
     // Buscar usuario
-    const user = await User.findByPk(id);
+    const user = await User.findByPk(id, {
+      include: [{ model: Role, as: 'role' }]
+    });
 
     if (!user) {
+      await t.rollback();
       return res.status(404).json({
         success: false,
         message: 'Usuario no encontrado'
       });
     }
 
-    // No permitir desactivar al propio usuario
+    // No permitir eliminar al propio usuario
     if (req.user && req.user.id === parseInt(id)) {
+      await t.rollback();
       return res.status(403).json({
         success: false,
-        message: 'No puedes desactivar tu propia cuenta'
+        message: 'No puedes eliminar tu propia cuenta'
       });
     }
 
-    // Desactivar usuario
-    await user.update({ isActive: false });
+    // Verificar si es el único usuario ACTIVO del área (solo aplica si el usuario está activo)
+    if (user.isActive && user.areaId) {
+      const usersInArea = await User.count({
+        where: { 
+          areaId: user.areaId,
+          isActive: true,
+          id: { [Op.ne]: id }
+        }
+      });
 
-    // Cerrar todas las sesiones activas del usuario
-    await UserSession.update(
-      { isActive: false },
-      { where: { userId: id, isActive: true } }
+      if (usersInArea === 0) {
+        await t.rollback();
+        return res.status(400).json({
+          success: false,
+          message: 'No se puede eliminar el único usuario activo del área. Asigne otro usuario primero.'
+        });
+      }
+    }
+
+    // Buscar usuario administrador para reasignar
+    let systemUser = await User.findOne({
+      include: [{
+        model: Role,
+        as: 'role',
+        where: { nombre: 'Administrador' }
+      }],
+      where: { 
+        isActive: true,
+        id: { [Op.ne]: id } // No el mismo que se está eliminando
+      },
+      order: [['id', 'ASC']] // El primer admin
+    });
+
+    if (!systemUser) {
+      await t.rollback();
+      return res.status(500).json({
+        success: false,
+        message: 'No se encontró un administrador del sistema para reasignar registros'
+      });
+    }
+
+    console.log(`🔄 Reasignando registros del usuario ${id} (${user.nombre}) al administrador ${systemUser.id} (${systemUser.nombre})`);
+
+    // 1. Reasignar documentos actuales (currentUserId)
+    await Document.update(
+      { currentUserId: systemUser.id },
+      { where: { currentUserId: id }, transaction: t }
     );
+
+    // 2. Reasignar movimientos (userId)
+    await DocumentMovement.update(
+      { userId: systemUser.id },
+      { where: { userId: id }, transaction: t }
+    );
+
+    // 3. Reasignar adjuntos (uploadedBy)
+    await Attachment.update(
+      { uploadedBy: systemUser.id },
+      { where: { uploadedBy: id }, transaction: t }
+    );
+
+    // 4. Reasignar categorías creadas (createdBy)
+    await AreaDocumentCategory.update(
+      { createdBy: systemUser.id },
+      { where: { createdBy: id }, transaction: t }
+    );
+
+    // 5. Reasignar versiones subidas (uploadedBy)
+    await DocumentVersion.update(
+      { uploadedBy: systemUser.id },
+      { where: { uploadedBy: id }, transaction: t }
+    );
+
+    // 6. Cerrar todas las sesiones activas del usuario
+    await UserSession.destroy({
+      where: { userId: id },
+      transaction: t
+    });
+
+    // 8. Eliminar físicamente el usuario
+    // Para usuarios inactivos, MySQL permite la eliminación aunque tengan FK
+    // porque no hay restricción ON DELETE RESTRICT desde otras tablas hacia users
+    await user.destroy({ transaction: t });
+
+    await t.commit();
 
     res.status(200).json({
       success: true,
-      message: 'Usuario desactivado exitosamente'
+      message: 'Usuario eliminado exitosamente. Sus registros fueron reasignados al sistema.'
     });
 
   } catch (error) {
+    await t.rollback();
     console.error('Error en deleteUser:', error);
+    
     res.status(500).json({
       success: false,
-      message: 'Error al desactivar usuario',
+      message: 'Error al eliminar usuario',
       error: error.message
     });
   }
@@ -453,6 +585,55 @@ exports.activateUser = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error al activar usuario',
+      error: error.message
+    });
+  }
+};
+
+/**
+ * Desactivar usuario
+ * @route PATCH /api/users/:id/deactivate
+ * @access Private (Admin o Encargado de Área)
+ */
+exports.deactivateUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const user = await User.findByPk(id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'Usuario no encontrado'
+      });
+    }
+
+    // No permitir desactivarse a sí mismo
+    if (user.id === req.user.id) {
+      return res.status(400).json({
+        success: false,
+        message: 'No puedes desactivar tu propia cuenta'
+      });
+    }
+
+    await user.update({ isActive: false });
+
+    res.status(200).json({
+      success: true,
+      message: 'Usuario desactivado exitosamente',
+      data: {
+        id: user.id,
+        nombre: user.nombre,
+        email: user.email,
+        isActive: user.isActive
+      }
+    });
+
+  } catch (error) {
+    console.error('Error en deactivateUser:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al desactivar usuario',
       error: error.message
     });
   }

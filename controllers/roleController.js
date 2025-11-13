@@ -1,5 +1,6 @@
 const { Role, User, Permission } = require('../models');
 const { Op } = require('sequelize');
+const { hasAreaMgmtPermissions, isAdmin } = require('../middleware/areaFilterMiddleware');
 
 /**
  * Controlador de Roles
@@ -56,6 +57,32 @@ exports.getAllRoles = async (req, res) => {
 
     const whereClause = activeOnly === 'true' ? { is_active: true } : {};
 
+    // 🔒 FILTRADO POR PERMISOS DE USUARIO Y ÁREA
+    const userPermissions = req.user?.permissions || [];
+    console.log('🔍 [ROLES] Usuario:', req.user?.id, 'Área:', req.user?.areaId);
+    console.log('🔍 [ROLES] Permisos del usuario:', userPermissions.map(p => p.codigo).join(', '));
+    
+    const hasAreaMgmtPermissions = userPermissions.some(p => p.codigo?.startsWith('area_mgmt.'));
+    const isAdmin = userPermissions.some(p => 
+      p.codigo === 'roles.view' || 
+      p.codigo === 'roles.create' || 
+      p.codigo === 'roles.edit' || 
+      p.codigo === 'roles.delete'
+    );
+
+    console.log('🔍 [ROLES] hasAreaMgmtPermissions:', hasAreaMgmtPermissions);
+    console.log('🔍 [ROLES] isAdmin:', isAdmin);
+
+    // Encargados de Área ven: roles globales (areaId = NULL) + roles de su área
+    if (hasAreaMgmtPermissions && !isAdmin) {
+      whereClause.es_sistema = false;
+      whereClause[Op.or] = [
+        { areaId: null },
+        { areaId: req.user.areaId }
+      ];
+      console.log(`🔒 [ROLES] Filtrando: roles globales + área ${req.user.areaId}`);
+    }
+
     const includeOptions = includePermissions === 'true' ? [
       {
         model: Permission,
@@ -70,6 +97,8 @@ exports.getAllRoles = async (req, res) => {
       include: includeOptions,
       order: [['nombre', 'ASC']]
     });
+
+    console.log(`✅ [ROLES] ${roles.length} roles cargados`);
 
     res.status(200).json({
       success: true,
@@ -121,6 +150,35 @@ exports.getRoleById = async (req, res) => {
       });
     }
 
+    // 🔒 VALIDACIÓN DE ÁREA PARA ENCARGADOS
+    const userPermissions = req.user?.permissions || [];
+    const hasAreaMgmtPermissions = userPermissions.some(p => p.codigo?.startsWith('area_mgmt.'));
+    const isAdmin = userPermissions.some(p => 
+      p.codigo === 'roles.view' || 
+      p.codigo === 'roles.create' || 
+      p.codigo === 'roles.edit' || 
+      p.codigo === 'roles.delete'
+    );
+
+    if (hasAreaMgmtPermissions && !isAdmin) {
+      // No pueden ver roles del sistema
+      if (role.es_sistema) {
+        console.log(`⛔ [ROLES] Usuario intentó acceder a rol del sistema: ${id}`);
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para ver roles del sistema'
+        });
+      }
+      // No pueden ver roles de otras áreas
+      if (role.areaId && role.areaId !== req.user.areaId) {
+        console.log(`⛔ [ROLES] Usuario área ${req.user.areaId} intentó acceder a rol del área ${role.areaId}`);
+        return res.status(403).json({
+          success: false,
+          message: 'No tienes permisos para ver roles de otras áreas'
+        });
+      }
+    }
+
     res.status(200).json({
       success: true,
       data: role
@@ -153,6 +211,21 @@ exports.createRole = async (req, res) => {
       });
     }
 
+    // 🔒 DETERMINAR ÁREA DEL ROL
+    const userPermissions = req.user?.permissions || [];
+    const hasAreaMgmtPermissions = userPermissions.some(p => p.codigo?.startsWith('area_mgmt.'));
+    const isAdmin = userPermissions.some(p => p.codigo === 'roles.create');
+    
+    let areaId = null; // Por defecto: rol global
+    
+    if (hasAreaMgmtPermissions && !isAdmin) {
+      // Encargados de Área crean roles específicos para su área
+      areaId = req.user.areaId;
+      console.log(`🔒 [ROLES] Rol será específico del área: ${areaId}`);
+    } else {
+      console.log('🌐 [ROLES] Rol será GLOBAL (todas las áreas)');
+    }
+
     // Verificar que el rol no exista
     const existingRole = await Role.findOne({
       where: { nombre: { [Op.like]: nombre } }
@@ -168,6 +241,7 @@ exports.createRole = async (req, res) => {
     // Crear rol (los roles personalizados NO son de sistema)
     const role = await Role.create({
       nombre: nombre.trim(),
+      areaId: areaId, // NULL para roles globales, areaId para roles específicos
       descripcion: descripcion ? descripcion.trim() : null,
       es_sistema: false, // Los roles creados por usuarios NO son de sistema
       puede_asignar_permisos: puede_asignar_permisos || false,
@@ -387,15 +461,18 @@ exports.deleteRole = async (req, res) => {
       });
     }
 
-    // Verificar si el rol tiene usuarios
+    // Verificar si el rol tiene usuarios ACTIVOS
     const usersCount = await User.count({
-      where: { rolId: id }
+      where: { 
+        rolId: id,
+        isActive: true  // Solo contar usuarios activos
+      }
     });
 
     if (usersCount > 0) {
       return res.status(400).json({
         success: false,
-        message: `No se puede eliminar el rol porque tiene ${usersCount} usuario(s) asignado(s)`
+        message: `No se puede eliminar el rol porque tiene ${usersCount} usuario(s) activo(s) asignado(s)`
       });
     }
 

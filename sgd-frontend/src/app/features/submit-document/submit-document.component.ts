@@ -173,7 +173,7 @@ export class SubmitDocumentComponent {
   }
 
   loadDocumentTypes() {
-    this.documentService.getDocumentTypes().subscribe({
+    this.documentService.getPublicDocumentTypes().subscribe({
       next: (response) => {
         if (response.success) {
           this.documentTypes.set(response.data);

@@ -17,6 +17,7 @@ const { Op } = require('sequelize');
 /**
  * GET /api/permissions
  * Obtener todos los permisos del sistema
+ * FILTRADO: Si el usuario solo tiene permisos area_mgmt.*, solo ve esos permisos
  */
 exports.getAllPermissions = async (req, res) => {
   try {
@@ -28,10 +29,21 @@ exports.getAllPermissions = async (req, res) => {
       limit = 100 
     } = req.query;
 
+    // Obtener permisos del usuario autenticado
+    const userPermissions = req.user.permissions || [];
+    
+    // Verificar si el usuario tiene SOLO permisos de area_management
+    const hasAreaMgmtPermissions = userPermissions.some(p => p.codigo && p.codigo.startsWith('area_mgmt.'));
+    const hasNonAreaMgmtPermissions = userPermissions.some(p => p.codigo && !p.codigo.startsWith('area_mgmt.'));
+
     // Construir filtros
     const where = {};
     
-    if (categoria) {
+    // Si SOLO tiene permisos de area_mgmt, forzar filtro
+    if (hasAreaMgmtPermissions && !hasNonAreaMgmtPermissions) {
+      where.categoria = 'area_management';
+      console.log('🔒 [PERMISOS] Usuario con acceso limitado: solo permisos area_management');
+    } else if (categoria) {
       where.categoria = categoria;
     }
     
@@ -79,14 +91,48 @@ exports.getAllPermissions = async (req, res) => {
 /**
  * GET /api/permissions/grouped
  * Obtener permisos agrupados por categoría
+ * FILTRADO: Si el usuario solo tiene permisos area_mgmt.*, solo ve esos permisos
  */
 exports.getGroupedPermissions = async (req, res) => {
   try {
-    const grouped = await Permission.getAllGroupedByCategory();
+    // Obtener permisos del usuario autenticado
+    const userPermissions = req.user.permissions || [];
+    
+    // Verificar si el usuario tiene SOLO permisos de area_management
+    const hasAreaMgmtPermissions = userPermissions.some(p => p.codigo && p.codigo.startsWith('area_mgmt.'));
+    const hasNonAreaMgmtPermissions = userPermissions.some(p => p.codigo && !p.codigo.startsWith('area_mgmt.'));
+    
+    let grouped;
+    let permissions;
+    
+    // Si SOLO tiene permisos de area_mgmt (es Jefe de Área), filtrar
+    if (hasAreaMgmtPermissions && !hasNonAreaMgmtPermissions) {
+      // Jefe de Área: solo puede ver/asignar permisos de area_management
+      permissions = await Permission.findAll({
+        where: { categoria: 'area_management' },
+        order: [['nombre', 'ASC']]
+      });
+      
+      grouped = { area_management: permissions };
+      
+      console.log('🔒 [PERMISOS] Usuario con acceso limitado: solo permisos area_management');
+      console.log(`📊 [PERMISOS] ${permissions.length} permisos de area_management cargados`);
+    } else {
+      // Admin o usuario con permisos generales: ver todos
+      grouped = await Permission.getAllGroupedByCategory();
+      permissions = await Permission.findAll({
+        order: [['categoria', 'ASC'], ['nombre', 'ASC']]
+      });
+      
+      console.log('✅ [PERMISOS] Usuario con acceso completo: todos los permisos');
+      console.log(`📊 [PERMISOS] ${permissions.length} permisos en ${Object.keys(grouped).length} categorías`);
+    }
 
     res.json({
       success: true,
-      data: grouped
+      count: permissions.length,
+      data: permissions,
+      grouped: grouped
     });
   } catch (error) {
     console.error('Error al obtener permisos agrupados:', error);

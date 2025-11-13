@@ -173,8 +173,8 @@ exports.rejectDocument = async (req, res) => {
       });
     }
 
-    // Verificar que el documento esté en el área del usuario
-    if (document.currentAreaId !== req.user.areaId) {
+    // Verificar que el documento esté en el área del usuario (excepto Administrador)
+    if (document.currentAreaId !== req.user.areaId && req.user.role.nombre !== 'Administrador') {
       return res.status(403).json({
         success: false,
         message: 'El documento no está en tu área'

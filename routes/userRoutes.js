@@ -17,7 +17,7 @@ const { checkPermission, checkAnyPermission } = require('../middleware/permissio
  * @query   ?active=true&roleId=1&areaId=2
  */
 router.get('/', authMiddleware, 
-  checkAnyPermission(['users.view.all', 'users.view.area']),
+  checkAnyPermission(['users.view.all', 'users.view.area', 'area_mgmt.users.view']),
   userController.getAllUsers
 );
 
@@ -27,7 +27,7 @@ router.get('/', authMiddleware,
  * @access  Private (requiere ver usuarios)
  */
 router.get('/:id', authMiddleware, 
-  checkAnyPermission(['users.view.all', 'users.view.area', 'users.view.own']),
+  checkAnyPermission(['users.view.all', 'users.view.area', 'users.view.own', 'area_mgmt.users.view']),
   userController.getUserById
 );
 
@@ -38,7 +38,7 @@ router.get('/:id', authMiddleware,
  * @note    También existe en /api/auth/register
  */
 router.post('/', authMiddleware, 
-  checkAnyPermission(['users.create.all', 'users.create.area']),
+  checkAnyPermission(['users.create.all', 'users.create.area', 'area_mgmt.users.create']),
   userController.createUser
 );
 
@@ -48,7 +48,7 @@ router.post('/', authMiddleware,
  * @access  Private (requiere editar usuarios)
  */
 router.put('/:id', authMiddleware, 
-  checkAnyPermission(['users.edit.all', 'users.edit.area']),
+  checkAnyPermission(['users.edit.all', 'users.edit.area', 'area_mgmt.users.edit']),
   userController.updateUser
 );
 
@@ -70,6 +70,16 @@ router.delete('/:id', authMiddleware,
 router.patch('/:id/activate', authMiddleware, 
   checkPermission('users.activate'),
   userController.activateUser
+);
+
+/**
+ * @route   PATCH /api/users/:id/deactivate
+ * @desc    Desactivar usuario activo
+ * @access  Private (requiere permiso de desactivar usuarios)
+ */
+router.patch('/:id/deactivate', authMiddleware, 
+  checkAnyPermission(['users.delete', 'area_mgmt.users.manage']),
+  userController.deactivateUser
 );
 
 module.exports = router;

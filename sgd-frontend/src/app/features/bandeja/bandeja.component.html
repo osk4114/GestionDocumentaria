@@ -267,7 +267,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr *ngFor="let doc of filteredDocuments()">
+            <tr *ngFor="let doc of filteredDocuments()" class="clickable-row" (click)="viewDocument(doc)">
               <td class="code">{{ doc.trackingCode }}</td>
               <td class="subject">{{ doc.asunto }}</td>
               <td class="doctype-cell">
@@ -286,7 +286,7 @@
                   </span>
                   <button
                     class="btn-assign-doctype"
-                    (click)="openDocTypeModal(doc)"
+                    (click)="openDocTypeModal(doc); $event.stopPropagation()"
                     [title]="doc.documentType ? 'Cambiar tipo' : 'Asignar tipo'"
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -313,8 +313,9 @@
                     Sin categoría
                   </span>
                   <button
+                    *hasAnyPermission="['documents.category.assign', 'area_mgmt.documents.category.assign']"
                     class="btn-assign-category"
-                    (click)="openCategoryModal(doc)"
+                    (click)="openCategoryModal(doc); $event.stopPropagation()"
                     [title]="doc.categoria ? 'Cambiar categoría' : 'Asignar categoría'"
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -337,7 +338,7 @@
               <td class="actions-cell">
                 <button
                   class="btn-action btn-view"
-                  (click)="viewDocument(doc)"
+                  (click)="viewDocument(doc); $event.stopPropagation()"
                   title="Ver detalles"
                 >
                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -345,26 +346,30 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                   </svg>
                 </button>
-                <button
-                  *ngIf="activeTab() !== 'archivados' && activeTab() !== 'finalizados'"
-                  class="btn-action btn-derive"
-                  (click)="deriveDocument(doc)"
-                  title="Derivar"
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
-                  </svg>
-                </button>
-                <button
-                  *ngIf="activeTab() !== 'archivados'"
-                  class="btn-action btn-archive"
-                  (click)="archiveDocument(doc)"
-                  title="Archivar"
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
-                  </svg>
-                </button>
+                <ng-container *ngIf="activeTab() !== 'archivados' && activeTab() !== 'finalizados'">
+                  <button
+                    *hasAnyPermission="['documents.derive', 'area_mgmt.documents.derive']"
+                    class="btn-action btn-derive"
+                    (click)="deriveDocument(doc); $event.stopPropagation()"
+                    title="Derivar"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                    </svg>
+                  </button>
+                </ng-container>
+                <ng-container *ngIf="activeTab() !== 'archivados'">
+                  <button
+                    *hasAnyPermission="['documents.archive', 'area_mgmt.documents.archive']"
+                    class="btn-action btn-archive"
+                    (click)="archiveDocument(doc); $event.stopPropagation()"
+                    title="Archivar"
+                  >
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
+                    </svg>
+                  </button>
+                </ng-container>
               </td>
             </tr>
           </tbody>
@@ -373,7 +378,7 @@
 
       <!-- CARDS (Mobile) -->
       <div *ngIf="filteredDocuments().length > 0" class="cards-container">
-        <div *ngFor="let doc of filteredDocuments()" class="document-card">
+        <div *ngFor="let doc of filteredDocuments()" class="document-card" (click)="viewDocument(doc)">
           <!-- Card Header -->
           <div class="card-header">
             <div class="card-code">{{ doc.trackingCode }}</div>
@@ -420,8 +425,9 @@
                     Sin categoría
                   </span>
                   <button
+                    *hasAnyPermission="['documents.category.assign', 'area_mgmt.documents.category.assign']"
                     class="btn-assign-category-mobile"
-                    (click)="openCategoryModal(doc)"
+                    (click)="openCategoryModal(doc); $event.stopPropagation()"
                     [title]="doc.categoria ? 'Cambiar categoría' : 'Asignar categoría'"
                   >
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -437,7 +443,7 @@
           <div class="card-actions">
             <button
               class="btn-card-action btn-primary"
-              (click)="viewDocument(doc)"
+              (click)="viewDocument(doc); $event.stopPropagation()"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
@@ -445,26 +451,30 @@
               </svg>
               <span>Ver detalles</span>
             </button>
-            <button
-              *ngIf="activeTab() !== 'archivados' && activeTab() !== 'finalizados'"
-              class="btn-card-action btn-success"
-              (click)="deriveDocument(doc)"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
-              </svg>
-              <span>Derivar</span>
-            </button>
-            <button
-              *ngIf="activeTab() !== 'archivados'"
-              class="btn-card-action btn-secondary"
-              (click)="archiveDocument(doc)"
-            >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
-              </svg>
-              <span>Archivar</span>
-            </button>
+            <ng-container *ngIf="activeTab() !== 'archivados' && activeTab() !== 'finalizados'">
+              <button
+                *hasAnyPermission="['documents.derive', 'area_mgmt.documents.derive']"
+                class="btn-card-action btn-success"
+                (click)="deriveDocument(doc); $event.stopPropagation()"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
+                </svg>
+                <span>Derivar</span>
+              </button>
+            </ng-container>
+            <ng-container *ngIf="activeTab() !== 'archivados'">
+              <button
+                *hasAnyPermission="['documents.archive', 'area_mgmt.documents.archive']"
+                class="btn-card-action btn-secondary"
+                (click)="archiveDocument(doc); $event.stopPropagation()"
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/>
+                </svg>
+                <span>Archivar</span>
+              </button>
+            </ng-container>
           </div>
         </div>
       </div>

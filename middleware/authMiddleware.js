@@ -1,5 +1,5 @@
 const jwt = require('jsonwebtoken');
-const { User, Role, Area, UserSession } = require('../models');
+const { User, Role, Area, UserSession, Permission } = require('../models');
 
 // Secret key (debe coincidir con authController)
 const JWT_SECRET = process.env.JWT_SECRET || 'sgd_secret_key_change_in_production';
@@ -71,7 +71,19 @@ const authMiddleware = async (req, res, next) => {
     // Buscar el usuario en la base de datos
     const user = await User.findByPk(decoded.id, {
       include: [
-        { model: Role, as: 'role', attributes: ['id', 'nombre'] },
+        { 
+          model: Role, 
+          as: 'role', 
+          attributes: ['id', 'nombre'],
+          include: [
+            {
+              model: Permission,
+              as: 'permissions',
+              attributes: ['id', 'codigo', 'nombre', 'categoria'],
+              through: { attributes: [] }
+            }
+          ]
+        },
         { model: Area, as: 'area', attributes: ['id', 'nombre', 'sigla'] }
       ],
       attributes: { exclude: ['password'] }
@@ -95,8 +107,9 @@ const authMiddleware = async (req, res, next) => {
     // Actualizar última actividad de la sesión
     await session.update({ lastActivity: new Date() });
 
-    // Agregar usuario y sesión a la request
+    // Agregar permisos al usuario para fácil acceso
     req.user = user;
+    req.user.permissions = user.role?.permissions || [];
     req.session = session;
     next();
 

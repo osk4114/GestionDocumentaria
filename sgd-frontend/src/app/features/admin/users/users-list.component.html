@@ -5,7 +5,7 @@
       <p class="page-subtitle">Administra los usuarios del sistema</p>
     </div>
     <button 
-      *hasAnyPermission="['users.create.all', 'users.create.area']"
+      *hasAnyPermission="['users.create.all', 'area_mgmt.users.create']"
       class="btn-primary" 
       (click)="openCreateModal()"
     >
@@ -124,7 +124,7 @@
                 <td class="actions-col">
                   <div class="action-buttons">
                     <button 
-                      *hasAnyPermission="['users.edit.all', 'users.edit.area']"
+                      *hasAnyPermission="['users.edit.all', 'area_mgmt.users.edit']"
                       class="btn-icon btn-edit" 
                       (click)="openEditModal(user)"
                       title="Editar"
@@ -194,7 +194,7 @@
 
             <div class="card-actions">
               <button 
-                *hasAnyPermission="['users.edit.all', 'users.edit.area']"
+                *hasAnyPermission="['users.edit.all', 'area_mgmt.users.edit']"
                 class="btn-card btn-edit" 
                 (click)="openEditModal(user)"
               >
@@ -299,16 +299,30 @@
           </div>
 
           <div class="form-group">
-            <label class="form-label">Área</label>
-            <select 
-              [(ngModel)]="formData().areaId"
-              class="form-select"
-            >
-              <option [value]="0">Sin área asignada</option>
-              @for (area of areas(); track area.id) {
-                <option [value]="area.id">{{ area.nombre }} ({{ area.sigla }})</option>
-              }
-            </select>
+            @if (isAreaManager()) {
+              <!-- Jefe de Área: Solo mostrar su área (no editable) -->
+              <label class="form-label">Área</label>
+              <input 
+                type="text" 
+                [value]="userArea()?.nombre + ' (' + userArea()?.sigla + ')'"
+                class="form-input"
+                disabled
+                style="background-color: #f3f4f6; cursor: not-allowed;"
+              />
+              <small class="form-hint">Los usuarios se crearán automáticamente en tu área</small>
+            } @else {
+              <!-- Admin: Puede seleccionar cualquier área -->
+              <label class="form-label">Área</label>
+              <select 
+                [(ngModel)]="formData().areaId"
+                class="form-select"
+              >
+                <option [value]="0">Sin área asignada</option>
+                @for (area of areas(); track area.id) {
+                  <option [value]="area.id">{{ area.nombre }} ({{ area.sigla }})</option>
+                }
+              </select>
+            }
           </div>
         </div>
 

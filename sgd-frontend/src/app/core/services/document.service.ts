@@ -152,6 +152,13 @@ export class DocumentService {
   }
 
   /**
+   * Obtiene tipos de documento activos (público - sin auth)
+   */
+  getPublicDocumentTypes(): Observable<any> {
+    return this.http.get(`${this.apiUrl}/document-types/public`);
+  }
+
+  /**
    * Obtiene todos los documentos (para dashboard)
    */
   getAllDocuments(): Observable<any> {

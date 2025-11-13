@@ -1,4 +1,4 @@
-import { Component, OnInit, signal, computed, effect } from '@angular/core';
+import { Component, OnInit, signal, computed, effect, untracked } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -57,6 +57,7 @@ interface Stats {
 export class DashboardComponent implements OnInit {
   user = signal<User | null>(null);
   documents = signal<Document[]>([]);
+  private isRefreshingProfile = false; // Flag para evitar loops
   filteredDocuments = signal<Document[]>([]);
   stats = signal<Stats>({ total: 0, pendientes: 0, enProceso: 0, finalizados: 0 });
   loading = signal(false);
@@ -150,12 +151,49 @@ export class DashboardComponent implements OnInit {
         this.calculateStats();
       }
     });
+
+    // 🔥 EVENTO: Usuario actualizado - Refrescar perfil automáticamente
+    effect(() => {
+      const userUpdated = this.realtimeEvents.lastUserUpdated();
+      if (userUpdated) {
+        // Usar untracked para leer currentUser sin crear dependencia reactiva
+        const currentUserId = untracked(() => this.authService.currentUser()?.id);
+        if (userUpdated.userId === currentUserId && !this.isRefreshingProfile) {
+          console.log('👤 [DASHBOARD] Usuario actualizado - Refrescando perfil...');
+          this.refreshUserProfile();
+        }
+      }
+    });
   }
 
   ngOnInit(): void {
     this.user.set(this.authService.currentUser());
+    this.refreshUserProfile(); // Refrescar datos del usuario por si hubo cambios
     this.loadDocuments();
     this.setupRealtimeEvents();
+  }
+
+  /**
+   * Refrescar perfil del usuario para obtener datos actualizados
+   * (Útil cuando el rol o área fueron modificados por un admin)
+   */
+  refreshUserProfile(): void {
+    if (this.isRefreshingProfile) return; // Evitar llamadas múltiples
+    
+    this.isRefreshingProfile = true;
+    this.authService.getProfile().subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          this.user.set(response.data);
+          console.log('✅ [DASHBOARD] Perfil actualizado:', response.data.role?.nombre);
+        }
+        this.isRefreshingProfile = false;
+      },
+      error: (error) => {
+        console.error('❌ Error al refrescar perfil:', error);
+        this.isRefreshingProfile = false;
+      }
+    });
   }
 
   private setupRealtimeEvents(): void {
@@ -409,5 +447,31 @@ export class DashboardComponent implements OnInit {
       },
       currentArea: doc.currentArea || doc.current_area || null
     };
+  }
+
+  archiveDocument(doc: Document): void {
+    const observacion = prompt(`¿Desea agregar una observación al archivar el documento ${doc.trackingCode}?`, '');
+    
+    if (observacion === null) {
+      // Usuario canceló
+      return;
+    }
+
+    if (!confirm(`¿Está seguro de archivar el documento ${doc.trackingCode}?`)) {
+      return;
+    }
+
+    this.documentService.archiveDocument(doc.id, observacion || undefined).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.toastService.success('Éxito', 'Documento archivado correctamente');
+          this.loadDocuments();
+        }
+      },
+      error: (error) => {
+        console.error('Error al archivar:', error);
+        this.toastService.error('Error', error.error?.message || 'Error al archivar el documento');
+      }
+    });
   }
 }

@@ -228,10 +228,16 @@ export class RolesListComponent implements OnInit {
   }
 
   openEditModal(role: Role): void {
+    console.log('🔍 [ROLES] Abriendo modal de edición para:', role);
+    console.log('   Permisos del rol:', role.permissions);
+    
     this.modalMode.set('edit');
     this.formData.set({ id: role.id, nombre: role.nombre, descripcion: role.descripcion || '' });
+    
     // Establecer permisos existentes del rol
     const permissionIds = role.permissions ? role.permissions.map(p => p.id) : [];
+    console.log('   IDs de permisos a seleccionar:', permissionIds);
+    
     this.selectedPermissionIds.set(permissionIds);
     this.showModal.set(true);
   }

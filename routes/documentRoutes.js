@@ -39,7 +39,7 @@ router.get('/tracking/:code', documentController.getDocumentByTrackingCode);
  * @access  Private (requiere ver documentos de al menos su área)
  */
 router.get('/stats', authMiddleware, 
-  checkAnyPermission(['documents.view.all', 'documents.view.area']),
+  checkAnyPermission(['documents.view.all', 'documents.view.area', 'area_mgmt.documents.view']),
   documentController.getDocumentStats
 );
 
@@ -68,7 +68,7 @@ router.get('/search', authMiddleware,
  * @query   areaId (opcional)
  */
 router.get('/by-status', authMiddleware, 
-  checkAnyPermission(['documents.view.all', 'documents.view.area']),
+  checkAnyPermission(['documents.view.all', 'documents.view.area', 'area_mgmt.documents.view']),
   documentController.getDocumentsByStatus
 );
 
@@ -89,7 +89,7 @@ router.get('/area/:areaId/archived', authMiddleware,
  * @access  Private (requiere ver documentos de área o todos)
  */
 router.get('/area/:areaId', authMiddleware, 
-  checkAnyPermission(['documents.view.all', 'documents.view.area']),
+  checkAnyPermission(['documents.view.all', 'documents.view.area', 'area_mgmt.documents.view']),
   documentController.getDocumentsByArea
 );
 
@@ -99,7 +99,7 @@ router.get('/area/:areaId', authMiddleware,
  * @access  Private (requiere ver documentos)
  */
 router.get('/:id/history', authMiddleware, 
-  checkAnyPermission(['documents.view.all', 'documents.view.area', 'documents.view.own']),
+  checkAnyPermission(['documents.view.all', 'documents.view.area', 'documents.view.own', 'area_mgmt.documents.view']),
   documentController.getDocumentHistory
 );
 
@@ -109,7 +109,7 @@ router.get('/:id/history', authMiddleware,
  * @access  Private (requiere ver documentos)
  */
 router.get('/:id', authMiddleware, 
-  checkAnyPermission(['documents.view.all', 'documents.view.area', 'documents.view.own']),
+  checkAnyPermission(['documents.view.all', 'documents.view.area', 'documents.view.own', 'area_mgmt.documents.view']),
   documentController.getDocumentById
 );
 
@@ -119,7 +119,7 @@ router.get('/:id', authMiddleware,
  * @access  Private (requiere ver documentos: todos, de área o propios)
  */
 router.get('/', authMiddleware, 
-  checkAnyPermission(['documents.view.all', 'documents.view.area', 'documents.view.own']),
+  checkAnyPermission(['documents.view.all', 'documents.view.area', 'documents.view.own', 'area_mgmt.documents.view']),
   documentController.getDocuments
 );
 
@@ -129,7 +129,7 @@ router.get('/', authMiddleware,
  * @access  Private (requiere permiso de crear documentos)
  */
 router.post('/', authMiddleware, 
-  checkPermission('documents.create'), 
+  checkAnyPermission(['documents.create', 'area_mgmt.documents.create']), 
   documentController.createDocument
 );
 
@@ -139,17 +139,17 @@ router.post('/', authMiddleware,
  * @access  Private (requiere editar todos o editar de su área)
  */
 router.put('/:id', authMiddleware, 
-  checkAnyPermission(['documents.edit.all', 'documents.edit.area']),
+  checkAnyPermission(['documents.edit.all', 'documents.edit.area', 'area_mgmt.documents.edit']),
   documentController.updateDocument
 );
 
 /**
  * @route   DELETE /api/documents/:id
- * @desc    Archivar documento
+ * @desc    Archivar/Eliminar documento (soft delete)
  * @access  Private (requiere permiso de archivar)
  */
 router.delete('/:id', authMiddleware, 
-  checkPermission('documents.archive'),
+  checkAnyPermission(['documents.archive', 'area_mgmt.documents.archive']),
   documentController.deleteDocument
 );
 
@@ -159,7 +159,7 @@ router.delete('/:id', authMiddleware,
  * @access  Private (requiere permiso de desarchivar)
  */
 router.post('/:id/unarchive', authMiddleware, 
-  checkPermission('documents.unarchive'),
+  checkAnyPermission(['documents.unarchive', 'area_mgmt.documents.unarchive']),
   documentController.unarchiveDocument
 );
 
@@ -169,7 +169,7 @@ router.post('/:id/unarchive', authMiddleware,
  * @access  Private (requiere permiso de derivar)
  */
 router.post('/:id/derive', authMiddleware, 
-  checkPermission('documents.derive'),
+  checkAnyPermission(['documents.derive', 'area_mgmt.documents.manage']),
   documentController.deriveDocument
 );
 
@@ -179,7 +179,7 @@ router.post('/:id/derive', authMiddleware,
  * @access  Private (requiere permiso de finalizar)
  */
 router.post('/:id/finalize', authMiddleware, 
-  checkPermission('documents.finalize'),
+  checkAnyPermission(['documents.finalize', 'area_mgmt.documents.finalize']),
   documentController.finalizeDocument
 );
 
@@ -189,7 +189,7 @@ router.post('/:id/finalize', authMiddleware,
  * @access  Private (requiere permiso de asignar categorías)
  */
 router.patch('/:id/category', authMiddleware, 
-  checkPermission('documents.category.assign'),
+  checkAnyPermission(['documents.category.assign', 'area_mgmt.documents.category.assign']),
   documentController.updateDocumentCategory
 );
 
@@ -199,7 +199,7 @@ router.patch('/:id/category', authMiddleware,
  * @access  Private (requiere permiso de editar documentos)
  */
 router.patch('/:id/document-type', authMiddleware, 
-  checkAnyPermission(['documents.edit.all', 'documents.edit.area']),
+  checkAnyPermission(['documents.edit.all', 'documents.edit.area', 'area_mgmt.documents.edit']),
   documentController.updateDocumentType
 );
 
@@ -209,7 +209,7 @@ router.patch('/:id/document-type', authMiddleware,
  * @access  Private (requiere permiso de cambiar estados)
  */
 router.put('/:id/status', authMiddleware, 
-  checkPermission('documents.status.change'),
+  checkAnyPermission(['documents.status.change', 'area_mgmt.documents.status.change']),
   documentController.changeDocumentStatus
 );
 
@@ -237,7 +237,7 @@ router.get('/:documentId/attachments/:attachmentId/download', documentController
  * @access  Private (requiere permiso de ver versiones)
  */
 router.get('/:documentId/versions', authMiddleware, 
-  checkPermission('versions.view'),
+  checkAnyPermission(['versions.view', 'versions.list', 'area_mgmt.versions.view', 'area_mgmt.versions.list', 'area_mgmt.versions.full']),
   documentVersionController.getVersionsByDocument
 );
 
@@ -247,7 +247,7 @@ router.get('/:documentId/versions', authMiddleware,
  * @access  Private (requiere permiso de ver versiones)
  */
 router.get('/:documentId/versions/latest', authMiddleware, 
-  checkPermission('versions.view'),
+  checkAnyPermission(['versions.view', 'area_mgmt.versions.view', 'area_mgmt.versions.full']),
   documentVersionController.getLatestVersion
 );
 
@@ -257,7 +257,7 @@ router.get('/:documentId/versions/latest', authMiddleware,
  * @access  Private (requiere permiso de crear versiones)
  */
 router.post('/:documentId/versions', authMiddleware, 
-  checkPermission('versions.upload'),
+  checkAnyPermission(['versions.upload', 'area_mgmt.versions.upload', 'area_mgmt.versions.full']),
   uploadDocumentVersion, handleMulterError, 
   documentVersionController.uploadVersion
 );
@@ -268,7 +268,7 @@ router.post('/:documentId/versions', authMiddleware,
  * @access  Private (requiere permiso de ver versiones)
  */
 router.get('/versions/:id', authMiddleware, 
-  checkPermission('versions.view'),
+  checkAnyPermission(['versions.view', 'area_mgmt.versions.view', 'area_mgmt.versions.full']),
   documentVersionController.getVersionById
 );
 
@@ -278,7 +278,7 @@ router.get('/versions/:id', authMiddleware,
  * @access  Private (requiere permiso de ver versiones)
  */
 router.get('/versions/:id/download', authMiddleware, 
-  checkPermission('versions.view'),
+  checkAnyPermission(['versions.view', 'versions.download', 'area_mgmt.versions.view', 'area_mgmt.versions.download', 'area_mgmt.versions.full']),
   documentVersionController.downloadVersion
 );
 
@@ -288,7 +288,7 @@ router.get('/versions/:id/download', authMiddleware,
  * @access  Private (requiere permiso de eliminar versiones)
  */
 router.delete('/versions/:id', authMiddleware, 
-  checkPermission('versions.delete'),
+  checkAnyPermission(['versions.delete', 'area_mgmt.versions.delete', 'area_mgmt.versions.full']),
   documentVersionController.deleteVersion
 );
 

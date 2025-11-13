@@ -9,6 +9,7 @@ import { DocumentTypeService, DocumentType } from '../../core/services/document-
 import { RealtimeEventsService } from '../../core/services/realtime-events.service';
 import { DocumentDeriveComponent } from '../documents/document-derive/document-derive.component';
 import { DocumentDetailsComponent } from '../documents/document-details/document-details.component';
+import { HasAnyPermissionDirective } from '../../shared/directives/has-any-permission.directive';
 
 interface Document {
   id: number;
@@ -45,7 +46,7 @@ interface Document {
 @Component({
   selector: 'app-bandeja',
   standalone: true,
-  imports: [CommonModule, FormsModule, DocumentDeriveComponent, DocumentDetailsComponent],
+  imports: [CommonModule, FormsModule, DocumentDeriveComponent, DocumentDetailsComponent, HasAnyPermissionDirective],
   templateUrl: './bandeja.component.html',
   styleUrl: './bandeja.component.scss'
 })
@@ -126,39 +127,53 @@ export class BandejaComponent implements OnInit {
     private authService: AuthService,
     private realtimeEvents: RealtimeEventsService,
     private router: Router
-  ) {}
+  ) {
+    // 🔥 EVENTOS EN TIEMPO REAL con effects (más eficiente)
+    effect(() => {
+      const created = this.realtimeEvents.lastDocumentCreated();
+      if (created) {
+        console.log('🔥 [BANDEJA] Documento creado - Agregando a lista');
+        this.handleNewDocument(created.document);
+      }
+    });
+
+    effect(() => {
+      const derived = this.realtimeEvents.lastDocumentDerived();
+      if (derived) {
+        console.log('🔥 [BANDEJA] Documento derivado - Agregando a lista');
+        this.handleNewDocument(derived.document);
+      }
+    });
+
+    effect(() => {
+      const updated = this.realtimeEvents.lastDocumentUpdated();
+      if (updated) {
+        console.log('🔥 [BANDEJA] Documento actualizado');
+        this.updateDocumentInList(updated.document);
+      }
+    });
+
+    effect(() => {
+      const finalized = this.realtimeEvents.lastDocumentFinalized();
+      if (finalized) {
+        console.log('🔥 [BANDEJA] Documento finalizado');
+        this.updateDocumentInList(finalized.document);
+      }
+    });
+
+    effect(() => {
+      const archived = this.realtimeEvents.lastDocumentArchived();
+      if (archived) {
+        console.log('🔥 [BANDEJA] Documento archivado');
+        this.updateDocumentInList(archived.document);
+      }
+    });
+  }
 
   ngOnInit(): void {
     this.loadAreaCategories();
     this.loadDocumentTypes();
     this.loadDocuments();
-    this.setupRealtimeEvents();
-  }
-
-  private setupRealtimeEvents(): void {
-    // Documento creado - solo refrescar la lista
-    this.realtimeEvents.getDocumentCreated$().subscribe(() => {
-      console.log('🔄 [BANDEJA] Documento creado - Refrescando lista...');
-      this.loadDocuments();
-    });
-
-    // Documento derivado - solo refrescar la lista
-    this.realtimeEvents.getDocumentDerived$().subscribe(() => {
-      console.log('🔄 [BANDEJA] Documento derivado - Refrescando lista...');
-      this.loadDocuments();
-    });
-
-    // Documento actualizado - solo refrescar la lista
-    this.realtimeEvents.getDocumentUpdated$().subscribe(() => {
-      console.log('🔄 [BANDEJA] Documento actualizado - Refrescando lista...');
-      this.loadDocuments();
-    });
-
-    // Documento finalizado - solo refrescar la lista
-    this.realtimeEvents.getDocumentFinalized$().subscribe(() => {
-      console.log('🔄 [BANDEJA] Documento finalizado - Refrescando lista...');
-      this.loadDocuments();
-    });
   }
 
   loadAreaCategories(): void {

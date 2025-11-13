@@ -11,63 +11,131 @@
     </div>
   </div>
 
-  <div class="permission-stats">
-    <span class="selected-count">{{ getSelectedCategoriesCount() }} de {{ categories.length }} categorías seleccionadas</span>
-    <span class="permission-count">({{ selectedPermissions().length }} permisos individuales)</span>
-  </div>
-
   @if (loading()) {
     <div class="loading-state">
       <div class="spinner"></div>
       <p>Cargando permisos...</p>
     </div>
   } @else {
-    <div class="categories-container simplified">
-      @for (category of categories; track category) {
-        <div class="category-card" [class.selected]="isCategorySelected(category)">
-          <label class="category-selector">
-            <input 
-              type="checkbox" 
-              [checked]="isCategorySelected(category)"
-              (change)="toggleCategory(category, $event)"
-            />
-            <div class="category-info">
-              <div class="category-header">
-                <span class="category-icon" [style.color]="getCategoryColor(category)">{{ getCategoryIcon(category) }}</span>
-                <span class="category-title">{{ formatCategoryName(category) }}</span>
-              </div>
-              <div class="category-details">
-                <span class="permission-count">{{ getCategoryPermissions(category).length }} permisos</span>
-                <span class="category-description">{{ getCategoryDescription(category) }}</span>
-              </div>
-            </div>
-          </label>
+    <!-- VISTA PARA JEFE DE ÁREA: Agrupación por funcionalidades -->
+    @if (isAreaManager) {
+      <div class="area-manager-view">
+        <div class="permission-stats-simple">
+          <span class="selected-count">{{ selectedPermissions().length }} de {{ totalPermissions }} permisos seleccionados</span>
         </div>
-      }
-    </div>
-    
-    <!-- Mostrar permisos seleccionados (colapsado por defecto) -->
-    <div class="selected-permissions-summary">
-      <button type="button" class="toggle-details" (click)="showDetails = !showDetails">
-        {{ showDetails ? '▼' : '▶' }} Ver detalles de permisos seleccionados ({{ selectedPermissions().length }})
-      </button>
-      
-      @if (showDetails) {
-        <div class="permissions-detail">
-          @for (category of categories; track category) {
-            @if (isCategorySelected(category)) {
-              <div class="selected-category">
-                <h5>{{ formatCategoryName(category) }}</h5>
-                <ul class="permission-list">
-                  @for (permission of getCategoryPermissions(category); track permission.id) {
-                    <li>{{ permission.nombre }}</li>
-                  }
-                </ul>
+
+        <div class="functional-groups">
+          @for (group of permissionGroups; track group.name) {
+            <div class="functional-group" 
+                 [class.selected]="isGroupSelected(group)"
+                 [class.partial]="isGroupPartiallySelected(group)">
+              
+              <div class="group-header">
+                <div class="group-header-row">
+                  <label class="group-selector" (click)="$event.stopPropagation()">
+                    <input 
+                      type="checkbox" 
+                      [checked]="isGroupSelected(group)"
+                      [indeterminate]="isGroupPartiallySelected(group)"
+                      (change)="toggleGroup(group, $event)"
+                    />
+                    <div class="group-info">
+                      <div class="group-title">
+                        <span class="group-icon">{{ group.icon }}</span>
+                        <span class="group-name">{{ group.name }}</span>
+                        <span class="permission-badge">{{ group.permissions.length }}</span>
+                      </div>
+                      <p class="group-description">{{ group.description }}</p>
+                    </div>
+                  </label>
+                  <button 
+                    type="button" 
+                    class="expand-toggle-group" 
+                    (click)="toggleGroupExpansion(group.name)"
+                    [title]="isGroupExpanded(group.name) ? 'Ocultar permisos' : 'Ver permisos'">
+                    {{ isGroupExpanded(group.name) ? '▼' : '▶' }}
+                  </button>
+                </div>
               </div>
-            }
+
+              @if (isGroupExpanded(group.name)) {
+                <div class="group-permissions">
+                  @for (permission of group.permissions; track permission.id) {
+                    <label class="permission-item-compact">
+                      <input 
+                        type="checkbox"
+                        [checked]="isPermissionSelected(permission.id)"
+                        (change)="togglePermission(permission.id, $event)"
+                      />
+                      <span class="permission-name-compact">{{ permission.nombre }}</span>
+                    </label>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    } @else {
+      <!-- VISTA PARA ADMIN: Agrupación por categorías -->
+      <div class="permission-stats">
+        <span class="selected-count">{{ getSelectedCategoriesCount() }} de {{ categories.length }} categorías seleccionadas</span>
+        <span class="permission-count">({{ selectedPermissions().length }} permisos individuales)</span>
+      </div>
+    <div class="categories-container">
+      @for (category of categories; track category) {
+        <div class="category-card" 
+             [class.selected]="isCategorySelected(category)"
+             [class.expanded]="isCategoryExpanded(category)">
+          
+          <div class="category-header-row">
+            <label class="category-selector" (click)="$event.stopPropagation()">
+              <input 
+                type="checkbox" 
+                [checked]="isCategorySelected(category)"
+                [indeterminate]="isCategoryPartiallySelected(category)"
+                (change)="toggleCategory(category, $event)"
+              />
+              <div class="category-info">
+                <div class="category-header">
+                  <span class="category-icon" [style.color]="getCategoryColor(category)">{{ getCategoryIcon(category) }}</span>
+                  <span class="category-title">{{ formatCategoryName(category) }}</span>
+                </div>
+                <div class="category-details">
+                  <span class="permission-count">{{ getCategoryPermissions(category).length }} permisos</span>
+                  <span class="category-description">{{ getCategoryDescription(category) }}</span>
+                </div>
+              </div>
+            </label>
+            <button 
+              type="button" 
+              class="expand-toggle" 
+              (click)="toggleCategoryExpansion(category)"
+              [title]="isCategoryExpanded(category) ? 'Ocultar permisos' : 'Ver permisos'">
+              {{ isCategoryExpanded(category) ? '▼' : '▶' }}
+            </button>
+          </div>
+
+          @if (isCategoryExpanded(category)) {
+            <div class="permissions-list">
+              @for (permission of getCategoryPermissions(category); track permission.id) {
+                <label class="permission-item">
+                  <input 
+                    type="checkbox"
+                    [checked]="isPermissionSelected(permission.id)"
+                    (change)="togglePermission(permission.id, $event)"
+                  />
+                  <div class="permission-details">
+                    <span class="permission-name">{{ permission.nombre }}</span>
+                    <span class="permission-description">{{ permission.descripcion }}</span>
+                  </div>
+                </label>
+              }
+            </div>
           }
         </div>
       }
     </div>
+    }
   }
 </div>

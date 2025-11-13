@@ -16,27 +16,27 @@ router.post('/', authMiddleware, checkPermission('movements.create'), movementCo
  * @desc    Obtener historial de movimientos de un documento
  * @access  Private (requiere ver movimientos)
  */
-router.get('/document/:documentId', authMiddleware, checkPermission('movements.view'), movementController.getMovementHistory);
+router.get('/document/:documentId', authMiddleware, checkAnyPermission(['movements.view', 'area_mgmt.movements.view']), movementController.getMovementHistory);
 
 /**
  * @route   POST /api/movements/accept/:documentId
  * @desc    Aceptar/recepcionar un documento
  * @access  Private (requiere aceptar documentos)
  */
-router.post('/accept/:documentId', authMiddleware, checkPermission('movements.accept'), movementController.acceptDocument);
+router.post('/accept/:documentId', authMiddleware, checkAnyPermission(['movements.accept', 'area_mgmt.movements.accept']), movementController.acceptDocument);
 
 /**
  * @route   POST /api/movements/reject/:documentId
  * @desc    Rechazar un documento
  * @access  Private (requiere rechazar documentos)
  */
-router.post('/reject/:documentId', authMiddleware, checkPermission('movements.reject'), movementController.rejectDocument);
+router.post('/reject/:documentId', authMiddleware, checkAnyPermission(['movements.reject', 'area_mgmt.movements.reject']), movementController.rejectDocument);
 
 /**
  * @route   POST /api/movements/complete/:documentId
  * @desc    Finalizar/completar un documento
  * @access  Private (requiere completar documentos)
  */
-router.post('/complete/:documentId', authMiddleware, checkPermission('movements.complete'), movementController.completeDocument);
+router.post('/complete/:documentId', authMiddleware, checkAnyPermission(['movements.complete', 'area_mgmt.movements.complete']), movementController.completeDocument);
 
 module.exports = router;

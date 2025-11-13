@@ -54,9 +54,14 @@ export class RoleService {
 
   /**
    * Obtener todos los roles
+   * @param includePermissions - Incluir permisos asociados al rol
    */
-  getAll(): Observable<ApiResponse<Role[]>> {
-    return this.http.get<ApiResponse<Role[]>>(this.apiUrl);
+  getAll(includePermissions: boolean = true): Observable<ApiResponse<Role[]>> {
+    const params: Record<string, string> = {};
+    if (includePermissions) {
+      params['includePermissions'] = 'true';
+    }
+    return this.http.get<ApiResponse<Role[]>>(this.apiUrl, { params });
   }
 
   /**

@@ -53,13 +53,14 @@ export interface DocumentEvent {
 })
 export class RealtimeEventsService {
   
-  // � Subjects para emitir eventos (en lugar de signals que causan loops)
+  // 🔔 Subjects para emitir eventos (en lugar de signals que causan loops)
   private documentCreated$ = new Subject<DocumentEvent>();
   private documentDerived$ = new Subject<DocumentEvent>();
   private documentUpdated$ = new Subject<DocumentEvent>();
   private documentAssigned$ = new Subject<DocumentEvent>();
   private documentFinalized$ = new Subject<DocumentEvent>();
   private documentArchived$ = new Subject<DocumentEvent>();
+  private userUpdated$ = new Subject<any>(); // Nuevo evento para usuarios
 
   // 🔔 Signals SOLO para lectura (no se modifican desde componentes)
   lastDocumentCreated = signal<DocumentEvent | null>(null);
@@ -68,6 +69,7 @@ export class RealtimeEventsService {
   lastDocumentAssigned = signal<DocumentEvent | null>(null);
   lastDocumentFinalized = signal<DocumentEvent | null>(null);
   lastDocumentArchived = signal<DocumentEvent | null>(null);
+  lastUserUpdated = signal<any | null>(null); // Nuevo signal
 
   // 📊 Contador de eventos pendientes (para badge)
   pendingEventsCount = signal<number>(0);
@@ -158,6 +160,21 @@ export class RealtimeEventsService {
         '📦 Documento Archivado',
         `${trackingCode} fue archivado`
       );
+    });
+
+    // Usuario actualizado (nuevo evento)
+    this.websocket.on('user:updated', (data: any) => {
+      console.log('👤 Evento recibido: user:updated', data);
+      this.lastUserUpdated.set(data);
+      this.userUpdated$.next(data);
+      
+      // Mostrar notificación si hubo cambio de rol
+      if (data.changedFields?.includes('rolId')) {
+        this.toast.info(
+          '👤 Perfil Actualizado',
+          'Tu rol ha sido modificado. Actualizando permisos...'
+        );
+      }
     });
   }
 
@@ -282,6 +299,13 @@ export class RealtimeEventsService {
    */
   getDocumentArchived$() {
     return this.documentArchived$.asObservable();
+  }
+
+  /**
+   * Obtener observable de usuario actualizado
+   */
+  getUserUpdated$() {
+    return this.userUpdated$.asObservable();
   }
 
 }

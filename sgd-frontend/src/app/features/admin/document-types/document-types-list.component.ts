@@ -1,12 +1,14 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DocumentTypeService, DocumentType } from '../../../core/services/document-type.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { PERMISSION_DIRECTIVES } from '../../../shared/directives';
 
 @Component({
   selector: 'app-document-types-list',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, ...PERMISSION_DIRECTIVES],
   template: `
     <div class="types-container">
       <div class="page-header">
@@ -14,7 +16,11 @@ import { DocumentTypeService, DocumentType } from '../../../core/services/docume
           <h1 class="page-title">Tipos de Documento</h1>
           <p class="page-subtitle">Gestiona los tipos de documentos disponibles</p>
         </div>
-        <button class="btn-primary" (click)="openCreateModal()">
+        <button 
+          *hasAnyPermission="['document_types.create', 'area_mgmt.document_types.create']"
+          class="btn-primary" 
+          (click)="openCreateModal()"
+        >
           <span>➕</span> Nuevo Tipo
         </button>
       </div>
@@ -98,11 +104,26 @@ import { DocumentTypeService, DocumentType } from '../../../core/services/docume
                     <td>{{ type.created_at ? (type.created_at | date:'dd/MM/yyyy') : '-' }}</td>
                     <td class="actions-col">
                       <div class="action-buttons">
-                        <button class="btn-icon btn-edit" (click)="openEditModal(type)" title="Editar">✏️</button>
-                        <button class="btn-icon btn-toggle" (click)="toggleStatus(type)" [title]="type.isActive ? 'Desactivar' : 'Activar'">
+                        <button 
+                          *hasAnyPermission="['document_types.edit', 'area_mgmt.document_types.edit']"
+                          class="btn-icon btn-edit" 
+                          (click)="openEditModal(type)" 
+                          title="Editar"
+                        >✏️</button>
+                        <button 
+                          *hasPermission="'document_types.activate'"
+                          class="btn-icon btn-toggle" 
+                          (click)="toggleStatus(type)" 
+                          [title]="type.isActive ? 'Desactivar' : 'Activar'"
+                        >
                           {{ type.isActive ? '🚫' : '✅' }}
                         </button>
-                        <button class="btn-icon btn-delete" (click)="deleteType(type)" title="Eliminar">🗑️</button>
+                        <button 
+                          *hasPermission="'document_types.delete'"
+                          class="btn-icon btn-delete" 
+                          (click)="deleteType(type)" 
+                          title="Eliminar"
+                        >🗑️</button>
                       </div>
                     </td>
                   </tr>
@@ -230,7 +251,18 @@ export class DocumentTypesListComponent implements OnInit {
   successMessage = signal('');
   errorMessage = signal('');
 
-  constructor(private typeService: DocumentTypeService) {}
+  // Usuario actual y área
+  currentUser = computed(() => this.authService.currentUser());
+  isAreaManager = computed(() => {
+    const user = this.currentUser();
+    return user?.role?.nombre === 'ENCARGADO DE ÁREA' || user?.role?.nombre === 'Jefe de Área';
+  });
+  userArea = computed(() => this.currentUser()?.area);
+
+  constructor(
+    private typeService: DocumentTypeService,
+    private authService: AuthService
+  ) {}
 
   ngOnInit(): void { this.loadTypes(); }
 

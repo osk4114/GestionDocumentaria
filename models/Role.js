@@ -29,6 +29,12 @@ const Role = sequelize.define('Role', {
       }
     }
   },
+  areaId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    field: 'area_id',
+    comment: 'ID del área a la que pertenece (NULL = global, NOT NULL = específico de área)'
+  },
   descripcion: {
     type: DataTypes.TEXT,
     allowNull: true,
@@ -80,14 +86,42 @@ const Role = sequelize.define('Role', {
         throw new Error('No se pueden eliminar roles del sistema (Administrador, Jefe de Área)');
       }
       
-      // Verificar que no haya usuarios con este rol
+      // Verificar que no haya usuarios ACTIVOS con este rol
       const User = require('./User');
       const userCount = await User.count({
-        where: { rol_id: role.id }
+        where: { 
+          rolId: role.id,
+          isActive: true  // Solo contar usuarios activos
+        }
       });
       
       if (userCount > 0) {
-        throw new Error(`No se puede eliminar el rol porque ${userCount} usuario(s) lo tienen asignado`);
+        throw new Error(`No se puede eliminar el rol porque ${userCount} usuario(s) activo(s) lo tienen asignado`);
+      }
+      
+      // Contar usuarios inactivos con este rol
+      const inactiveCount = await User.count({
+        where: { 
+          rolId: role.id,
+          isActive: false
+        }
+      });
+      
+      console.log(`🔍 [ROLE HOOK] Rol ${role.id} tiene ${inactiveCount} usuario(s) inactivo(s)`);
+      
+      // Establecer rolId = NULL en usuarios INACTIVOS para evitar error de FK
+      if (inactiveCount > 0) {
+        const [updated] = await User.update(
+          { rolId: null },
+          { 
+            where: { 
+              rolId: role.id,
+              isActive: false
+            },
+            validate: false  // Saltar validaciones (rolId tiene allowNull: false)
+          }
+        );
+        console.log(`✅ [ROLE HOOK] ${updated} usuario(s) inactivo(s) actualizados (rolId=NULL)`);
       }
     },
     beforeUpdate: async (role) => {

@@ -1,10 +1,11 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UserService, UserAdmin } from '../../../core/services/user.service';
 import { AreaService, Area } from '../../../core/services/area.service';
 import { RoleService, Role } from '../../../core/services/role.service';
 import { PermissionService } from '../../../core/services/permission.service';
+import { AuthService } from '../../../core/services/auth.service';
 import { PERMISSION_DIRECTIVES } from '../../../shared/directives';
 
 @Component({
@@ -45,11 +46,20 @@ export class UsersListComponent implements OnInit {
   errorMessage = signal('');
   showPassword = signal(false);
 
+  // Usuario actual y área
+  currentUser = computed(() => this.authService.currentUser());
+  isAreaManager = computed(() => {
+    const user = this.currentUser();
+    return user?.role?.nombre === 'ENCARGADO DE ÁREA' || user?.role?.nombre === 'Jefe de Área';
+  });
+  userArea = computed(() => this.currentUser()?.area);
+
   constructor(
     private userService: UserService,
     private areaService: AreaService,
     private roleService: RoleService,
-    public permissionService: PermissionService
+    public permissionService: PermissionService,
+    private authService: AuthService
   ) {}
 
   ngOnInit(): void {
@@ -190,13 +200,23 @@ export class UsersListComponent implements OnInit {
     this.loading.set(true);
 
     if (this.modalMode() === 'create') {
+      // Determinar el areaId correcto
+      let finalAreaId: number | undefined;
+      if (this.isAreaManager()) {
+        // Jefe de Área: usar su área obligatoriamente
+        finalAreaId = this.userArea()?.id;
+      } else {
+        // Admin: usar el área seleccionada (o undefined si es 0)
+        finalAreaId = data.areaId || undefined;
+      }
+
       // Crear nuevo usuario
       this.userService.create({
         nombre: data.nombre,
         email: data.email,
         password: data.password,
         rolId: data.rolId,
-        areaId: data.areaId || undefined
+        areaId: finalAreaId
       }).subscribe({
         next: (response) => {
           if (response.success) {
@@ -213,12 +233,22 @@ export class UsersListComponent implements OnInit {
         }
       });
     } else {
+      // Determinar el areaId correcto para edición
+      let finalAreaId: number | undefined;
+      if (this.isAreaManager()) {
+        // Jefe de Área: mantener su área obligatoriamente
+        finalAreaId = this.userArea()?.id;
+      } else {
+        // Admin: usar el área seleccionada (o undefined si es 0)
+        finalAreaId = data.areaId || undefined;
+      }
+
       // Actualizar usuario existente
       const updateData: any = {
         nombre: data.nombre,
         email: data.email,
         rolId: data.rolId,
-        areaId: data.areaId || undefined
+        areaId: finalAreaId
       };
 
       // Solo incluir password si se ingresó uno nuevo

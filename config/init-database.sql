@@ -3,10 +3,27 @@
 -- Sistema de Gestión Documentaria
 -- Ejecutar este script en phpMyAdmin o MySQL CLI
 -- 
--- VERSIÓN: 3.2
--- ÚLTIMA ACTUALIZACIÓN: 08 de Noviembre 2025
+-- VERSIÓN: 3.4
+-- ÚLTIMA ACTUALIZACIÓN: 13 de Noviembre 2025
 -- 
--- CAMBIOS EN ESTA VERSIÓN (v3.2):
+-- CAMBIOS EN ESTA VERSIÓN (v3.4):
+-- 🎯 CATEGORÍA "JEFE DE ÁREA" AMPLIADA A 48 PERMISOS
+-- - Agregados permisos específicos de documents (view.own, derive, finalize, archive, etc.)
+-- - Agregados permisos específicos de attachments (view, upload, download, delete)
+-- - Agregados permisos específicos de versions (view, upload, download, list, delete)
+-- - Agregados permisos específicos de movements (view, accept, reject, complete, create)
+-- - Ahora con funcionalidad COMPLETA: bandeja, adjuntos, versiones, historial, reportes
+-- 
+-- CAMBIOS EN v3.3:
+-- 🏢 SOPORTE PARA GESTIÓN POR ÁREA
+-- - Agregada columna area_id a roles (NULL = global, NOT NULL = específico de área)
+-- - Agregada columna area_id a document_types (NULL = global, NOT NULL = específico de área)
+-- - Nuevos permisos: area_management (23 permisos para Encargados de Área)
+-- - Encargados de Área ven solo: roles/tipos de su área + globales
+-- - Encargados de Área crean: roles/tipos específicos de su área automáticamente
+-- - Total de permisos: 101 (era 86)
+--
+-- CAMBIOS EN VERSIÓN ANTERIOR (v3.2):
 -- 🗑️ ELIMINACIÓN DEL SISTEMA DE NOTIFICACIONES
 -- - Eliminada tabla: notifications
 -- - Eliminado índice: idx_notifications_user
@@ -46,26 +63,66 @@ CREATE DATABASE IF NOT EXISTS sgd_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unico
 USE sgd_db;
 
 -- ============================================================
+-- ORDEN DE CREACIÓN DE TABLAS (respetando dependencias de FK)
+-- ============================================================
+-- 1. areas (no tiene FK)
+-- 2. roles (FK: areas)
+-- 3. permissions (no tiene FK)
+-- 4. users (FK: roles, areas)
+-- 5. role_permissions (FK: roles, permissions, users)
+-- 6. user_sessions (FK: users)
+-- 7. login_attempts (no tiene FK)
+-- 8. senders (no tiene FK)
+-- 9. document_types (FK: areas)
+-- 10. document_statuses (no tiene FK)
+-- 11. area_document_categories (FK: areas, users)
+-- 12. documents (FK: senders, document_types, area_document_categories, document_statuses, areas, users)
+-- 13. document_movements (FK: documents, areas, users)
+-- 14. attachments (FK: documents, users)
+-- 15. document_versions (FK: documents, users, areas)
+-- ============================================================
+
+-- ============================================================
+-- Tabla: areas
+-- Descripción: Áreas/Departamentos de la organización
+-- PRIORIDAD: 1 - Se crea primero (no tiene FK)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS areas (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    sigla VARCHAR(20) NOT NULL UNIQUE,
+    descripcion TEXT,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
 -- Tabla: roles
 -- Descripción: Roles de usuarios en el sistema
--- Actualizado: v3.0 - Sistema de permisos granulares
+-- PRIORIDAD: 2 - FK a areas
+-- Actualizado: v3.3 - Agregado area_id para filtrado por área
 -- ============================================================
 CREATE TABLE IF NOT EXISTS roles (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(50) NOT NULL UNIQUE,
     descripcion TEXT,
+    area_id INT NULL COMMENT 'NULL = rol global (visible para todos), NOT NULL = rol específico de área',
     es_sistema BOOLEAN DEFAULT FALSE COMMENT 'Rol del sistema (Admin, Jefe) - no editable',
     puede_asignar_permisos BOOLEAN DEFAULT FALSE COMMENT 'Puede gestionar permisos de otros roles',
     is_active BOOLEAN DEFAULT TRUE COMMENT 'Si el rol está activo',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_es_sistema (es_sistema),
-    INDEX idx_is_active (is_active)
+    INDEX idx_is_active (is_active),
+    INDEX idx_area_id (area_id),
+    CONSTRAINT fk_roles_area FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
 -- Tabla: permissions
 -- Descripción: Permisos del sistema (RBAC)
+-- PRIORIDAD: 3 - No tiene FK
 -- Agregado: v3.0 - Sistema de permisos granulares
 -- ============================================================
 CREATE TABLE IF NOT EXISTS permissions (
@@ -77,7 +134,8 @@ CREATE TABLE IF NOT EXISTS permissions (
         'auth',
         'users', 
         'roles', 
-        'areas', 
+        'areas',
+        'area_management',
         'categories', 
         'document_types', 
         'documents', 
@@ -98,42 +156,30 @@ CREATE TABLE IF NOT EXISTS permissions (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
--- Tabla: areas
--- Descripción: Áreas/Departamentos de la organización
--- ============================================================
-CREATE TABLE IF NOT EXISTS areas (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    nombre VARCHAR(100) NOT NULL,
-    sigla VARCHAR(20) NOT NULL UNIQUE,
-    descripcion TEXT,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- ============================================================
 -- Tabla: users
 -- Descripción: Usuarios del sistema
+-- PRIORIDAD: 4 - FK a roles y areas
+-- NOTA: area_id puede ser NULL para Administrador (acceso global)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS users (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
     password VARCHAR(255) NOT NULL,
-    rol_id INT NOT NULL,
-    area_id INT,
+    rol_id INT NULL COMMENT 'Rol del usuario - NULL permite eliminar roles sin bloqueos de FK',
+    area_id INT COMMENT 'Área del usuario - NULL para Administrador (acceso global)',
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-    FOREIGN KEY (rol_id) REFERENCES roles(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    FOREIGN KEY (rol_id) REFERENCES roles(id) ON DELETE SET NULL ON UPDATE CASCADE,
     FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
 -- Tabla: role_permissions
 -- Descripción: Relación muchos a muchos entre roles y permisos
+-- PRIORIDAD: 5 - FK a roles, permissions, users
 -- Agregado: v3.0 - Sistema de permisos granulares
--- NOTA: Debe ir DESPUÉS de users porque tiene FK a users(id)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS role_permissions (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -155,12 +201,10 @@ CREATE TABLE IF NOT EXISTS role_permissions (
 -- ============================================================
 -- Tabla: user_sessions
 -- Descripción: Gestión de sesiones de usuario (JWT refresh tokens)
+-- PRIORIDAD: 6 - FK a users
 -- 
 -- ⚠️ IMPORTANTE: El campo expires_at NO debe tener ON UPDATE CURRENT_TIMESTAMP
 -- porque debe mantener su valor fijo durante toda la vida de la sesión.
--- Si MySQL lo agrega automáticamente, ejecutar:
--- ALTER TABLE user_sessions MODIFY COLUMN expires_at TIMESTAMP NOT NULL 
--- DEFAULT '1970-01-01 00:00:01' COMMENT 'Fecha de expiración del token';
 -- ============================================================
 CREATE TABLE IF NOT EXISTS user_sessions (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -185,6 +229,7 @@ CREATE TABLE IF NOT EXISTS user_sessions (
 -- ============================================================
 -- Tabla: login_attempts
 -- Descripción: Registro de intentos de login para prevenir fuerza bruta
+-- PRIORIDAD: 7 - No tiene FK
 -- ============================================================
 CREATE TABLE IF NOT EXISTS login_attempts (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -199,6 +244,7 @@ CREATE TABLE IF NOT EXISTS login_attempts (
 -- ============================================================
 -- Tabla: senders
 -- Descripción: Remitentes de documentos (ciudadanos, empresas)
+-- PRIORIDAD: 8 - No tiene FK
 -- Actualizado: 2025-10-28 - Campos completos para persona natural y jurídica
 -- ============================================================
 CREATE TABLE IF NOT EXISTS senders (
@@ -245,22 +291,28 @@ CREATE TABLE IF NOT EXISTS senders (
 -- ============================================================
 -- Tabla: document_types
 -- Descripción: Tipos de documentos (solicitud, reclamo, etc.)
+-- PRIORIDAD: 9 - FK a areas
+-- Actualizado: v3.3 - Agregado area_id para filtrado por área
 -- ============================================================
 CREATE TABLE IF NOT EXISTS document_types (
     id INT AUTO_INCREMENT PRIMARY KEY,
     nombre VARCHAR(100) NOT NULL UNIQUE,
     codigo VARCHAR(20) NOT NULL UNIQUE,
+    area_id INT NULL COMMENT 'NULL = tipo global (visible para todas las áreas), NOT NULL = tipo específico de área',
     descripcion TEXT,
     requiere_adjunto BOOLEAN DEFAULT FALSE,
     dias_max_atencion INT,
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    INDEX idx_area_id (area_id),
+    CONSTRAINT fk_document_types_area FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
 -- Tabla: document_statuses
 -- Descripción: Estados posibles de un documento
+-- PRIORIDAD: 10 - No tiene FK
 -- ============================================================
 CREATE TABLE IF NOT EXISTS document_statuses (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -275,6 +327,7 @@ CREATE TABLE IF NOT EXISTS document_statuses (
 -- ============================================================
 -- Tabla: area_document_categories
 -- Descripción: Categorías de documentos personalizables por área
+-- PRIORIDAD: 11 - FK a areas, users
 -- Agregado: 2025-10-29 - Permite que cada área cree sus categorías
 -- Actualizado: 2025-01-04 - Eliminados campos 'icono' y 'requiere_adjunto' (innecesarios)
 -- ============================================================
@@ -301,6 +354,7 @@ CREATE TABLE IF NOT EXISTS area_document_categories (
 -- ============================================================
 -- Tabla: documents (Tabla Central)
 -- Descripción: Documentos principales del sistema
+-- PRIORIDAD: 12 - FK a senders, document_types, area_document_categories, document_statuses, areas, users
 -- Actualizado: 2025-10-27 - Permitir NULL en doc_type_id para Mesa de Partes
 -- Actualizado: 2025-10-29 - Agregado categoria_id para categorías por área
 -- ============================================================
@@ -332,6 +386,7 @@ CREATE TABLE IF NOT EXISTS documents (
 -- ============================================================
 -- Tabla: document_movements
 -- Descripción: Trazabilidad completa de movimientos de documentos
+-- PRIORIDAD: 13 - FK a documents, areas, users
 -- ============================================================
 CREATE TABLE IF NOT EXISTS document_movements (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -345,12 +400,13 @@ CREATE TABLE IF NOT EXISTS document_movements (
     FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE ON UPDATE CASCADE,
     FOREIGN KEY (from_area_id) REFERENCES areas(id) ON DELETE SET NULL ON UPDATE CASCADE,
     FOREIGN KEY (to_area_id) REFERENCES areas(id) ON DELETE SET NULL ON UPDATE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
 -- Tabla: attachments
 -- Descripción: Archivos adjuntos a documentos
+-- PRIORIDAD: 14 - FK a documents, users
 -- ============================================================
 CREATE TABLE IF NOT EXISTS attachments (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -369,6 +425,7 @@ CREATE TABLE IF NOT EXISTS attachments (
 -- ============================================================
 -- Tabla: document_versions
 -- Descripción: Historial de versiones de documentos
+-- PRIORIDAD: 15 - FK a documents, users, areas
 -- Agregado: 2025-10-29 - Permite subir documentos con sellos y firmas
 -- ============================================================
 CREATE TABLE IF NOT EXISTS document_versions (
@@ -387,7 +444,7 @@ CREATE TABLE IF NOT EXISTS document_versions (
     area_id INT COMMENT 'Área que subió esta versión',
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+    FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE SET NULL ON UPDATE CASCADE,
     FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE SET NULL ON UPDATE CASCADE,
     INDEX idx_document_id (document_id),
     INDEX idx_version_number (version_number),
@@ -399,11 +456,10 @@ CREATE TABLE IF NOT EXISTS document_versions (
 -- Datos iniciales (Seeds)
 -- ============================================================
 
--- Insertar roles por defecto (SOLO Admin y Jefe de Área)
--- Los demás roles se crean personalizados desde el sistema
+-- Insertar SOLO el rol Administrador
+-- Los demás roles (incluyendo Jefe de Área) se crean desde el sistema
 INSERT INTO roles (nombre, descripcion, es_sistema, puede_asignar_permisos, is_active) VALUES
-('Administrador', 'Control total del sistema - Puede gestionar todo y asignar permisos', TRUE, TRUE, TRUE),
-('Jefe de Área', 'Gestión completa de su área - Usuarios, documentos y reportes de su área', TRUE, FALSE, TRUE)
+('Administrador', 'Control total del sistema - Puede gestionar todo y asignar permisos', TRUE, TRUE, TRUE)
 ON DUPLICATE KEY UPDATE 
     descripcion = VALUES(descripcion),
     es_sistema = VALUES(es_sistema),
@@ -503,6 +559,60 @@ INSERT INTO permissions (codigo, nombre, descripcion, categoria, es_sistema) VAL
 ('areas.deactivate', 'Desactivar Áreas', 'Puede desactivar áreas', 'areas', TRUE)
 ON DUPLICATE KEY UPDATE nombre=nombre;
 
+-- CATEGORÍA: AREA_MANAGEMENT (48 permisos) - Jefe de Área
+-- Agrupa TODOS los permisos necesarios para gestionar COMPLETAMENTE su área asignada
+-- Incluye: usuarios, roles, documentos, adjuntos, versiones, movimientos, reportes
+INSERT INTO permissions (codigo, nombre, descripcion, categoria, es_sistema) VALUES
+-- Gestión de Usuarios (4 permisos)
+('area_mgmt.users.view', 'Ver Usuarios de su Área', 'Ver usuarios de su propia área', 'area_management', TRUE),
+('area_mgmt.users.create', 'Crear Usuarios en su Área', 'Crear usuarios solo en su área', 'area_management', TRUE),
+('area_mgmt.users.edit', 'Editar Usuarios de su Área', 'Editar usuarios de su área', 'area_management', TRUE),
+('area_mgmt.users.manage', 'Gestionar Usuarios de su Área', 'Activar/desactivar usuarios de su área', 'area_management', TRUE),
+-- Gestión de Roles (3 permisos)
+('area_mgmt.roles.view', 'Ver Roles', 'Ver roles del sistema', 'area_management', TRUE),
+('area_mgmt.roles.create', 'Crear Roles', 'Crear roles personalizados para su área', 'area_management', TRUE),
+('area_mgmt.roles.edit', 'Editar Roles', 'Editar roles personalizados', 'area_management', TRUE),
+-- Gestión de Tipos de Documento (3 permisos)
+('area_mgmt.document_types.view', 'Ver Tipos de Documento', 'Ver tipos de documento de su área', 'area_management', TRUE),
+('area_mgmt.document_types.create', 'Crear Tipos de Documento', 'Crear tipos de documento para su área', 'area_management', TRUE),
+('area_mgmt.document_types.edit', 'Editar Tipos de Documento', 'Editar tipos de documento de su área', 'area_management', TRUE),
+-- Gestión de Categorías (1 permiso)
+('area_mgmt.categories.full', 'Gestión Completa de Categorías', 'Crear, editar y gestionar categorías de su área', 'area_management', TRUE),
+-- Gestión de Documentos - AMPLIADO (12 permisos)
+('area_mgmt.documents.view', 'Ver Documentos de su Área', 'Ver documentos de su área en bandeja', 'area_management', TRUE),
+('area_mgmt.documents.view.own', 'Ver Documentos Asignados', 'Ver documentos asignados personalmente', 'area_management', TRUE),
+('area_mgmt.documents.create', 'Crear Documentos', 'Crear nuevos documentos en su área', 'area_management', TRUE),
+('area_mgmt.documents.edit', 'Editar Documentos de su Área', 'Editar documentos de su área', 'area_management', TRUE),
+('area_mgmt.documents.derive', 'Derivar Documentos', 'Derivar documentos a otras áreas o usuarios', 'area_management', TRUE),
+('area_mgmt.documents.finalize', 'Finalizar Documentos', 'Finalizar/atender documentos', 'area_management', TRUE),
+('area_mgmt.documents.archive', 'Archivar Documentos', 'Archivar documentos completados', 'area_management', TRUE),
+('area_mgmt.documents.unarchive', 'Desarchivar Documentos', 'Recuperar documentos archivados', 'area_management', TRUE),
+('area_mgmt.documents.category.assign', 'Asignar Categorías', 'Asignar/cambiar categorías de documentos', 'area_management', TRUE),
+('area_mgmt.documents.status.change', 'Cambiar Estados', 'Cambiar estados de documentos manualmente', 'area_management', TRUE),
+('area_mgmt.documents.search', 'Buscar Documentos', 'Realizar búsquedas avanzadas de documentos', 'area_management', TRUE),
+('area_mgmt.documents.stats.view', 'Ver Estadísticas de Documentos', 'Ver estadísticas de documentos del área', 'area_management', TRUE),
+-- Gestión de Adjuntos - AMPLIADO (4 permisos)
+('area_mgmt.attachments.view', 'Ver Adjuntos', 'Ver archivos adjuntos a documentos', 'area_management', TRUE),
+('area_mgmt.attachments.upload', 'Subir Adjuntos', 'Subir archivos adjuntos a documentos', 'area_management', TRUE),
+('area_mgmt.attachments.download', 'Descargar Adjuntos', 'Descargar archivos adjuntos', 'area_management', TRUE),
+('area_mgmt.attachments.delete', 'Eliminar Adjuntos', 'Eliminar archivos adjuntos', 'area_management', TRUE),
+-- Gestión de Versiones - AMPLIADO (5 permisos)
+('area_mgmt.versions.view', 'Ver Versiones', 'Ver historial de versiones de documentos', 'area_management', TRUE),
+('area_mgmt.versions.upload', 'Subir Versiones', 'Subir nuevas versiones de documentos', 'area_management', TRUE),
+('area_mgmt.versions.download', 'Descargar Versiones', 'Descargar versiones de documentos (con sello/firma)', 'area_management', TRUE),
+('area_mgmt.versions.list', 'Listar Versiones', 'Listar todas las versiones disponibles', 'area_management', TRUE),
+('area_mgmt.versions.delete', 'Eliminar Versiones', 'Eliminar versiones de documentos', 'area_management', TRUE),
+-- Gestión de Movimientos - AMPLIADO (5 permisos)
+('area_mgmt.movements.view', 'Ver Historial de Movimientos', 'Ver historial completo de movimientos', 'area_management', TRUE),
+('area_mgmt.movements.accept', 'Aceptar Documentos', 'Aceptar documentos derivados a su área', 'area_management', TRUE),
+('area_mgmt.movements.reject', 'Rechazar Documentos', 'Rechazar documentos derivados', 'area_management', TRUE),
+('area_mgmt.movements.complete', 'Completar Documentos', 'Marcar documentos como completados', 'area_management', TRUE),
+('area_mgmt.movements.create', 'Crear Movimientos Manuales', 'Crear movimientos manuales (uso avanzado)', 'area_management', TRUE),
+-- Gestión de Reportes (2 permisos)
+('area_mgmt.reports.view', 'Ver Reportes de su Área', 'Ver reportes y estadísticas de su área', 'area_management', TRUE),
+('area_mgmt.reports.export', 'Exportar Reportes de su Área', 'Exportar reportes de su área', 'area_management', TRUE)
+ON DUPLICATE KEY UPDATE nombre=nombre;
+
 -- CATEGORÍA: CATEGORIES (6 permisos)
 INSERT INTO permissions (codigo, nombre, descripcion, categoria, es_sistema) VALUES
 ('categories.view', 'Ver Categorías', 'Puede ver categorías de su área', 'categories', TRUE),
@@ -596,85 +706,8 @@ WHERE es_sistema = TRUE
 ON DUPLICATE KEY UPDATE rol_id = rol_id;
 
 -- ============================================================
--- Asignar permisos específicos al rol Jefe de Área
+-- Otros roles y sus permisos se asignan desde la aplicación
 -- ============================================================
-
--- AUTH
-INSERT INTO role_permissions (rol_id, permission_id)
-SELECT (SELECT id FROM roles WHERE nombre = 'Jefe de Área'), id
-FROM permissions
-WHERE codigo IN ('auth.profile.view', 'auth.profile.edit', 'auth.sessions.view', 'auth.sessions.manage')
-ON DUPLICATE KEY UPDATE rol_id = rol_id;
-
--- USERS (Solo su área)
-INSERT INTO role_permissions (rol_id, permission_id)
-SELECT (SELECT id FROM roles WHERE nombre = 'Jefe de Área'), id
-FROM permissions
-WHERE codigo IN ('users.view.area', 'users.view.own', 'users.create.area', 'users.edit.area')
-ON DUPLICATE KEY UPDATE rol_id = rol_id;
-
--- ROLES (Solo ver)
-INSERT INTO role_permissions (rol_id, permission_id)
-SELECT (SELECT id FROM roles WHERE nombre = 'Jefe de Área'), id
-FROM permissions
-WHERE codigo IN ('roles.view')
-ON DUPLICATE KEY UPDATE rol_id = rol_id;
-
--- AREAS (Solo su área)
-INSERT INTO role_permissions (rol_id, permission_id)
-SELECT (SELECT id FROM roles WHERE nombre = 'Jefe de Área'), id
-FROM permissions
-WHERE codigo IN ('areas.view.all', 'areas.view.stats.own', 'areas.edit.own')
-ON DUPLICATE KEY UPDATE rol_id = rol_id;
-
--- CATEGORIES (Su área)
-INSERT INTO role_permissions (rol_id, permission_id)
-SELECT (SELECT id FROM roles WHERE nombre = 'Jefe de Área'), id
-FROM permissions
-WHERE codigo IN ('categories.view', 'categories.create', 'categories.edit', 'categories.reorder', 'categories.toggle')
-ON DUPLICATE KEY UPDATE rol_id = rol_id;
-
--- DOCUMENT_TYPES (Solo ver)
-INSERT INTO role_permissions (rol_id, permission_id)
-SELECT (SELECT id FROM roles WHERE nombre = 'Jefe de Área'), id
-FROM permissions
-WHERE codigo IN ('document_types.view')
-ON DUPLICATE KEY UPDATE rol_id = rol_id;
-
--- DOCUMENTS (Su área)
-INSERT INTO role_permissions (rol_id, permission_id)
-SELECT (SELECT id FROM roles WHERE nombre = 'Jefe de Área'), id
-FROM permissions
-WHERE codigo IN ('documents.view.area', 'documents.create', 'documents.edit.area', 'documents.derive', 'documents.finalize', 'documents.archive', 'documents.category.assign', 'documents.search', 'documents.stats.view')
-ON DUPLICATE KEY UPDATE rol_id = rol_id;
-
--- ATTACHMENTS
-INSERT INTO role_permissions (rol_id, permission_id)
-SELECT (SELECT id FROM roles WHERE nombre = 'Jefe de Área'), id
-FROM permissions
-WHERE codigo IN ('attachments.view', 'attachments.upload', 'attachments.download')
-ON DUPLICATE KEY UPDATE rol_id = rol_id;
-
--- VERSIONS
-INSERT INTO role_permissions (rol_id, permission_id)
-SELECT (SELECT id FROM roles WHERE nombre = 'Jefe de Área'), id
-FROM permissions
-WHERE codigo IN ('versions.view', 'versions.upload', 'versions.download', 'versions.list')
-ON DUPLICATE KEY UPDATE rol_id = rol_id;
-
--- MOVEMENTS
-INSERT INTO role_permissions (rol_id, permission_id)
-SELECT (SELECT id FROM roles WHERE nombre = 'Jefe de Área'), id
-FROM permissions
-WHERE codigo IN ('movements.view', 'movements.accept', 'movements.reject', 'movements.complete')
-ON DUPLICATE KEY UPDATE rol_id = rol_id;
-
--- REPORTS (Solo su área)
-INSERT INTO role_permissions (rol_id, permission_id)
-SELECT (SELECT id FROM roles WHERE nombre = 'Jefe de Área'), id
-FROM permissions
-WHERE codigo IN ('reports.view.area', 'reports.export.area')
-ON DUPLICATE KEY UPDATE rol_id = rol_id;
 
 -- ============================================================
 -- Índices para optimización de consultas
@@ -692,12 +725,12 @@ CREATE INDEX idx_attachments_document ON attachments(document_id);
 -- RESUMEN DE ESTRUCTURA (v3.2)
 -- ============================================================
 -- Total de tablas: 15
--- Total de permisos: 86 (12 categorías)
--- Total de roles predefinidos: 2 (Administrador, Jefe de Área)
+-- Total de permisos: 101 (13 categorías)
+-- Total de roles predefinidos: 1 (solo Administrador)
 --
 -- TABLAS DEL SISTEMA:
 -- 1. roles (gestión de roles y permisos)
--- 2. permissions (permisos granulares del sistema - 86 permisos)
+-- 2. permissions (permisos granulares del sistema - 101 permisos)
 -- 3. role_permissions (relación muchos a muchos roles-permisos)
 -- 4. areas (departamentos de la institución)
 -- 5. users (usuarios del sistema)
@@ -712,13 +745,14 @@ CREATE INDEX idx_attachments_document ON attachments(document_id);
 -- 14. document_versions (historial de versiones con sello/firma)
 -- 15. attachments (archivos adjuntos - OBLIGATORIOS)
 --
--- CATEGORÍAS DE PERMISOS (86 total):
+-- CATEGORÍAS DE PERMISOS (127 total en v3.4):
 -- - auth: 6 permisos (registro, perfil, sesiones)
 -- - users: 9 permisos (gestión de usuarios)
 -- - roles: 5 permisos (gestión de roles)
 -- - areas: 9 permisos (gestión de áreas)
+-- - area_management: 48 permisos (Jefe de Área - gestión COMPLETA de SU área) ← AMPLIADO v3.4
 -- - categories: 6 permisos (categorías por área)
--- - document_types: 6 permisos (tipos globales) ← ACTUALIZADO en v3.1
+-- - document_types: 6 permisos (tipos globales)
 -- - documents: 16 permisos (gestión documental)
 -- - attachments: 4 permisos (archivos adjuntos)
 -- - versions: 5 permisos (versionado)
@@ -729,7 +763,7 @@ CREATE INDEX idx_attachments_document ON attachments(document_id);
 -- DATOS INICIALES (SEEDS):
 -- - Estados: Pendiente, En Proceso, Derivado, Atendido, Observado, Archivado
 -- - Áreas: Mesa de Partes, Dirección General, RRHH, Logística, Asesoría Legal
--- - Roles: Administrador (TODOS los permisos), Jefe de Área (permisos de su área)
+-- - Roles: Solo Administrador (TODOS los permisos)
 -- - Tipos de documento: Solicitud, Reclamo, Consulta, Recurso, Oficio
 -- - Categorías de ejemplo: Por área (Mesa de Partes: 5 categorías, RRHH: 5 categorías)
 --

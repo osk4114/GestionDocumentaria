@@ -17,6 +17,12 @@ const DocumentType = sequelize.define('DocumentType', {
     allowNull: false,
     unique: true
   },
+  areaId: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    field: 'area_id',
+    comment: 'ID del área a la que pertenece (NULL = global, NOT NULL = específico de área)'
+  },
   descripcion: {
     type: DataTypes.TEXT,
     allowNull: true

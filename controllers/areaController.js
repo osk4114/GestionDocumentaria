@@ -1,4 +1,4 @@
-const { Area, User, Document } = require('../models');
+const { Area, User, Document, Role, DocumentType } = require('../models');
 const { Op } = require('sequelize');
 
 /**
@@ -264,43 +264,60 @@ exports.deleteArea = async (req, res) => {
       });
     }
 
-    // Verificar si el área tiene usuarios activos
-    const activeUsersCount = await User.count({
-      where: {
-        areaId: id,
-        isActive: true
-      }
+    // Verificar si el área tiene usuarios (activos o inactivos)
+    const usersCount = await User.count({
+      where: { areaId: id }
     });
 
-    if (activeUsersCount > 0) {
+    if (usersCount > 0) {
       return res.status(400).json({
         success: false,
-        message: `No se puede desactivar el área porque tiene ${activeUsersCount} usuario(s) activo(s)`
+        message: `No se puede eliminar el área porque tiene ${usersCount} usuario(s) asignado(s). Elimine o reasigne los usuarios primero.`
       });
     }
 
-    // Verificar si el área tiene documentos activos
-    const activeDocumentsCount = await Document.count({
-      where: {
-        currentAreaId: id,
-        statusId: { [Op.ne]: 4 } // 4 = Finalizado
-      }
+    // Verificar si el área tiene documentos
+    const documentsCount = await Document.count({
+      where: { currentAreaId: id }
     });
 
-    if (activeDocumentsCount > 0) {
+    if (documentsCount > 0) {
       return res.status(400).json({
         success: false,
-        message: `No se puede desactivar el área porque tiene ${activeDocumentsCount} documento(s) en proceso`
+        message: `No se puede eliminar el área porque tiene ${documentsCount} documento(s) asignado(s).`
       });
     }
 
-    // Desactivar área
-    await area.update({ isActive: false });
+    // Verificar si el área tiene roles específicos
+    const rolesCount = await Role.count({
+      where: { areaId: id }
+    });
+
+    if (rolesCount > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `No se puede eliminar el área porque tiene ${rolesCount} rol(es) específico(s). Elimine los roles primero.`
+      });
+    }
+
+    // Verificar si el área tiene tipos de documento específicos
+    const docTypesCount = await DocumentType.count({
+      where: { areaId: id }
+    });
+
+    if (docTypesCount > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `No se puede eliminar el área porque tiene ${docTypesCount} tipo(s) de documento específico(s). Elimine los tipos primero.`
+      });
+    }
+
+    // Eliminar físicamente el área
+    await area.destroy();
 
     res.status(200).json({
       success: true,
-      message: 'Área desactivada exitosamente',
-      data: area
+      message: 'Área eliminada exitosamente'
     });
 
   } catch (error) {

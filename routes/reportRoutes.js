@@ -9,7 +9,7 @@ const { checkPermission, checkAnyPermission } = require('../middleware/permissio
  * @desc    Obtener estadísticas para el dashboard
  * @access  Private (requiere ver reportes)
  */
-router.get('/stats', authMiddleware, checkAnyPermission(['reports.view.all', 'reports.view.area']), reportController.getStats);
+router.get('/stats', authMiddleware, checkAnyPermission(['reports.view.all', 'reports.view.area', 'area_mgmt.reports.view']), reportController.getStats);
 
 /**
  * @route   GET /api/reports/export
@@ -18,6 +18,6 @@ router.get('/stats', authMiddleware, checkAnyPermission(['reports.view.all', 're
  * @query   type: 'general' | 'by-status' | 'by-area'
  * @query   startDate, endDate (opcional)
  */
-router.get('/export', authMiddleware, checkAnyPermission(['reports.export.all', 'reports.export.area']), reportController.exportToCsv);
+router.get('/export', authMiddleware, checkAnyPermission(['reports.export.all', 'reports.export.area', 'area_mgmt.reports.export']), reportController.exportToCsv);
 
 module.exports = router;

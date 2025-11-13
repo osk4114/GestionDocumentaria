@@ -21,10 +21,31 @@ exports.getAllDocumentTypes = async (req, res) => {
       where.isActive = active === 'true';
     }
 
+    // 🔒 FILTRADO POR PERMISOS DE USUARIO Y ÁREA
+    const userPermissions = req.user?.permissions || [];
+    const hasAreaMgmtPermissions = userPermissions.some(p => p.codigo?.startsWith('area_mgmt.'));
+    const isAdmin = userPermissions.some(p => 
+      p.codigo === 'document_types.view' || 
+      p.codigo === 'document_types.create' || 
+      p.codigo === 'document_types.edit'
+    );
+
+    if (hasAreaMgmtPermissions && !isAdmin) {
+      where.isActive = true;
+      // Mostrar tipos globales (areaId = NULL) + tipos de su área
+      where[Op.or] = [
+        { areaId: null },
+        { areaId: req.user.areaId }
+      ];
+      console.log(`🔒 [DOCUMENT_TYPES] Filtrando: tipos globales + área ${req.user.areaId}`);
+    }
+
     const documentTypes = await DocumentType.findAll({
       where,
       order: [['nombre', 'ASC']]
     });
+
+    console.log(`✅ [DOCUMENT_TYPES] ${documentTypes.length} tipos cargados`);
 
     res.status(200).json({
       success: true,
@@ -121,6 +142,21 @@ exports.createDocumentType = async (req, res) => {
       });
     }
 
+    // 🔒 DETERMINAR ÁREA DEL TIPO DE DOCUMENTO
+    const userPermissions = req.user?.permissions || [];
+    const hasAreaMgmtPermissions = userPermissions.some(p => p.codigo?.startsWith('area_mgmt.'));
+    const isAdmin = userPermissions.some(p => p.codigo === 'document_types.create');
+    
+    let areaId = null; // Por defecto: tipo global
+    
+    if (hasAreaMgmtPermissions && !isAdmin) {
+      // Encargados de Área crean tipos específicos para su área
+      areaId = req.user.areaId;
+      console.log(`🔒 [DOCUMENT_TYPES] Tipo de documento será específico del área: ${areaId}`);
+    } else {
+      console.log('🌐 [DOCUMENT_TYPES] Tipo de documento será GLOBAL (todas las áreas)');
+    }
+
     // Verificar que el código no exista
     const existingCodigo = await DocumentType.findOne({
       where: { codigo: codigo.toUpperCase() }
@@ -149,6 +185,7 @@ exports.createDocumentType = async (req, res) => {
     const documentType = await DocumentType.create({
       nombre: nombre.trim(),
       codigo: codigo.toUpperCase().trim(),
+      areaId: areaId, // NULL para tipos globales, areaId para tipos específicos
       descripcion: descripcion ? descripcion.trim() : null,
       requiereAdjunto: requiereAdjunto !== undefined ? requiereAdjunto : false,
       diasMaxAtencion: diasMaxAtencion || null,

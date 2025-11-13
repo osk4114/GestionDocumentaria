@@ -432,7 +432,7 @@ exports.getDocumentStatuses = async (req, res) => {
  */
 exports.getDocuments = async (req, res) => {
   try {
-    const documents = await documentService.getDocuments(req.query);
+    const documents = await documentService.getDocuments(req.query, req.user);
 
     res.status(200).json({
       success: true,

@@ -15,9 +15,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     '/login',
     '/register',
     '/refresh',
-    '/submit',                // Mesa de Partes Virtual
-    '/tracking/',             // Seguimiento público
-    '/document-types/active'  // Solo el endpoint de tipos activos es público
+    '/submit',                    // Mesa de Partes Virtual
+    '/tracking/',                 // Seguimiento público
+    '/document-types/public'      // Solo el endpoint /public es sin autenticación
   ];
 
   // Verificar si la URL es pública

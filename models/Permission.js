@@ -22,11 +22,11 @@ const Permission = sequelize.define('Permission', {
     type: DataTypes.STRING(100),
     allowNull: false,
     unique: true,
-    comment: 'Código único del permiso (ej: documents.create, users.edit.all)',
+    comment: 'Código único del permiso (ej: documents.create, area_mgmt.users.view)',
     validate: {
       notEmpty: { msg: 'El código del permiso no puede estar vacío' },
       is: {
-        args: /^[a-z]+(\.[a-z_]+)+$/,
+        args: /^[a-z_]+(\.[a-z_]+)+$/,
         msg: 'El código debe estar en formato categoría.acción (ej: documents.create)'
       }
     }
@@ -54,6 +54,7 @@ const Permission = sequelize.define('Permission', {
       'users',
       'roles',
       'areas',
+      'area_management',
       'categories',
       'document_types',
       'documents',
@@ -69,7 +70,7 @@ const Permission = sequelize.define('Permission', {
     validate: {
       isIn: {
         args: [[
-          'auth', 'users', 'roles', 'areas', 'categories', 
+          'auth', 'users', 'roles', 'areas', 'area_management', 'categories', 
           'document_types', 'documents', 'attachments', 'versions', 
           'movements', 'reports', 'system'
         ]],
