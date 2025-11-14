@@ -301,10 +301,9 @@ User.hasMany(DocumentCargo, {
 // ============================================================
 const syncDatabase = async (force = false) => {
   try {
-    // IMPORTANTE: No usar sync en producción, usar migraciones
-    // force: false = no elimina tablas existentes (las tablas ya fueron creadas por SQL)
-    await sequelize.sync({ force, alter: false });
-    console.log('✓ Modelos de Sequelize sincronizados con la base de datos');
+    // IMPORTANTE: En producción NO sincronizar - la base de datos ya fue creada con init-database.sql
+    // await sequelize.sync({ force, alter: false });
+    console.log('✓ Modelos de Sequelize cargados (sync desactivado en producción)');
   } catch (error) {
     console.error('✗ Error al sincronizar modelos:', error.message);
     throw error;
