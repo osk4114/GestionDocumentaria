@@ -20,7 +20,7 @@ const Role = require('./models/Role');
 const ADMIN_CONFIG = {
   nombre: 'Administrador del Sistema',
   email: 'admin@sgd.gob.pe',
-  password: 'Admin123!',  // CAMBIAR INMEDIATAMENTE después del primer login
+  password: 'admin123',  // CAMBIAR INMEDIATAMENTE después del primer login
   is_active: true
 };
 
