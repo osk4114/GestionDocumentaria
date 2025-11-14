@@ -9,7 +9,7 @@ import { StorageService } from './storage.service';
 })
 export class WebSocketService {
   private socket: Socket | null = null;
-  private readonly SOCKET_URL = environment.apiUrl.replace('/api', ''); // http://localhost:3000
+  private readonly SOCKET_URL = environment.socketUrl;
 
   constructor(
     private router: Router,

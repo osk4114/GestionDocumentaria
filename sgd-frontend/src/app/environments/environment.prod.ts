@@ -12,11 +12,11 @@
 export const environment = {
   production: true,
   
-  // URL de la API REST (CAMBIAR por URL real en producción)
-  apiUrl: 'https://api.tudominio.gob.pe/api',
+  // URL de la API REST
+  apiUrl: 'https://api.sgd-drtcpuno.me/api',
   
-  // URL del servidor WebSocket (CAMBIAR por URL real en producción)
-  socketUrl: 'https://api.tudominio.gob.pe',
+  // URL del servidor WebSocket
+  socketUrl: 'https://api.sgd-drtcpuno.me',
   
   // Información de la aplicación
   appName: 'Sistema de Gestión Documentaria',
