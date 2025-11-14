@@ -2,6 +2,7 @@ import { Component, Input, Output, EventEmitter, OnInit, signal } from '@angular
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { DocumentVersionService, DocumentVersion, VersionUploadData } from '../../../core/services/document-version.service';
+import { CargoService } from '../../../core/services/cargo.service';
 
 @Component({
   selector: 'app-document-versions-modal',
@@ -30,7 +31,13 @@ export class DocumentVersionsModalComponent implements OnInit {
   uploadTieneSello: boolean = false;
   uploadTieneFirma: boolean = false;
 
-  constructor(public versionService: DocumentVersionService) {}
+  // Estado de conservar cargo
+  conservandoCargo = signal(false);
+
+  constructor(
+    public versionService: DocumentVersionService,
+    private cargoService: CargoService
+  ) {}
 
   ngOnInit(): void {
     this.loadVersions();
@@ -191,6 +198,43 @@ export class DocumentVersionsModalComponent implements OnInit {
    */
   formatSize(bytes: number): string {
     return this.versionService.formatFileSize(bytes);
+  }
+
+  /**
+   * Conservar versión como cargo
+   */
+  conservarCargo(version: DocumentVersion): void {
+    const customName = prompt(
+      `Conservar versión ${version.versionNumber} como cargo.\n\n` +
+      `¿Deseas agregar un nombre personalizado? (opcional)`,
+      `${this.documentTrackingCode} - v${version.versionNumber}`
+    );
+
+    // Si cancela, no hacer nada
+    if (customName === null) {
+      return;
+    }
+
+    this.conservandoCargo.set(true);
+    this.errorMessage.set(null);
+
+    this.cargoService.createCargo({
+      versionId: version.id,
+      customName: customName.trim() || undefined
+    }).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.successMessage.set('✅ Cargo conservado exitosamente en la bandeja del área');
+          setTimeout(() => this.successMessage.set(null), 4000);
+        }
+        this.conservandoCargo.set(false);
+      },
+      error: (error) => {
+        console.error('Error al conservar cargo:', error);
+        this.errorMessage.set(error.message || 'Error al conservar el cargo');
+        this.conservandoCargo.set(false);
+      }
+    });
   }
 
   /**

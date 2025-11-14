@@ -509,23 +509,26 @@
         transition: all 0.2s;
         border: none;
         cursor: pointer;
+        display: inline-block;
+        opacity: 1 !important;
+        visibility: visible !important;
       }
 
       .btn-primary {
-        background: var(--color-primary);
-        color: white;
+        background: #c1272d !important;
+        color: white !important;
 
         &:hover {
-          background: #9e1f24;
+          background: #9e1f24 !important;
         }
       }
 
       .btn-secondary {
-        background: var(--color-link);
-        color: white;
+        background: #0066cc !important;
+        color: white !important;
 
         &:hover {
-          background: #0052a3;
+          background: #0052a3 !important;
         }
       }
     }
@@ -662,6 +665,27 @@ select {
 
         .btn {
           width: 100%;
+          display: inline-block !important;
+          opacity: 1 !important;
+          visibility: visible !important;
+        }
+        
+        .btn-primary {
+          background: #c1272d !important;
+          color: white !important;
+          
+          &:hover {
+            background: #9e1f24 !important;
+          }
+        }
+        
+        .btn-secondary {
+          background: #0066cc !important;
+          color: white !important;
+          
+          &:hover {
+            background: #0052a3 !important;
+          }
         }
       }
     }

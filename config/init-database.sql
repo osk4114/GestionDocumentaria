@@ -3,9 +3,18 @@
 -- Sistema de Gestión Documentaria
 -- Ejecutar este script en phpMyAdmin o MySQL CLI
 -- 
--- VERSIÓN: 3.4
--- ÚLTIMA ACTUALIZACIÓN: 13 de Noviembre 2025
+-- VERSIÓN: 3.5
+-- ÚLTIMA ACTUALIZACIÓN: 14 de Noviembre 2025
 -- 
+-- CAMBIOS EN ESTA VERSIÓN (v3.5):
+-- 🗂️ SISTEMA DE CARGOS IMPLEMENTADO
+-- - Nueva tabla: document_cargos (conservar versiones en bandeja del área)
+-- - 4 nuevos permisos: area_mgmt.cargos.{create, view, edit, delete}
+-- - Relación con document_versions para mantener referencia a archivos
+-- - Permite renombrar cargos con custom_name
+-- - Total de permisos: 124 (era 101)
+-- - Total de tablas: 16 (era 15)
+--
 -- CAMBIOS EN ESTA VERSIÓN (v3.4):
 -- 🎯 CATEGORÍA "JEFE DE ÁREA" AMPLIADA A 48 PERMISOS
 -- - Agregados permisos específicos de documents (view.own, derive, finalize, archive, etc.)
@@ -59,6 +68,11 @@
 -- Crear la base de datos
 CREATE DATABASE IF NOT EXISTS sgd_db CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
+-- Crear usuario de base de datos
+CREATE USER IF NOT EXISTS 'summer4114'@'localhost' IDENTIFIED BY 'screamer-1';
+GRANT ALL PRIVILEGES ON sgd_db.* TO 'summer4114'@'localhost';
+FLUSH PRIVILEGES;
+
 -- Usar la base de datos
 USE sgd_db;
 
@@ -80,6 +94,7 @@ USE sgd_db;
 -- 13. document_movements (FK: documents, areas, users)
 -- 14. attachments (FK: documents, users)
 -- 15. document_versions (FK: documents, users, areas)
+-- 16. document_cargos (FK: areas, document_versions, users)
 -- ============================================================
 
 -- ============================================================
@@ -453,6 +468,28 @@ CREATE TABLE IF NOT EXISTS document_versions (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ============================================================
+-- Tabla: document_cargos
+-- Descripción: Cargos conservados en la bandeja del área
+-- PRIORIDAD: 16 - FK a areas, document_versions, users
+-- Agregado: 2025-11-13 - Sistema de cargos para conservar versiones importantes
+-- ============================================================
+CREATE TABLE IF NOT EXISTS document_cargos (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    area_id INT NOT NULL COMMENT 'Área a la que pertenece este cargo',
+    version_id INT NOT NULL COMMENT 'Versión del documento que se conserva como cargo',
+    custom_name VARCHAR(255) COMMENT 'Nombre personalizado del cargo (opcional)',
+    created_by INT NOT NULL COMMENT 'Usuario que creó el cargo',
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME NOT NULL,
+    FOREIGN KEY (area_id) REFERENCES areas(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (version_id) REFERENCES document_versions(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    INDEX idx_cargos_area (area_id),
+    INDEX idx_cargos_version (version_id),
+    INDEX idx_cargos_created_by (created_by)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ============================================================
 -- Datos iniciales (Seeds)
 -- ============================================================
 
@@ -559,9 +596,9 @@ INSERT INTO permissions (codigo, nombre, descripcion, categoria, es_sistema) VAL
 ('areas.deactivate', 'Desactivar Áreas', 'Puede desactivar áreas', 'areas', TRUE)
 ON DUPLICATE KEY UPDATE nombre=nombre;
 
--- CATEGORÍA: AREA_MANAGEMENT (48 permisos) - Jefe de Área
+-- CATEGORÍA: AREA_MANAGEMENT (52 permisos) - Jefe de Área
 -- Agrupa TODOS los permisos necesarios para gestionar COMPLETAMENTE su área asignada
--- Incluye: usuarios, roles, documentos, adjuntos, versiones, movimientos, reportes
+-- Incluye: usuarios, roles, documentos, adjuntos, versiones, movimientos, reportes, cargos
 INSERT INTO permissions (codigo, nombre, descripcion, categoria, es_sistema) VALUES
 -- Gestión de Usuarios (4 permisos)
 ('area_mgmt.users.view', 'Ver Usuarios de su Área', 'Ver usuarios de su propia área', 'area_management', TRUE),
@@ -610,7 +647,12 @@ INSERT INTO permissions (codigo, nombre, descripcion, categoria, es_sistema) VAL
 ('area_mgmt.movements.create', 'Crear Movimientos Manuales', 'Crear movimientos manuales (uso avanzado)', 'area_management', TRUE),
 -- Gestión de Reportes (2 permisos)
 ('area_mgmt.reports.view', 'Ver Reportes de su Área', 'Ver reportes y estadísticas de su área', 'area_management', TRUE),
-('area_mgmt.reports.export', 'Exportar Reportes de su Área', 'Exportar reportes de su área', 'area_management', TRUE)
+('area_mgmt.reports.export', 'Exportar Reportes de su Área', 'Exportar reportes de su área', 'area_management', TRUE),
+-- Gestión de Cargos - NUEVO (4 permisos)
+('area_mgmt.cargos.create', 'Crear Cargos', 'Puede conservar versiones como cargos en la bandeja del área', 'area_management', TRUE),
+('area_mgmt.cargos.view', 'Ver Cargos del Área', 'Puede ver cargos almacenados en la bandeja del área', 'area_management', TRUE),
+('area_mgmt.cargos.edit', 'Editar Nombre de Cargos', 'Puede renombrar cargos del área', 'area_management', TRUE),
+('area_mgmt.cargos.delete', 'Eliminar Cargos del Área', 'Puede eliminar cargos del área', 'area_management', TRUE)
 ON DUPLICATE KEY UPDATE nombre=nombre;
 
 -- CATEGORÍA: CATEGORIES (6 permisos)
@@ -713,24 +755,24 @@ ON DUPLICATE KEY UPDATE rol_id = rol_id;
 -- Índices para optimización de consultas
 -- ============================================================
 
-CREATE INDEX idx_documents_tracking ON documents(tracking_code);
-CREATE INDEX idx_documents_status ON documents(status_id);
-CREATE INDEX idx_documents_current_area ON documents(current_area_id);
-CREATE INDEX idx_documents_current_user ON documents(current_user_id);
-CREATE INDEX idx_movements_document ON document_movements(document_id);
-CREATE INDEX idx_movements_timestamp ON document_movements(timestamp);
-CREATE INDEX idx_attachments_document ON attachments(document_id);
+CREATE INDEX IF NOT EXISTS idx_documents_tracking ON documents(tracking_code);
+CREATE INDEX IF NOT EXISTS idx_documents_status ON documents(status_id);
+CREATE INDEX IF NOT EXISTS idx_documents_current_area ON documents(current_area_id);
+CREATE INDEX IF NOT EXISTS idx_documents_current_user ON documents(current_user_id);
+CREATE INDEX IF NOT EXISTS idx_movements_document ON document_movements(document_id);
+CREATE INDEX IF NOT EXISTS idx_movements_timestamp ON document_movements(timestamp);
+CREATE INDEX IF NOT EXISTS idx_attachments_document ON attachments(document_id);
 
 -- ============================================================
--- RESUMEN DE ESTRUCTURA (v3.2)
+-- RESUMEN DE ESTRUCTURA (v3.5)
 -- ============================================================
--- Total de tablas: 15
--- Total de permisos: 101 (13 categorías)
+-- Total de tablas: 16 (agregada document_cargos)
+-- Total de permisos: 124 (13 categorías)
 -- Total de roles predefinidos: 1 (solo Administrador)
 --
 -- TABLAS DEL SISTEMA:
 -- 1. roles (gestión de roles y permisos)
--- 2. permissions (permisos granulares del sistema - 101 permisos)
+-- 2. permissions (permisos granulares del sistema - 124 permisos)
 -- 3. role_permissions (relación muchos a muchos roles-permisos)
 -- 4. areas (departamentos de la institución)
 -- 5. users (usuarios del sistema)
@@ -744,13 +786,14 @@ CREATE INDEX idx_attachments_document ON attachments(document_id);
 -- 13. document_movements (trazabilidad completa de movimientos)
 -- 14. document_versions (historial de versiones con sello/firma)
 -- 15. attachments (archivos adjuntos - OBLIGATORIOS)
+-- 16. document_cargos (cargos conservados en bandeja del área)
 --
--- CATEGORÍAS DE PERMISOS (127 total en v3.4):
+-- CATEGORÍAS DE PERMISOS (124 total en v3.5):
 -- - auth: 6 permisos (registro, perfil, sesiones)
 -- - users: 9 permisos (gestión de usuarios)
 -- - roles: 5 permisos (gestión de roles)
 -- - areas: 9 permisos (gestión de áreas)
--- - area_management: 48 permisos (Jefe de Área - gestión COMPLETA de SU área) ← AMPLIADO v3.4
+-- - area_management: 52 permisos (Jefe de Área - gestión COMPLETA + cargos) ← AMPLIADO v3.5
 -- - categories: 6 permisos (categorías por área)
 -- - document_types: 6 permisos (tipos globales)
 -- - documents: 16 permisos (gestión documental)
@@ -774,6 +817,7 @@ CREATE INDEX idx_attachments_document ON attachments(document_id);
 -- ✅ email y telefono en senders son OBLIGATORIOS (Mesa de Partes Virtual)
 -- ✅ Cada área puede crear categorías ilimitadas (area_document_categories)
 -- ✅ Versiones mantienen historial completo con flags tiene_sello/tiene_firma
+-- ✅ Cargos conservan versiones importantes en bandeja del área (document_cargos)
 -- ✅ ARCHIVOS ADJUNTOS OBLIGATORIOS: Mínimo 1 archivo PDF o imagen por documento
 -- ✅ FORMATOS PERMITIDOS: Solo PDF, JPG, JPEG, PNG (validación frontend y backend)
 -- ⚠️ TIPOS DE DOCUMENTO: DELETE elimina permanente, DEACTIVATE es soft delete
@@ -785,7 +829,8 @@ CREATE INDEX idx_attachments_document ON attachments(document_id);
 -- 3. Área Receptora → Asigna categoría propia y procesa documento
 -- 4. Derivaciones → Movimientos entre áreas con trazabilidad completa
 -- 5. Versiones → Cada área puede subir versión con sello/firma
--- 6. Finalización → Atendido/Archivado con historial completo
+-- 6. Cargos → Conservar versiones importantes en bandeja del área
+-- 7. Finalización → Atendido/Archivado con historial completo
 -- ============================================================
 
-SELECT 'Base de datos SGD v3.1 creada exitosamente - 16 tablas, 86 permisos' AS mensaje;
+SELECT 'Base de datos SGD v3.5 creada exitosamente - 16 tablas, 124 permisos' AS mensaje;

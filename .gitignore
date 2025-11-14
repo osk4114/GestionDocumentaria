@@ -1,38 +1,141 @@
-# Node modules
-node_modules/
+# ============================================================
+# GITIGNORE - Sistema de Gestión Documentaria (SGD)
+# ============================================================
 
-# Logs
-logs
-*.log
+# ============================================================
+# Node.js y npm
+# ============================================================
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+lerna-debug.log*
+.npm
+.yarn-integrity
 
-# Environment variables
+# ============================================================
+# Variables de Entorno (CRÍTICO - NO SUBIR)
+# ============================================================
 .env
 .env.local
 .env.*.local
+.env.production
+.env.development
+.env.test
 
-# IDE
+# ============================================================
+# Archivos de Usuario (NO SUBIR)
+# ============================================================
+uploads/
+temp/
+tmp/
+*.tmp
+.cache/
+
+# ============================================================
+# Logs
+# ============================================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+lerna-debug.log*
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# ============================================================
+# IDE y Editores
+# ============================================================
 .vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
 .idea/
 *.swp
 *.swo
 *~
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+*.sublime-project
 
-# OS
+# ============================================================
+# Sistema Operativo
+# ============================================================
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
 Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
 
-# Uploads y archivos temporales
-uploads/
-temp/
-*.tmp
-
-# Build
+# ============================================================
+# Build y Distribución
+# ============================================================
 dist/
 build/
+out/
+.next/
+.nuxt/
+.vuepress/dist
 
-# Coverage
+# ============================================================
+# Testing y Coverage
+# ============================================================
 coverage/
 .nyc_output/
+*.lcov
+.jest/
+junit.xml
+test-results/
+
+# ============================================================
+# Bases de Datos (Backups locales)
+# ============================================================
+*.sql.backup
+*.sql.bak
+*.db
+*.sqlite
+*.sqlite3
+
+# ============================================================
+# Certificados y Claves (CRÍTICO - NO SUBIR)
+# ============================================================
+*.pem
+*.key
+*.cert
+*.crt
+*.p12
+*.pfx
+ssl/
+certs/
+
+# ============================================================
+# Package Manager Locks (Opcional - comentar si quieres versionar)
+# ============================================================
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# ============================================================
+# Otros
+# ============================================================
+.env.backup
+.vercel
+.serverless/
+.fusebox/
+.dynamodb/
+.tern-port
+.vscode-test
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*

@@ -129,6 +129,14 @@
         Archivados
         <span class="tab-badge badge-gray">{{ stats().archivados }}</span>
       </button>
+      <button
+        class="tab-button"
+        [class.active]="activeTab() === 'cargos'"
+        (click)="setActiveTab('cargos')"
+      >
+        📋 Cargos
+        <span class="tab-badge badge-blue">{{ cargos().length }}</span>
+      </button>
     </div>
 
     <!-- Filters Section -->
@@ -243,7 +251,7 @@
     </div>
 
     <!-- Documents Table -->
-    <div *ngIf="!loading()" class="documents-section">
+    <div *ngIf="!loading() && activeTab() !== 'cargos'" class="documents-section">
       <div *ngIf="filteredDocuments().length === 0" class="empty-state">
         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -477,6 +485,116 @@
             </ng-container>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- Sección de Cargos -->
+    <div *ngIf="!loading() && activeTab() === 'cargos'">
+      <div *ngIf="loadingCargos()" class="loading-state">
+        <div class="spinner"></div>
+        <p>Cargando cargos...</p>
+      </div>
+
+      <div *ngIf="!loadingCargos() && cargos().length === 0" class="empty-state">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+        </svg>
+        <p>No hay cargos conservados en tu área</p>
+        <small>Usa "Conservar Cargo" en las versiones de documentos para guardar copias aquí</small>
+      </div>
+
+      <div *ngIf="!loadingCargos() && cargos().length > 0" class="table-container">
+        <table class="documents-table">
+          <thead>
+            <tr>
+              <th>Nombre / Documento</th>
+              <th>Versión</th>
+              <th>Archivo</th>
+              <th>Tamaño</th>
+              <th>Características</th>
+              <th>Conservado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let cargo of cargos()">
+              <td class="cargo-name-cell">
+                <div *ngIf="editingCargoId() !== cargo.id" class="cargo-name">
+                  <strong>{{ getCargoDisplayName(cargo) }}</strong>
+                  <small *ngIf="cargo.version?.document?.asunto">{{ cargo.version?.document?.asunto }}</small>
+                </div>
+                <input 
+                  *ngIf="editingCargoId() === cargo.id"
+                  type="text"
+                  class="cargo-edit-input"
+                  [ngModel]="editingCargoName()"
+                  (ngModelChange)="editingCargoName.set($event)"
+                  (keyup.enter)="saveCargoName(cargo.id)"
+                  (keyup.escape)="cancelEditCargo()"
+                  autofocus
+                />
+              </td>
+              <td class="version-cell">
+                <span class="version-badge">v{{ cargo.version?.versionNumber || '-' }}</span>
+              </td>
+              <td class="file-cell">
+                <div class="file-info">
+                  <span class="file-name">{{ cargo.version?.originalName || 'N/A' }}</span>
+                </div>
+              </td>
+              <td class="size-cell">{{ formatFileSize(cargo.version?.fileSize || 0) }}</td>
+              <td class="badges-cell">
+                <span *ngIf="cargo.version?.tieneSello" class="badge badge-sello">✅ Sello</span>
+                <span *ngIf="cargo.version?.tieneFirma" class="badge badge-firma">✍️ Firma</span>
+                <span *ngIf="!cargo.version?.tieneSello && !cargo.version?.tieneFirma" class="text-muted">-</span>
+              </td>
+              <td class="date-cell">
+                <div class="date-info">
+                  <span class="date">{{ cargo.created_at | date:'dd/MM/yyyy' }}</span>
+                  <small *ngIf="cargo.creator">{{ cargo.creator.nombre }}</small>
+                </div>
+              </td>
+              <td class="actions-cell" (click)="$event.stopPropagation()">
+                <div class="action-buttons">
+                  <button 
+                    class="btn-icon" 
+                    (click)="downloadCargo(cargo)"
+                    title="Descargar">
+                    ⬇️
+                  </button>
+                  <button 
+                    *ngIf="editingCargoId() !== cargo.id"
+                    class="btn-icon btn-edit" 
+                    (click)="startEditCargoName(cargo)"
+                    title="Renombrar">
+                    ✏️
+                  </button>
+                  <button 
+                    *ngIf="editingCargoId() === cargo.id"
+                    class="btn-icon btn-save" 
+                    (click)="saveCargoName(cargo.id)"
+                    title="Guardar">
+                    ✓
+                  </button>
+                  <button 
+                    *ngIf="editingCargoId() === cargo.id"
+                    class="btn-icon btn-cancel" 
+                    (click)="cancelEditCargo()"
+                    title="Cancelar">
+                    ✕
+                  </button>
+                  <button 
+                    *ngIf="editingCargoId() !== cargo.id"
+                    class="btn-icon btn-delete" 
+                    (click)="deleteCargo(cargo)"
+                    title="Eliminar">
+                    🗑️
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>

@@ -32,9 +32,9 @@
             <button (click)="resetForm()" class="btn btn-primary">
               Registrar otro documento
             </button>
-            <a [href]="'/track?code=' + trackingCode()" class="btn btn-secondary">
+            <button (click)="consultarEstado()" class="btn btn-secondary">
               Consultar estado
-            </a>
+            </button>
           </div>
         </div>
       </div>
@@ -109,7 +109,7 @@
                     type="text" 
                     formControlName="numeroDocumentoNatural"
                     placeholder="Ej: 12345678"
-                    maxlength="9">
+                    maxlength="8">
                   @if (isValid('numeroDocumentoNatural')) {
                     <span class="icon-valid">✓</span>
                   }
@@ -337,7 +337,7 @@
                     type="text" 
                     formControlName="numeroDocumentoRepresentante"
                     placeholder="Ej: 12345678"
-                    maxlength="9">
+                    maxlength="8">
                   @if (isValid('numeroDocumentoRepresentante')) {
                     <span class="icon-valid">✓</span>
                   }

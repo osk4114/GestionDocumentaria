@@ -2,11 +2,14 @@ import { Component, OnInit, signal, computed, effect, untracked } from '@angular
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { environment } from '../../environments/environment';
 import { DocumentService, DocumentFilters } from '../../core/services/document.service';
 import { AuthService } from '../../core/services/auth.service';
+import { StorageService } from '../../core/services/storage.service';
 import { AreaCategoryService, AreaCategory } from '../../core/services/area-category.service';
 import { DocumentTypeService, DocumentType } from '../../core/services/document-type.service';
 import { RealtimeEventsService } from '../../core/services/realtime-events.service';
+import { CargoService, DocumentCargo } from '../../core/services/cargo.service';
 import { DocumentDeriveComponent } from '../documents/document-derive/document-derive.component';
 import { DocumentDetailsComponent } from '../documents/document-details/document-details.component';
 import { HasAnyPermissionDirective } from '../../shared/directives/has-any-permission.directive';
@@ -53,10 +56,12 @@ interface Document {
 export class BandejaComponent implements OnInit {
   // Signals para estado reactivo
   documents = signal<Document[]>([]);
+  cargos = signal<DocumentCargo[]>([]);
   areaCategories = signal<AreaCategory[]>([]);
   documentTypes = signal<DocumentType[]>([]);
   loading = signal<boolean>(true);
-  activeTab = signal<'todos' | 'pendientes' | 'proceso' | 'finalizados' | 'archivados'>('todos');
+  loadingCargos = signal<boolean>(false);
+  activeTab = signal<'todos' | 'pendientes' | 'proceso' | 'finalizados' | 'archivados' | 'cargos'>('todos');
   
   // Filtros avanzados
   searchTerm = signal<string>('');
@@ -75,6 +80,8 @@ export class BandejaComponent implements OnInit {
   selectedDocument = signal<Document | null>(null);
   selectedCategoryId = signal<number | null>(null);
   selectedDocTypeId = signal<number | null>(null);
+  editingCargoId = signal<number | null>(null);
+  editingCargoName = signal<string>('');
 
   // Computed values
   currentUser = computed(() => this.authService.currentUser());
@@ -125,8 +132,10 @@ export class BandejaComponent implements OnInit {
     private areaCategoryService: AreaCategoryService,
     private documentTypeService: DocumentTypeService,
     private authService: AuthService,
+    private storageService: StorageService,
     private realtimeEvents: RealtimeEventsService,
-    private router: Router
+    private router: Router,
+    private cargoService: CargoService
   ) {
     // 🔥 EVENTOS EN TIEMPO REAL con effects (más eficiente)
     effect(() => {
@@ -269,8 +278,13 @@ export class BandejaComponent implements OnInit {
     this.showFilters.update(value => !value);
   }
 
-  setActiveTab(tab: 'todos' | 'pendientes' | 'proceso' | 'finalizados' | 'archivados'): void {
+  setActiveTab(tab: 'todos' | 'pendientes' | 'proceso' | 'finalizados' | 'archivados' | 'cargos'): void {
     this.activeTab.set(tab);
+    
+    // Si es la pestaña de cargos y no hay datos, cargar
+    if (tab === 'cargos' && this.cargos().length === 0) {
+      this.loadCargos();
+    }
   }
 
   viewDocument(doc: Document): void {
@@ -506,5 +520,151 @@ export class BandejaComponent implements OnInit {
       console.error('❌ [transformDocument] Error:', error);
       throw error;
     }
+  }
+
+  /**
+   * Cargar cargos del área
+   */
+  loadCargos(): void {
+    this.loadingCargos.set(true);
+    this.cargoService.getCargosByArea().subscribe({
+      next: (response) => {
+        if (response.success && Array.isArray(response.data)) {
+          this.cargos.set(response.data);
+        }
+        this.loadingCargos.set(false);
+      },
+      error: (error) => {
+        console.error('Error al cargar cargos:', error);
+        this.loadingCargos.set(false);
+      }
+    });
+  }
+
+  /**
+   * Obtener nombre de display del cargo
+   */
+  getCargoDisplayName(cargo: DocumentCargo): string {
+    return this.cargoService.getDisplayName(cargo);
+  }
+
+  /**
+   * Iniciar edición de nombre de cargo
+   */
+  startEditCargoName(cargo: DocumentCargo): void {
+    this.editingCargoId.set(cargo.id);
+    this.editingCargoName.set(cargo.customName || this.getCargoDisplayName(cargo));
+  }
+
+  /**
+   * Cancelar edición de cargo
+   */
+  cancelEditCargo(): void {
+    this.editingCargoId.set(null);
+    this.editingCargoName.set('');
+  }
+
+  /**
+   * Guardar nombre editado de cargo
+   */
+  saveCargoName(cargoId: number): void {
+    const newName = this.editingCargoName().trim();
+    
+    if (!newName) {
+      alert('El nombre no puede estar vacío');
+      return;
+    }
+
+    this.cargoService.updateCargoName(cargoId, { customName: newName }).subscribe({
+      next: (response) => {
+        if (response.success && response.data) {
+          // Actualizar en la lista
+          const cargo = response.data as DocumentCargo;
+          this.cargos.update(list => 
+            list.map(c => c.id === cargoId ? cargo : c)
+          );
+          this.cancelEditCargo();
+        }
+      },
+      error: (error) => {
+        console.error('Error al actualizar cargo:', error);
+        alert(error.message || 'Error al actualizar el nombre del cargo');
+      }
+    });
+  }
+
+  /**
+   * Eliminar cargo
+   */
+  deleteCargo(cargo: DocumentCargo): void {
+    if (!confirm(`¿Eliminar cargo "${this.getCargoDisplayName(cargo)}"?`)) {
+      return;
+    }
+
+    this.cargoService.deleteCargo(cargo.id).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.cargos.update(list => list.filter(c => c.id !== cargo.id));
+        }
+      },
+      error: (error) => {
+        console.error('Error al eliminar cargo:', error);
+        alert(error.message || 'Error al eliminar el cargo');
+      }
+    });
+  }
+
+  /**
+   * Descargar archivo del cargo
+   */
+  downloadCargo(cargo: DocumentCargo): void {
+    if (!cargo.version) return;
+    
+    // Obtener el token del StorageService
+    const token = this.storageService.getToken();
+    if (!token) {
+      alert('No hay sesión activa. Por favor inicie sesión nuevamente.');
+      return;
+    }
+    
+    // Usar variable de entorno para la URL base
+    const baseUrl = window.location.origin;
+    const downloadUrl = `${baseUrl}${environment.apiUrl}/documents/versions/${cargo.versionId}/download`;
+    
+    // Hacer la descarga con fetch para incluir el token
+    fetch(downloadUrl, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error('Error al descargar el archivo');
+      }
+      return response.blob();
+    })
+    .then(blob => {
+      // Crear URL temporal del blob
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = cargo.version?.originalName || 'archivo.pdf';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    })
+    .catch(error => {
+      console.error('Error al descargar:', error);
+      alert('Error al descargar el archivo');
+    });
+  }
+
+  /**
+   * Formatear tamaño de archivo
+   */
+  formatFileSize(bytes: number): string {
+    return this.cargoService.formatFileSize(bytes);
   }
 }

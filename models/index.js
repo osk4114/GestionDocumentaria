@@ -14,6 +14,7 @@ const DocumentMovement = require('./DocumentMovement');
 const Attachment = require('./Attachment');
 const AreaDocumentCategory = require('./AreaDocumentCategory');
 const DocumentVersion = require('./DocumentVersion');
+const DocumentCargo = require('./DocumentCargo');
 
 // Inicializar modelos que son funciones
 const UserSession = require('./UserSession')(sequelize);
@@ -264,6 +265,37 @@ Area.hasMany(DocumentVersion, {
   as: 'documentVersions'
 });
 
+// -------- RELACIONES DE DOCUMENT_CARGO --------
+// DocumentCargo pertenece a un Area
+DocumentCargo.belongsTo(Area, {
+  foreignKey: 'areaId',
+  as: 'area'
+});
+Area.hasMany(DocumentCargo, {
+  foreignKey: 'areaId',
+  as: 'cargos'
+});
+
+// DocumentCargo referencia a DocumentVersion
+DocumentCargo.belongsTo(DocumentVersion, {
+  foreignKey: 'versionId',
+  as: 'version'
+});
+DocumentVersion.hasMany(DocumentCargo, {
+  foreignKey: 'versionId',
+  as: 'cargos'
+});
+
+// DocumentCargo creado por User
+DocumentCargo.belongsTo(User, {
+  foreignKey: 'createdBy',
+  as: 'creator'
+});
+User.hasMany(DocumentCargo, {
+  foreignKey: 'createdBy',
+  as: 'createdCargos'
+});
+
 // ============================================================
 // Función para sincronizar modelos con la base de datos
 // ============================================================
@@ -299,5 +331,6 @@ module.exports = {
   LoginAttempt,
   AreaDocumentCategory,
   DocumentVersion,
+  DocumentCargo,
   syncDatabase
 };

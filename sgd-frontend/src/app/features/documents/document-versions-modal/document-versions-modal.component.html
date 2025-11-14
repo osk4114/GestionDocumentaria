@@ -179,6 +179,18 @@
                   ⬇️ Descargar
                 </button>
                 <button 
+                  class="btn-action btn-cargo" 
+                  (click)="conservarCargo(version)"
+                  [disabled]="conservandoCargo()"
+                  title="Conservar como cargo para el área">
+                  @if (conservandoCargo()) {
+                    <span class="spinner-tiny"></span>
+                  } @else {
+                    📋
+                  }
+                  Conservar Cargo
+                </button>
+                <button 
                   class="btn-action btn-delete" 
                   (click)="deleteVersion(version)"
                   title="Eliminar">

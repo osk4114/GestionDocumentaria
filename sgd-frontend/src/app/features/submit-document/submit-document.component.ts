@@ -348,6 +348,12 @@ export class SubmitDocumentComponent {
     this.errorMessage.set('');
   }
 
+  consultarEstado() {
+    this.router.navigate(['/track'], { 
+      queryParams: { code: this.trackingCode() } 
+    });
+  }
+
   /**
    * Obtiene el mensaje de error para un campo específico
    */
