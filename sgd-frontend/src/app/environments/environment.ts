@@ -14,6 +14,7 @@
 export const environment = {
   production: false,
   apiUrl: '/api', // Ruta relativa - el proxy redirige a localhost:3000
+  socketUrl: 'http://localhost:3000', // WebSocket en desarrollo
   appName: 'Sistema de Gestión Documentaria',
   appVersion: '1.0.0'
 };
