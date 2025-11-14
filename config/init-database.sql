@@ -755,13 +755,13 @@ ON DUPLICATE KEY UPDATE rol_id = rol_id;
 -- Índices para optimización de consultas
 -- ============================================================
 
-CREATE INDEX IF NOT EXISTS idx_documents_tracking ON documents(tracking_code);
-CREATE INDEX IF NOT EXISTS idx_documents_status ON documents(status_id);
-CREATE INDEX IF NOT EXISTS idx_documents_current_area ON documents(current_area_id);
-CREATE INDEX IF NOT EXISTS idx_documents_current_user ON documents(current_user_id);
-CREATE INDEX IF NOT EXISTS idx_movements_document ON document_movements(document_id);
-CREATE INDEX IF NOT EXISTS idx_movements_timestamp ON document_movements(timestamp);
-CREATE INDEX IF NOT EXISTS idx_attachments_document ON attachments(document_id);
+CREATE INDEX idx_documents_tracking ON documents(tracking_code);
+CREATE INDEX idx_documents_status ON documents(status_id);
+CREATE INDEX idx_documents_current_area ON documents(current_area_id);
+CREATE INDEX idx_documents_current_user ON documents(current_user_id);
+CREATE INDEX idx_movements_document ON document_movements(document_id);
+CREATE INDEX idx_movements_timestamp ON document_movements(timestamp);
+CREATE INDEX idx_attachments_document ON attachments(document_id);
 
 -- ============================================================
 -- RESUMEN DE ESTRUCTURA (v3.5)

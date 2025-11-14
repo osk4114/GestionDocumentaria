@@ -1,12 +1,13 @@
 const mysql = require('mysql2');
+require('dotenv').config();
 
-// Configuración de conexión a MySQL (XAMPP)
+// Configuración de conexión a MySQL
 const dbConfig = {
-  host: 'localhost',
-  user: 'root',
-  password: '', // XAMPP por defecto no tiene contraseña
-  database: 'sgd_db',
-  port: 3306
+  host: process.env.DB_HOST || 'localhost',
+  user: process.env.DB_USER || 'root',
+  password: process.env.DB_PASSWORD || '',
+  database: process.env.DB_NAME || 'sgd_db',
+  port: process.env.DB_PORT || 3306
 };
 
 // Crear pool de conexiones
